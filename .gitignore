@@ -36,3 +36,10 @@ __pycache__/
 *.pyc
 *.pyo
 
+# Local Agent Customizations & Skills
+.agents/
+.agent/
+_agents/
+_agent/
+
+
