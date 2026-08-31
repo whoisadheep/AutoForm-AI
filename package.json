@@ -2,13 +2,23 @@
   "name": "autoform-ai",
   "version": "2.0.0",
   "description": "Production-ready browser extension to automatically solve and fill Google Forms using AI (Groq, Gemini, NVIDIA)",
-  "private": true,
+  "main": "server/src/index.js",
   "scripts": {
+    "start": "node server/src/index.js",
+    "postinstall": "cd server && npm install",
     "validate": "node scripts/validate_manifest.js",
     "package": "node scripts/package_extension.js",
     "server:install": "cd server && npm install",
     "server:start": "cd server && npm start",
     "server:dev": "cd server && npm run dev"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "chrome-extension",
