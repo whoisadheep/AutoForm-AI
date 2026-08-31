@@ -4,8 +4,9 @@
  * Handles backend proxy requests, client identity management, and direct API fallback.
  */
 
-// Default Cloud Backend Proxy URL (editable via extension settings)
-const DEFAULT_SERVER_URL = "http://localhost:3000";
+// Default Production Cloud Backend Proxy URL
+const DEFAULT_SERVER_URL = "https://autoform-ai-production.up.railway.app";
+
 
 /**
  * Ensures an anonymous client ID is generated and stored for rate limiting.

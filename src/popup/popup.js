@@ -2,10 +2,10 @@
  * @file src/popup/popup.js
  * @description AutoForm AI v2.0 Popup Controller.
  * Handles active tab analysis, server health checks, solving triggers, and preferences persistence.
- * Clean, SVG-first, zero-emoji implementation.
+ * Zero-config, clean, minimal implementation.
  */
 
-const DEFAULT_SERVER_URL = "http://localhost:3000";
+const DEFAULT_SERVER_URL = "https://autoform-ai-production.up.railway.app";
 
 // DOM Elements
 const connectionPill = document.getElementById('connectionPill');
@@ -19,15 +19,9 @@ const solveBtnIcon = document.getElementById('solveBtnIcon');
 const solveSpinner = document.getElementById('solveSpinner');
 const toneSelect = document.getElementById('toneSelect');
 const customContext = document.getElementById('customContext');
-const serverUrlInput = document.getElementById('serverUrl');
-const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-const testConnectionBtn = document.getElementById('testConnectionBtn');
-const useDirectKey = document.getElementById('useDirectKey');
-const directKeyGroup = document.getElementById('directKeyGroup');
-const directKeyInput = document.getElementById('directKeyInput');
 const popupStatus = document.getElementById('popupStatus');
 
-// SVG Icon Templates
+// SVG Icon Templates (NO emojis)
 const ICONS = {
     play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
     stop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`
@@ -53,10 +47,10 @@ async function checkServerHealth() {
         if (res && res.success) {
             connectionPill.className = 'connection-pill status-online';
             const active = res.data?.activeProviders?.length || 0;
-            connectionText.innerText = active > 0 ? `${active} Engine${active > 1 ? 's' : ''} Live` : 'Proxy Ready';
+            connectionText.innerText = active > 0 ? `${active} Engines` : 'Ready';
         } else {
             connectionPill.className = 'connection-pill status-offline';
-            connectionText.innerText = 'Server Offline';
+            connectionText.innerText = 'Offline';
         }
     });
 }
@@ -126,20 +120,11 @@ function setSolvingButtonState(isSolving) {
 document.addEventListener('DOMContentLoaded', () => {
     // Load stored preferences
     chrome.storage.local.get([
-        'serverUrl',
         'tone',
-        'customContext',
-        'useDirectKey',
-        'geminiApiKey'
+        'customContext'
     ], (stored) => {
-        serverUrlInput.value = stored.serverUrl || DEFAULT_SERVER_URL;
         if (stored.tone) toneSelect.value = stored.tone;
         if (stored.customContext) customContext.value = stored.customContext;
-        if (stored.useDirectKey) {
-            useDirectKey.checked = true;
-            directKeyGroup.style.display = 'block';
-        }
-        if (stored.geminiApiKey) directKeyInput.value = stored.geminiApiKey;
     });
 
     checkServerHealth();
@@ -153,53 +138,6 @@ toneSelect.addEventListener('change', () => {
 
 customContext.addEventListener('input', () => {
     chrome.storage.local.set({ customContext: customContext.value.trim() });
-});
-
-useDirectKey.addEventListener('change', () => {
-    const isDirect = useDirectKey.checked;
-    directKeyGroup.style.display = isDirect ? 'block' : 'none';
-    chrome.storage.local.set({ useDirectKey: isDirect });
-});
-
-directKeyInput.addEventListener('change', () => {
-    chrome.storage.local.set({ 
-        geminiApiKey: directKeyInput.value.trim(),
-        geminiApiKeys: [directKeyInput.value.trim()]
-    });
-});
-
-// Save Server URL Settings
-saveSettingsBtn.addEventListener('click', () => {
-    const url = serverUrlInput.value.trim() || DEFAULT_SERVER_URL;
-    chrome.storage.local.set({ serverUrl: url }, () => {
-        showStatus('Server URL saved', 'success');
-        checkServerHealth();
-    });
-});
-
-// Test Server Connection
-testConnectionBtn.addEventListener('click', async () => {
-    testConnectionBtn.disabled = true;
-    const origHtml = testConnectionBtn.innerHTML;
-    testConnectionBtn.innerText = 'Testing...';
-    
-    const url = serverUrlInput.value.trim() || DEFAULT_SERVER_URL;
-    try {
-        const res = await fetch(`${url.replace(/\/$/, '')}/api/v1/health`);
-        const data = await res.json();
-        if (res.ok) {
-            const active = data.activeProviders?.join(', ') || 'Online';
-            showStatus(`Connected: ${active}`, 'success');
-            checkServerHealth();
-        } else {
-            showStatus(`Error: ${data.error || 'Server error'}`, 'error');
-        }
-    } catch (e) {
-        showStatus(`Cannot reach ${url}`, 'error');
-    } finally {
-        testConnectionBtn.disabled = false;
-        testConnectionBtn.innerHTML = origHtml;
-    }
 });
 
 // Main Solve / Stop Button Click Handler
