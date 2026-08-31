@@ -1,7 +1,7 @@
 {
   "name": "AutoForm AI",
-  "description": "Automatically fill Google Forms using AI. Smart, fast, and secure.",
-  "version": "1.0",
+  "description": "Automatically fill and solve Google Forms with AI (Groq, Gemini, NVIDIA NIM).",
+  "version": "2.0.0",
   "manifest_version": 3,
   "permissions": [
     "scripting", 
@@ -9,30 +9,40 @@
     "storage"
   ],
   "host_permissions": [
+    "https://docs.google.com/*",
     "https://generativelanguage.googleapis.com/*",
-    "https://docs.google.com/*"
+    "http://localhost:3000/*",
+    "http://127.0.0.1:3000/*",
+    "https://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["src/background/background.js"],
+    "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
       "matches": ["https://docs.google.com/forms/*"],
-      "js": ["content.js"],
+      "js": ["src/content/content.js"],
       "run_at": "document_idle"
     }
   ],
   "action": {
-    "default_popup": "popup.html",
+    "default_popup": "src/popup/popup.html",
     "default_icon": {
-      "16": "icon16.png",
-      "48": "icon48.png",
-      "128": "icon128.png"
+      "16": "assets/icons/icon16.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
     }
   },
   "icons": {
-    "16": "icon16.png",
-    "48": "icon48.png",
-    "128": "icon128.png"
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "autoform-ai@whoisadheep.dev",
+      "strict_min_version": "115.0"
+    }
   }
 }

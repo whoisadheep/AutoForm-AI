@@ -1,0 +1,648 @@
+/**
+ * @file src/popup/popup.css
+ * @description Minimalist, production-ready design system inspired by the clean DevTools/Figma inspector interface.
+ * Clean light palette, crisp borders, Royal Violet (#7241FF) primary action, zero emojis, zero green/red dots.
+ */
+
+:root {
+    /* Base Surface Colors */
+    --bg-base: #f8f9fa;
+    --bg-card: #ffffff;
+    --bg-surface: #f3f4f6;
+    --bg-input: #ffffff;
+    --bg-input-focus: #ffffff;
+    
+    /* Text Colors (High Contrast WCAG AAA) */
+    --text-primary: #0e0e0e;
+    --text-secondary: #5b6270;
+    --text-muted: #8c93a3;
+    
+    /* Brand & Action Colors (Matches reference design #7241FF) */
+    --primary: #7241ff;
+    --primary-hover: #612df0;
+    --primary-active: #501ee0;
+    
+    --danger: #e11d48;
+    --danger-hover: #be123c;
+    
+    /* Crisp Neutral Borders */
+    --border-subtle: 1px solid #ebecef;
+    --border-medium: 1px solid #e2e4e8;
+    --border-focus: 1px solid #7241ff;
+    
+    /* Subtle Diffused Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+    --shadow-card: 0 4px 16px -2px rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+    --shadow-btn: 0 4px 12px 0 rgba(114, 65, 255, 0.25), 0 1px 2px rgba(0, 0, 0, 0.05);
+    
+    /* Radii */
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+    
+    /* Transitions */
+    --ease-spring: cubic-bezier(0.2, 0.8, 0.2, 1);
+    --transition-fast: 0.15s var(--ease-spring);
+    --transition-normal: 0.2s var(--ease-spring);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 350px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-base);
+    color: var(--text-primary);
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+.container {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ==========================================================================
+   Header & Brand
+   ========================================================================== */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 2px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.brand-logo {
+    width: 20px;
+    height: 20px;
+    display: block;
+    border-radius: var(--radius-sm);
+}
+
+.brand-text {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+}
+
+.version-tag {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border: var(--border-subtle);
+    padding: 1px 6px;
+    border-radius: var(--radius-full);
+}
+
+/* Connection Status Pill (Clean text only, NO green/red dots) */
+.connection-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 9px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    background-color: var(--bg-card);
+    border: var(--border-medium);
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-normal);
+}
+
+.status-online {
+    color: var(--text-primary);
+    background-color: #ffffff;
+    border-color: #d1d5db;
+}
+
+.status-offline {
+    color: var(--text-muted);
+    background-color: var(--bg-surface);
+    border-color: var(--border-medium);
+}
+
+/* ==========================================================================
+   Form Status Card
+   ========================================================================== */
+
+.card {
+    background-color: var(--bg-card);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition-normal);
+}
+
+.form-status-card {
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.card-icon-bubble {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background-color: var(--bg-surface);
+    border: var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.card-svg-icon {
+    width: 16px;
+    height: 16px;
+    color: var(--text-primary);
+}
+
+.card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card-desc {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.badge {
+    padding: 3px 8px;
+    background-color: var(--bg-surface);
+    color: var(--text-primary);
+    border: var(--border-medium);
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   Action Buttons (Royal Violet #7241FF as in Reference Design)
+   ========================================================================== */
+
+.btn {
+    width: 100%;
+    padding: 10px 16px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+    font-family: inherit;
+    user-select: none;
+}
+
+.btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    box-shadow: none !important;
+    transform: none !important;
+}
+
+/* Primary Action Button (#7241FF) */
+.btn-primary {
+    background-color: var(--primary);
+    color: #ffffff;
+    box-shadow: var(--shadow-btn);
+}
+
+.btn-primary:hover:not(:disabled) {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(1px);
+    background-color: var(--primary-active);
+}
+
+/* Danger / Stop State */
+.btn-danger {
+    background-color: var(--danger) !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px 0 rgba(225, 29, 72, 0.25) !important;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background-color: var(--danger-hover) !important;
+    transform: translateY(-1px);
+}
+
+.btn-danger:active:not(:disabled) {
+    transform: translateY(1px) !important;
+}
+
+.btn-icon svg {
+    width: 15px;
+    height: 15px;
+    display: block;
+}
+
+.btn-secondary {
+    background-color: #ffffff;
+    color: var(--text-primary);
+    border: var(--border-medium);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background-color: var(--bg-surface);
+    border-color: #d1d5db;
+}
+
+.btn-secondary:active:not(:disabled) {
+    transform: translateY(1px);
+    background-color: #e5e7eb;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 11px;
+    border-radius: var(--radius-sm);
+}
+
+/* Spinner */
+.spinner {
+    width: 13px;
+    height: 13px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: spin 0.65s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Section & Form Inputs
+   ========================================================================== */
+
+.section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+}
+
+.section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.label-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: normal;
+}
+
+/* Clean Form Inputs */
+.input, .select {
+    width: 100%;
+    padding: 8px 10px;
+    background-color: var(--bg-input);
+    border: var(--border-medium);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    box-shadow: var(--shadow-sm);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.input::placeholder {
+    color: var(--text-muted);
+}
+
+.input:focus, .select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(114, 65, 255, 0.12);
+}
+
+/* Custom Select Dropdown */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select {
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 30px;
+    cursor: pointer;
+}
+
+.select-chevron {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 13px;
+    height: 13px;
+    color: var(--text-secondary);
+    pointer-events: none;
+}
+
+.select option {
+    background-color: #ffffff;
+    color: var(--text-primary);
+    padding: 6px;
+}
+
+/* ==========================================================================
+   Details / Accordion Sheet
+   ========================================================================== */
+
+.details-section {
+    background-color: var(--bg-card);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+    transition: var(--transition-normal);
+}
+
+.details-summary {
+    padding: 10px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    list-style: none;
+    user-select: none;
+    transition: color var(--transition-fast), background-color var(--transition-fast);
+}
+
+.details-summary:hover {
+    color: var(--text-primary);
+    background-color: var(--bg-surface);
+}
+
+.details-summary::-webkit-details-marker {
+    display: none;
+}
+
+.summary-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.summary-icon {
+    width: 14px;
+    height: 14px;
+    color: var(--text-secondary);
+}
+
+.details-chevron {
+    width: 13px;
+    height: 13px;
+    color: var(--text-muted);
+    transition: transform var(--transition-normal);
+}
+
+details[open] .details-chevron {
+    transform: rotate(180deg);
+}
+
+.details-content {
+    padding: 12px;
+    border-top: var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background-color: #fbfbfc;
+}
+
+.action-row {
+    display: flex;
+    gap: 8px;
+}
+
+.action-row .btn {
+    flex: 1;
+}
+
+.divider {
+    height: 1px;
+    background-color: #ebecef;
+    margin: 2px 0;
+}
+
+/* ==========================================================================
+   Figma / iOS Minimalist Toggle Switch
+   ========================================================================== */
+
+.toggle-group {
+    display: flex;
+    align-items: center;
+}
+
+.toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    cursor: pointer;
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.toggle-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.toggle-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+}
+
+.switch-container {
+    position: relative;
+    width: 34px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.toggle-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #e5e7eb;
+    border-radius: var(--radius-full);
+    transition: var(--transition-normal);
+}
+
+.toggle-slider::before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    transition: var(--transition-normal);
+}
+
+.toggle-checkbox:checked + .toggle-slider {
+    background-color: var(--primary);
+}
+
+.toggle-checkbox:checked + .toggle-slider::before {
+    transform: translateX(16px);
+}
+
+/* ==========================================================================
+   Status Toast
+   ========================================================================== */
+
+.status-msg {
+    padding: 7px 10px;
+    border-radius: var(--radius-md);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    background-color: var(--bg-card);
+    border: var(--border-medium);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+    animation: statusSlide 0.2s var(--ease-spring);
+}
+
+@keyframes statusSlide {
+    from { opacity: 0; transform: translateY(-3px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.status-msg.success {
+    border-color: #86efac;
+    color: #15803d;
+    background-color: #f0fdf4;
+}
+
+.status-msg.error {
+    border-color: #fca5a5;
+    color: #b91c1c;
+    background-color: #fef2f2;
+}
+
+.status-msg.info {
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+    background-color: #eff6ff;
+}
+
+/* ==========================================================================
+   Footer
+   ========================================================================== */
+
+.footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--text-muted);
+    border-top: var(--border-subtle);
+    padding-top: 10px;
+}
+
+/* Accessibility */
+:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

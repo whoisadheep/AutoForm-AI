@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoForm AI</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="brand">
+                <img src="../../assets/icons/icon48.png" alt="AutoForm" class="brand-logo" width="22" height="22">
+                <div class="brand-text">
+                    <h1 class="title">AutoForm</h1>
+                    <span class="version-tag">2.0</span>
+                </div>
+            </div>
+
+            <div id="connectionPill" class="connection-pill status-connecting" aria-live="polite">
+                <span id="connectionText" class="connection-text">Checking</span>
+            </div>
+        </header>
+
+        <!-- Main Form Detection Card -->
+        <section id="formStatusCard" class="card form-status-card" aria-label="Form Status">
+            <div class="card-icon-bubble">
+                <svg class="card-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <line x1="10" y1="9" x2="8" y2="9"/>
+                </svg>
+            </div>
+            <div class="card-content">
+                <div id="formStatusTitle" class="card-title">Scanning tab...</div>
+                <div id="formStatusDesc" class="card-desc">Navigate to any Google Form</div>
+            </div>
+            <span id="questionBadge" class="badge" style="display: none;">0 Qs</span>
+        </section>
+
+        <!-- Primary Solve Action -->
+        <button id="solveBtn" class="btn btn-primary" disabled aria-label="Fill Current Form">
+            <span id="solveBtnIcon" class="btn-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+            </span>
+            <span id="solveBtnText" class="btn-text">Fill Current Form</span>
+            <div id="solveSpinner" class="spinner" style="display: none;" aria-hidden="true"></div>
+        </button>
+
+        <!-- Configuration Section -->
+        <section class="section">
+            <div class="section-header">
+                <span class="section-title">Preferences</span>
+            </div>
+
+            <div class="input-group">
+                <label for="toneSelect" class="label">Answer Style</label>
+                <div class="select-wrapper">
+                    <select id="toneSelect" class="select">
+                        <option value="accurate" selected>Accurate & Direct (High Precision)</option>
+                        <option value="concise">Concise & Brief (1–2 Sentences)</option>
+                        <option value="detailed">Detailed & Explanatory</option>
+                    </select>
+                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label for="customContext" class="label">
+                    <span>Target Persona</span>
+                    <span class="label-hint">Optional</span>
+                </label>
+                <input type="text" id="customContext" class="input" placeholder="e.g. Computer Science student...">
+            </div>
+        </section>
+
+        <!-- Advanced Server Settings (Figma-Style Collapsible Sheet) -->
+        <details class="details-section">
+            <summary class="details-summary">
+                <div class="summary-left">
+                    <svg class="summary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    <span>Server & API Settings</span>
+                </div>
+                <svg class="details-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </summary>
+            
+            <div class="details-content">
+                <div class="input-group">
+                    <label for="serverUrl" class="label">Backend Proxy URL</label>
+                    <input type="text" id="serverUrl" class="input" placeholder="http://localhost:3000">
+                </div>
+
+                <div class="action-row">
+                    <button id="saveSettingsBtn" class="btn btn-secondary btn-sm">Save URL</button>
+                    <button id="testConnectionBtn" class="btn btn-secondary btn-sm">Test Server</button>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="toggle-group">
+                    <label class="toggle-label" for="useDirectKey">
+                        <div class="toggle-text">
+                            <div class="toggle-title">Direct Client API Mode</div>
+                            <div class="toggle-desc">Direct inference without proxy routing</div>
+                        </div>
+                        <div class="switch-container">
+                            <input type="checkbox" id="useDirectKey" class="toggle-checkbox">
+                            <span class="toggle-slider"></span>
+                        </div>
+                    </label>
+                </div>
+
+                <div id="directKeyGroup" class="input-group" style="display: none; margin-top: 8px;">
+                    <label for="directKeyInput" class="label">Gemini API Key</label>
+                    <input type="password" id="directKeyInput" class="input" placeholder="AIzaSy...">
+                </div>
+            </div>
+        </details>
+
+        <!-- Status Notification Toast -->
+        <div id="popupStatus" class="status-msg" style="display: none;" role="status"></div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <span>Production Ready • v2.0</span>
+            <span>Groq • Gemini • NVIDIA</span>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

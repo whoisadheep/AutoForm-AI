@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: autoform-ai-server
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: node src/index.js
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: NODE_ENV
+        value: production
+      - key: RATE_LIMIT_PER_HOUR
+        value: 60
+      - key: GROQ_API_KEYS
+        sync: false
+      - key: GEMINI_API_KEYS
+        sync: false
+      - key: NVIDIA_API_KEYS
+        sync: false
