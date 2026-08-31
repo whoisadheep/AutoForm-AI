@@ -22,7 +22,7 @@ if (fs.existsSync(zipFile)) {
 console.log('📦 Packaging AutoForm AI...');
 
 try {
-    execSync(`zip -r "${zipFile}" manifest.json assets/ src/ -x "*.DS_Store*"`, {
+    execSync(`zip -r "${zipFile}" manifest.json assets/icons/ src/ -x "*.DS_Store*"`, {
         cwd: rootDir,
         stdio: 'inherit'
     });

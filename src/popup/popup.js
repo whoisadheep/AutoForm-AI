@@ -21,11 +21,6 @@ const toneSelect = document.getElementById('toneSelect');
 const customContext = document.getElementById('customContext');
 const popupStatus = document.getElementById('popupStatus');
 
-// SVG Icon Templates (NO emojis)
-const ICONS = {
-    play: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`,
-    stop: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`
-};
 
 /**
  * Displays a temporary status notification toast in the popup.
@@ -92,20 +87,52 @@ function analyzeActiveTab() {
 }
 
 /**
+ * Sets SVG icon on the button safely without innerHTML.
+ * @param {'play'|'stop'} type 
+ */
+function setButtonIcon(type) {
+    solveBtnIcon.textContent = '';
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("viewBox", "0 0 24 24");
+    svg.setAttribute("fill", "none");
+    svg.setAttribute("stroke", "currentColor");
+    svg.setAttribute("stroke-width", "2.2");
+    svg.setAttribute("stroke-linecap", "round");
+    svg.setAttribute("stroke-linejoin", "round");
+    svg.setAttribute("aria-hidden", "true");
+
+    if (type === 'stop') {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", "6");
+        rect.setAttribute("y", "6");
+        rect.setAttribute("width", "12");
+        rect.setAttribute("height", "12");
+        rect.setAttribute("rx", "2");
+        svg.appendChild(rect);
+    } else {
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        poly.setAttribute("points", "13 2 3 14 12 14 11 22 21 10 12 10 13 2");
+        svg.appendChild(poly);
+    }
+
+    solveBtnIcon.appendChild(svg);
+}
+
+/**
  * Toggles the solve button between Start and Stop states.
  * @param {boolean} isSolving 
  */
 function setSolvingButtonState(isSolving) {
     if (isSolving) {
-        solveBtnText.innerText = "Stop Form Filling";
-        solveBtnIcon.innerHTML = ICONS.stop;
+        solveBtnText.textContent = "Stop Form Filling";
+        setButtonIcon('stop');
         solveBtn.classList.add("btn-danger");
         solveBtn.disabled = false;
         solveSpinner.style.display = 'none';
         solveBtn.setAttribute('aria-label', 'Stop Form Filling');
     } else {
-        solveBtnText.innerText = "Fill Current Form";
-        solveBtnIcon.innerHTML = ICONS.play;
+        solveBtnText.textContent = "Fill Current Form";
+        setButtonIcon('play');
         solveBtn.classList.remove("btn-danger");
         solveBtn.disabled = false;
         solveSpinner.style.display = 'none';

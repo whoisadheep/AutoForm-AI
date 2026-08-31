@@ -30,7 +30,7 @@ function cancelFormSolver() {
     }
 
     const floatBtn = document.getElementById('ai-floating-btn');
-    if (floatBtn) floatBtn.innerHTML = 'Stopping...';
+    if (floatBtn) floatBtn.textContent = 'Stopping...';
 }
 
 // ---------------------------------------------------------------------------
@@ -152,7 +152,101 @@ function getQuestions() {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates and renders the redesigned modern progress modal overlay.
+ * Creates SVG elements programmatically without innerHTML.
+ * @param {'spark'|'stop'|'check'|'error'|'warning'|'info'} type 
+ * @returns {SVGElement}
+ */
+function createContentSvg(type) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('fill', 'none');
+    svg.setAttribute('stroke', 'currentColor');
+    svg.setAttribute('stroke-linecap', 'round');
+    svg.setAttribute('stroke-linejoin', 'round');
+    svg.setAttribute('aria-hidden', 'true');
+
+    if (type === 'spark') {
+        svg.setAttribute('width', '15');
+        svg.setAttribute('height', '15');
+        svg.setAttribute('stroke-width', '2.2');
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        poly.setAttribute('points', '13 2 3 14 12 14 11 22 21 10 12 10 13 2');
+        svg.appendChild(poly);
+    } else if (type === 'stop') {
+        svg.setAttribute('width', '13');
+        svg.setAttribute('height', '13');
+        svg.setAttribute('stroke-width', '2.2');
+        const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', '6');
+        rect.setAttribute('y', '6');
+        rect.setAttribute('width', '12');
+        rect.setAttribute('height', '12');
+        rect.setAttribute('rx', '2');
+        svg.appendChild(rect);
+    } else if (type === 'check') {
+        svg.setAttribute('width', '15');
+        svg.setAttribute('height', '15');
+        svg.setAttribute('stroke-width', '2.5');
+        svg.setAttribute('stroke', '#7241ff');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M22 11.08V12a10 10 0 1 1-5.93-9.14');
+        const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+        poly.setAttribute('points', '22 4 12 14.01 9 11.01');
+        svg.appendChild(path);
+        svg.appendChild(poly);
+    } else if (type === 'error') {
+        svg.setAttribute('width', '15');
+        svg.setAttribute('height', '15');
+        svg.setAttribute('stroke-width', '2.5');
+        svg.setAttribute('stroke', '#e11d48');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l1.setAttribute('x1', '15'); l1.setAttribute('y1', '9'); l1.setAttribute('x2', '9'); l1.setAttribute('y2', '15');
+        const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l2.setAttribute('x1', '9'); l2.setAttribute('y1', '9'); l2.setAttribute('x2', '15'); l2.setAttribute('y2', '15');
+        svg.appendChild(circle);
+        svg.appendChild(l1);
+        svg.appendChild(l2);
+    } else if (type === 'warning') {
+        svg.setAttribute('width', '15');
+        svg.setAttribute('height', '15');
+        svg.setAttribute('stroke-width', '2.5');
+        svg.setAttribute('stroke', '#d97706');
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z');
+        const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l1.setAttribute('x1', '12'); l1.setAttribute('y1', '9'); l1.setAttribute('x2', '12'); l1.setAttribute('y2', '13');
+        const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l2.setAttribute('x1', '12'); l2.setAttribute('y1', '17'); l2.setAttribute('x2', '12.01'); l2.setAttribute('y2', '17');
+        svg.appendChild(path);
+        svg.appendChild(l1);
+        svg.appendChild(l2);
+    } else if (type === 'info') {
+        svg.setAttribute('width', '15');
+        svg.setAttribute('height', '15');
+        svg.setAttribute('stroke-width', '2.5');
+        svg.setAttribute('stroke', '#7241ff');
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '10');
+        const l1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l1.setAttribute('x1', '12'); l1.setAttribute('y1', '16'); l1.setAttribute('x2', '12'); l1.setAttribute('y2', '12');
+        const l2 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        l2.setAttribute('x1', '12'); l2.setAttribute('y1', '8'); l2.setAttribute('x2', '12.01'); l2.setAttribute('y2', '8');
+        svg.appendChild(circle);
+        svg.appendChild(l1);
+        svg.appendChild(l2);
+    }
+    return svg;
+}
+
+/**
+ * Creates and renders the modern progress modal overlay without innerHTML.
+ * @param {number} totalQuestions
  * @returns {HTMLDivElement}
  */
 function createLoadingOverlay(totalQuestions) {
@@ -166,127 +260,133 @@ function createLoadingOverlay(totalQuestions) {
         background: rgba(14, 14, 14, 0.4); z-index: 100000;
         display: flex; align-items: center; justify-content: center;
         font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
-        animation: aiFadeIn 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     `;
 
-    overlay.innerHTML = `
-        <div style="
-            background: #ffffff;
-            border: 1px solid #ebecef;
-            border-radius: 14px;
-            padding: 28px 30px;
-            width: 90%;
-            max-width: 380px;
-            box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
-            text-align: center;
-            position: relative;
-            color: #0e0e0e;
-        ">
-            <!-- Header Badge (NO colored dots) -->
-            <div style="display: inline-flex; align-items: center; padding: 3px 10px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 9999px; margin-bottom: 14px;">
-                <span id="ai-provider-badge" style="font-size: 11px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px;">AutoForm AI Active</span>
-            </div>
-
-            <!-- Title & Question Preview -->
-            <h3 id="ai-status-text" style="margin: 0 0 6px; color: #0e0e0e; font-size: 16px; font-weight: 700; letter-spacing: -0.3px;">Solving Form Questions...</h3>
-            <p id="ai-status-subtext" style="color: #6b7280; font-size: 13px; margin: 0 0 20px; line-height: 1.5; min-height: 20px; word-break: break-word;">Initializing solver...</p>
-
-            <!-- Progress Bar with Percentage Indicator -->
-            <div style="margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-                <span id="ai-progress-counter" style="font-size: 12px; font-weight: 600; color: #4b5563;">Question 0 of ${totalQuestions}</span>
-                <span id="ai-progress-percent" style="font-size: 12px; font-weight: 700; color: #7241ff;">0%</span>
-            </div>
-            
-            <div style="background: #f3f4f6; border: 1px solid #e5e7eb; height: 8px; border-radius: 9999px; overflow: hidden; position: relative;">
-                <div id="ai-progress-bar" style="background: #7241ff; height: 100%; width: 0%; border-radius: 9999px; transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);"></div>
-            </div>
-
-            <!-- Cancel Button -->
-            <div style="margin-top: 20px; display: flex; justify-content: center;">
-                <button id="ai-cancel-btn" style="
-                    padding: 8px 16px;
-                    background: #ffffff;
-                    color: #4b5563;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 8px;
-                    font-size: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 6px;
-                    transition: background-color 0.15s, color 0.15s, border-color 0.15s;
-                    font-family: inherit;
-                    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-                ">
-                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <rect x="6" y="6" width="12" height="12" rx="2"/>
-                    </svg>
-                    Stop & Cancel
-                </button>
-            </div>
-            
-            <style>
-                @keyframes aiFadeIn { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
-            </style>
-        </div>
+    const card = document.createElement('div');
+    card.style.cssText = `
+        background: #ffffff;
+        border: 1px solid #ebecef;
+        border-radius: 14px;
+        padding: 28px 30px;
+        width: 90%;
+        max-width: 380px;
+        box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
+        text-align: center;
+        position: relative;
+        color: #0e0e0e;
     `;
 
-    const cancelBtn = overlay.querySelector('#ai-cancel-btn');
-    if (cancelBtn) {
-        cancelBtn.onmouseover = () => {
-            cancelBtn.style.background = '#e11d48';
-            cancelBtn.style.borderColor = '#e11d48';
-            cancelBtn.style.color = '#ffffff';
-        };
-        cancelBtn.onmouseout = () => {
-            if (!cancelRequested) {
-                cancelBtn.style.background = '#ffffff';
-                cancelBtn.style.borderColor = '#e5e7eb';
-                cancelBtn.style.color = '#4b5563';
-            }
-        };
-        cancelBtn.onclick = (e) => {
-            e.stopPropagation();
-            cancelFormSolver();
-        };
-    }
+    // Header Badge
+    const badgeWrap = document.createElement('div');
+    badgeWrap.style.cssText = 'display: inline-flex; align-items: center; padding: 3px 10px; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 9999px; margin-bottom: 14px;';
+    const badgeText = document.createElement('span');
+    badgeText.id = 'ai-provider-badge';
+    badgeText.style.cssText = 'font-size: 11px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.5px;';
+    badgeText.textContent = 'AutoForm AI Active';
+    badgeWrap.appendChild(badgeText);
+    card.appendChild(badgeWrap);
 
+    // Title
+    const title = document.createElement('h3');
+    title.id = 'ai-status-text';
+    title.style.cssText = 'margin: 0 0 6px; color: #0e0e0e; font-size: 16px; font-weight: 700; letter-spacing: -0.3px;';
+    title.textContent = 'Solving Form Questions...';
+    card.appendChild(title);
+
+    // Subtitle
+    const subtext = document.createElement('p');
+    subtext.id = 'ai-status-subtext';
+    subtext.style.cssText = 'color: #6b7280; font-size: 13px; margin: 0 0 20px; line-height: 1.5; min-height: 20px; word-break: break-word;';
+    subtext.textContent = 'Initializing solver...';
+    card.appendChild(subtext);
+
+    // Progress counter row
+    const counterRow = document.createElement('div');
+    counterRow.style.cssText = 'margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;';
+    const counter = document.createElement('span');
+    counter.id = 'ai-progress-counter';
+    counter.style.cssText = 'font-size: 12px; font-weight: 600; color: #4b5563;';
+    counter.textContent = `Question 0 of ${totalQuestions}`;
+    const percent = document.createElement('span');
+    percent.id = 'ai-progress-percent';
+    percent.style.cssText = 'font-size: 12px; font-weight: 700; color: #7241ff;';
+    percent.textContent = '0%';
+    counterRow.appendChild(counter);
+    counterRow.appendChild(percent);
+    card.appendChild(counterRow);
+
+    // Progress Bar Track
+    const track = document.createElement('div');
+    track.style.cssText = 'background: #f3f4f6; border: 1px solid #e5e7eb; height: 8px; border-radius: 9999px; overflow: hidden; position: relative;';
+    const bar = document.createElement('div');
+    bar.id = 'ai-progress-bar';
+    bar.style.cssText = 'background: #7241ff; height: 100%; width: 0%; border-radius: 9999px; transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);';
+    track.appendChild(bar);
+    card.appendChild(track);
+
+    // Cancel Button Container
+    const btnRow = document.createElement('div');
+    btnRow.style.cssText = 'margin-top: 20px; display: flex; justify-content: center;';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.id = 'ai-cancel-btn';
+    cancelBtn.style.cssText = `
+        padding: 8px 16px;
+        background: #ffffff;
+        color: #4b5563;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        font-family: inherit;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    `;
+    const stopIcon = createContentSvg('stop');
+    const stopLabel = document.createElement('span');
+    stopLabel.textContent = 'Stop & Cancel';
+    cancelBtn.appendChild(stopIcon);
+    cancelBtn.appendChild(stopLabel);
+
+    cancelBtn.onmouseover = () => {
+        cancelBtn.style.background = '#e11d48';
+        cancelBtn.style.borderColor = '#e11d48';
+        cancelBtn.style.color = '#ffffff';
+    };
+    cancelBtn.onmouseout = () => {
+        if (!cancelRequested) {
+            cancelBtn.style.background = '#ffffff';
+            cancelBtn.style.borderColor = '#e5e7eb';
+            cancelBtn.style.color = '#4b5563';
+        }
+    };
+    cancelBtn.onclick = (e) => {
+        e.stopPropagation();
+        cancelFormSolver();
+    };
+
+    btnRow.appendChild(cancelBtn);
+    card.appendChild(btnRow);
+
+    overlay.appendChild(card);
     document.body.appendChild(overlay);
     return overlay;
 }
 
 /**
- * Displays a modern toast notification on the page with SVG icons (NO emojis).
+ * Displays a modern toast notification on the page without innerHTML.
  * @param {string} message 
  * @param {'success'|'error'|'warning'|'info'} [type='success']
  */
 function showNotification(message, type = 'success') {
     const config = {
-        success: { 
-            bg: '#ffffff', 
-            text: '#0e0e0e', 
-            border: '#e5e7eb', 
-            icon: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7241ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>` 
-        },
-        error: { 
-            bg: '#ffffff', 
-            text: '#0e0e0e', 
-            border: '#fca5a5', 
-            icon: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#e11d48" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>` 
-        },
-        warning: { 
-            bg: '#ffffff', 
-            text: '#0e0e0e', 
-            border: '#fde68a', 
-            icon: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#d97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>` 
-        },
-        info: { 
-            bg: '#ffffff', 
-            text: '#0e0e0e', 
-            border: '#e5e7eb', 
-            icon: `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#7241ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>` 
-        }
+        success: { bg: '#ffffff', text: '#0e0e0e', border: '#e5e7eb', iconType: 'check' },
+        error: { bg: '#ffffff', text: '#0e0e0e', border: '#fca5a5', iconType: 'error' },
+        warning: { bg: '#ffffff', text: '#0e0e0e', border: '#fde68a', iconType: 'warning' },
+        info: { bg: '#ffffff', text: '#0e0e0e', border: '#e5e7eb', iconType: 'info' }
     };
 
     const c = config[type] || config.success;
@@ -301,14 +401,14 @@ function showNotification(message, type = 'success') {
         font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
         font-size: 13px; font-weight: 600;
         display: flex; align-items: center; gap: 8px;
-        animation: notifSlide 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
     `;
 
-    notif.innerHTML = `<span>${c.icon}</span> <span>${message}</span>`;
+    const iconEl = createContentSvg(c.iconType);
+    const textEl = document.createElement('span');
+    textEl.textContent = message;
 
-    const style = document.createElement('style');
-    style.textContent = `@keyframes notifSlide { from { transform: translateY(-10px) scale(0.96); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }`;
-    document.head.appendChild(style);
+    notif.appendChild(iconEl);
+    notif.appendChild(textEl);
 
     document.body.appendChild(notif);
     setTimeout(() => notif.remove(), 4500);
@@ -442,22 +542,34 @@ async function fillTextInput(block, answer) {
 // Main Solver Pipeline
 // ---------------------------------------------------------------------------
 
+function setFloatingButtonDOM(btn, isSolvingState, count) {
+    btn.textContent = '';
+    const icon = createContentSvg(isSolvingState ? 'stop' : 'spark');
+    const label = document.createElement('span');
+    label.textContent = isSolvingState ? 'Stop' : 'AutoForm';
+    btn.appendChild(icon);
+    btn.appendChild(label);
+
+    if (!isSolvingState && count) {
+        const badge = document.createElement('span');
+        badge.style.cssText = 'padding: 1px 6px; background: rgba(255, 255, 255, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #ffffff; margin-left: 2px;';
+        badge.textContent = String(count);
+        btn.appendChild(badge);
+    }
+}
+
 function updateFloatingButtonState(questionCount) {
     const btn = document.getElementById('ai-floating-btn');
     if (!btn) return;
 
-    const SPARK_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
-    const STOP_SVG = `<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>`;
-
     if (isSolving) {
-        btn.innerHTML = `${STOP_SVG}<span>Stop</span>`;
+        setFloatingButtonDOM(btn, true);
         btn.style.background = '#e11d48';
         btn.style.color = '#ffffff';
         btn.style.boxShadow = '0 4px 14px 0 rgba(225, 29, 72, 0.35)';
         btn.title = 'Stop form filling';
     } else {
-        const countHtml = questionCount ? `<span style="padding: 1px 6px; background: rgba(255, 255, 255, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #ffffff; margin-left: 2px;">${questionCount}</span>` : '';
-        btn.innerHTML = `${SPARK_SVG}<span>AutoForm</span>${countHtml}`;
+        setFloatingButtonDOM(btn, false, questionCount);
         btn.style.background = '#7241ff';
         btn.style.color = '#ffffff';
         btn.style.boxShadow = '0 4px 14px rgba(114, 65, 255, 0.35)';
@@ -651,12 +763,9 @@ function createFloatingButton() {
     if (document.getElementById('ai-floating-btn')) return;
     const questions = getQuestions();
 
-    const SPARK_SVG = `<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`;
-    const countHtml = questions.length > 0 ? `<span style="padding: 1px 6px; background: rgba(255, 255, 255, 0.2); border-radius: 9999px; font-size: 11px; font-weight: 700; color: #ffffff; margin-left: 2px;">${questions.length}</span>` : '';
-
     const btn = document.createElement('button');
     btn.id = 'ai-floating-btn';
-    btn.innerHTML = `${SPARK_SVG}<span>AutoForm</span>${countHtml}`;
+    setFloatingButtonDOM(btn, false, questions.length);
     btn.style.cssText = `
         position: fixed; bottom: 24px; right: 24px; z-index: 99999;
         background-color: #7241ff;
