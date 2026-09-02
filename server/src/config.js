@@ -29,7 +29,8 @@ module.exports = {
             name: 'groq',
             enabled: parseKeyList(process.env.GROQ_API_KEYS).length > 0,
             keys: parseKeyList(process.env.GROQ_API_KEYS),
-            model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+            model: process.env.GROQ_MODEL || 'llama-3.1-8b-instant',
+            fallbackModels: ['llama-3.1-8b-instant', 'openai/gpt-oss-120b', 'openai/gpt-oss-20b', 'qwen/qwen3.6-27b', 'deepseek-r1-distill-llama-70b', 'gemma2-9b-it'],
             endpoint: 'https://api.groq.com/openai/v1/chat/completions',
             timeoutMs: 8000
         },
@@ -37,7 +38,8 @@ module.exports = {
             name: 'gemini',
             enabled: parseKeyList(process.env.GEMINI_API_KEYS).length > 0,
             keys: parseKeyList(process.env.GEMINI_API_KEYS),
-            model: process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite',
+            model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
+            fallbackModels: ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
             endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
             timeoutMs: 12000
         },
@@ -45,7 +47,8 @@ module.exports = {
             name: 'nvidia',
             enabled: parseKeyList(process.env.NVIDIA_API_KEYS).length > 0,
             keys: parseKeyList(process.env.NVIDIA_API_KEYS),
-            model: process.env.NVIDIA_MODEL || 'meta/llama-3.1-70b-instruct',
+            model: process.env.NVIDIA_MODEL || 'meta/llama-3.3-70b-instruct',
+            fallbackModels: ['meta/llama-3.3-70b-instruct', 'meta/llama-3.1-8b-instruct', 'nvidia/llama-3.1-nemotron-70b-instruct'],
             endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
             timeoutMs: 12000
         }
