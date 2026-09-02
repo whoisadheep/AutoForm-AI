@@ -24,7 +24,7 @@ app.use(express.json({ limit: '1mb' }));
 app.get('/', (req, res) => {
     res.json({
         name: 'AutoForm AI Backend API',
-        version: '2.0.0',
+        version: '2.0.1',
         status: 'online',
         docs: 'https://github.com/whoisadheep/AutoForm-AI'
     });
@@ -35,6 +35,7 @@ app.get('/api/v1/health', (req, res) => {
     const status = router.getStatus();
     res.json({
         status: 'healthy',
+        version: '2.0.1',
         timestamp: new Date().toISOString(),
         ...status
     });

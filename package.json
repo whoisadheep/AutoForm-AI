@@ -1,6 +1,6 @@
 {
   "name": "autoform-ai",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Production-ready browser extension to automatically solve and fill Google Forms using AI (Groq, Gemini, NVIDIA)",
   "main": "server/src/index.js",
   "scripts": {

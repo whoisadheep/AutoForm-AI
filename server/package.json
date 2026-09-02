@@ -1,6 +1,6 @@
 {
   "name": "autoform-ai-server",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Production multi-provider AI proxy server for AutoForm AI (Groq, Gemini, NVIDIA)",
   "main": "src/index.js",
   "scripts": {
