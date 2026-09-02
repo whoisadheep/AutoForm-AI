@@ -267,13 +267,14 @@ function createLoadingOverlay(totalQuestions) {
         background: #ffffff;
         border: 1px solid #ebecef;
         border-radius: 14px;
-        padding: 28px 30px;
-        width: 90%;
+        padding: 24px 22px;
+        width: calc(100% - 32px);
         max-width: 380px;
         box-shadow: 0 20px 48px -10px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.05);
         text-align: center;
         position: relative;
         color: #0e0e0e;
+        box-sizing: border-box;
     `;
 
     // Header Badge
@@ -767,15 +768,18 @@ function createFloatingButton() {
     btn.id = 'ai-floating-btn';
     setFloatingButtonDOM(btn, false, questions.length);
     btn.style.cssText = `
-        position: fixed; bottom: 24px; right: 24px; z-index: 99999;
+        position: fixed; bottom: max(20px, env(safe-area-inset-bottom, 20px)); right: max(20px, env(safe-area-inset-right, 20px)); z-index: 99999;
         background-color: #7241ff;
         color: #ffffff; border: none; padding: 10px 16px;
+        min-height: 40px;
         border-radius: 9999px; cursor: pointer; font-weight: 600; font-size: 13px;
         box-shadow: 0 4px 14px rgba(114, 65, 255, 0.35);
         transition: transform 0.15s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s;
         font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
         display: flex; align-items: center; gap: 7px;
         user-select: none;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     `;
 
     btn.onmouseover = () => {
