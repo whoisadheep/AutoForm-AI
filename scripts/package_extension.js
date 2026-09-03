@@ -83,7 +83,13 @@ try {
     const firefoxZip = path.join(distDir, 'autoform-ai-firefox.zip');
     execSync(`zip -r "${firefoxZip}" manifest.json assets/icons/ src/ -x "*.DS_Store*"`, { cwd: tmpDir, stdio: 'pipe' });
 
+    // Also create unpacked dist/firefox folder for easy local testing via about:debugging
+    const firefoxUnpackedDir = path.join(distDir, 'firefox');
+    if (fs.existsSync(firefoxUnpackedDir)) fs.rmSync(firefoxUnpackedDir, { recursive: true, force: true });
+    fs.cpSync(tmpDir, firefoxUnpackedDir, { recursive: true });
+
     console.log(`✅ Firefox AMO Package:      dist/autoform-ai-firefox.zip`);
+    console.log(`✅ Firefox Local Unpacked:   dist/firefox/manifest.json`);
 
     // Clean staging
     fs.rmSync(tmpDir, { recursive: true, force: true });
