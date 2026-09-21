@@ -1,29 +1,49 @@
 {
   "name": "AutoForm AI",
-  "description": "Automatically fill and solve Google Forms with AI (Groq, Gemini, NVIDIA NIM).",
+  "description": "Automatically fill and solve Google Forms, Job Boards & Web Forms with AI (Groq, Gemini, NVIDIA NIM).",
   "version": "2.0.1",
   "manifest_version": 3,
   "permissions": [
     "scripting", 
     "activeTab",
+    "tabs",
     "storage"
   ],
   "host_permissions": [
     "https://docs.google.com/*",
-    "https://autoform-ai-production.up.railway.app/*",
+    "http://*/*",
+    "https://*/*",
+    "https://web-production-d1895.up.railway.app/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],
+  "options_page": "src/options/options.html",
   "background": {
     "service_worker": "src/background/background.js"
   },
   "content_scripts": [
     {
-      "matches": ["https://docs.google.com/forms/*"],
-      "js": ["src/content/content.js"],
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/services/memoryRetriever.js",
+        "src/services/formAdapters.js",
+        "src/content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
+  "commands": {
+    "start_solving": {
+      "suggested_key": {
+        "default": "Alt+Shift+F",
+        "mac": "Alt+Shift+F"
+      },
+      "description": "Start AutoForm AI solving on active form or job application"
+    }
+  },
   "action": {
     "default_popup": "src/popup/popup.html",
     "default_icon": {

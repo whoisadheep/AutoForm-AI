@@ -54,6 +54,11 @@ if (manifest.action && manifest.action.default_popup) {
     filesToCheck.push(manifest.action.default_popup);
 }
 
+// Options page
+if (manifest.options_page) {
+    filesToCheck.push(manifest.options_page);
+}
+
 // Icons
 if (manifest.icons) {
     Object.values(manifest.icons).forEach(iconPath => filesToCheck.push(iconPath));

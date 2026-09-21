@@ -16,7 +16,7 @@ class GeminiProvider {
     async solve(questionData) {
         const apiKey = this.rotator.getKey();
         if (!apiKey) {
-            throw new Error('No Gemini API keys available');
+            throw new Error('No Gemini API keys available (all keys on cooldown or unconfigured)');
         }
 
         const { systemPrompt, userPrompt } = buildPrompt(questionData);
@@ -25,14 +25,18 @@ class GeminiProvider {
         const modelsToTry = [this.activeModel, ...this.candidates.filter(m => m !== this.activeModel)];
 
         for (const model of modelsToTry) {
-            const url = `${this.config.endpoint}/${model}:generateContent?key=${apiKey}`;
+            // Header-based auth avoids leaking API keys in URL query params and access logs
+            const url = `${this.config.endpoint}/${model}:generateContent`;
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs || 12000);
 
             try {
                 const res = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey
+                    },
                     body: JSON.stringify({
                         systemInstruction: {
                             parts: [{ text: systemPrompt }]
@@ -52,6 +56,12 @@ class GeminiProvider {
                 if (!res.ok) {
                     const errBody = await res.text();
                     lastError = new Error(`Gemini HTTP ${res.status}: ${errBody}`);
+
+                    if (res.status === 429 || errBody.includes('RESOURCE_EXHAUSTED')) {
+                        const retryAfter = parseInt(res.headers.get('retry-after') || '60', 10);
+                        this.rotator.markKeyRateLimited(apiKey, retryAfter);
+                    }
+
                     if (res.status === 404 || res.status === 410 || errBody.includes('NOT_FOUND') || errBody.includes('no longer available')) {
                         console.warn(`[Gemini] Model ${model} unavailable (${res.status}), trying fallback candidate...`);
                         continue;
@@ -62,7 +72,8 @@ class GeminiProvider {
                 const data = await res.json();
                 const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
                 this.activeModel = model;
-                return parseAiResponse(text, questionData.type);
+                this.rotator.markKeySuccess(apiKey);
+                return parseAiResponse(text, questionData.type, questionData.choices);
 
             } catch (err) {
                 if (err.name === 'AbortError') {

@@ -8,7 +8,7 @@ const config = require('../config');
 const usageMap = new Map();
 
 // Periodic cleanup of stale client records every 10 minutes
-setInterval(() => {
+const cleanupInterval = setInterval(() => {
     const oneHourAgo = Date.now() - (60 * 60 * 1000);
     for (const [clientId, timestamps] of usageMap.entries()) {
         const filtered = timestamps.filter(t => t > oneHourAgo);
@@ -19,6 +19,7 @@ setInterval(() => {
         }
     }
 }, 10 * 60 * 1000);
+cleanupInterval.unref();
 
 function rateLimiter(req, res, next) {
     const clientId = req.body?.clientId || req.headers['x-client-id'] || req.ip || 'anonymous';
@@ -55,13 +56,22 @@ function getQuotaStatus(clientId) {
     const now = Date.now();
     const oneHourAgo = now - (60 * 60 * 1000);
     const history = usageMap.get(clientId) || [];
-    const used = history.filter(t => t > oneHourAgo).length;
+    const validTimestamps = history.filter(t => t > oneHourAgo);
+    const used = validTimestamps.length;
     const limit = config.rateLimitPerHour;
+
+    let resetMinutes = 0;
+    if (validTimestamps.length > 0) {
+        const oldest = validTimestamps[0];
+        const resetInSeconds = Math.max(0, Math.ceil((oldest + (60 * 60 * 1000) - now) / 1000));
+        resetMinutes = Math.ceil(resetInSeconds / 60);
+    }
 
     return {
         used,
         limit,
-        remaining: Math.max(0, limit - used)
+        remaining: Math.max(0, limit - used),
+        resetMinutes
     };
 }
 

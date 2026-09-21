@@ -11,10 +11,12 @@ services:
       - key: NODE_ENV
         value: production
       - key: RATE_LIMIT_PER_HOUR
-        value: 60
+        value: 150
       - key: GROQ_API_KEYS
         sync: false
       - key: GEMINI_API_KEYS
+        sync: false
+      - key: OPENROUTER_API_KEYS
         sync: false
       - key: NVIDIA_API_KEYS
         sync: false

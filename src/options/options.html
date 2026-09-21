@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoForm AI — Memory & Profile</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Welcoming Header & Hero -->
+        <header class="header">
+            <div class="brand-group">
+                <div class="brand-icon-wrapper">
+                    <img src="../../assets/icons/icon48.png" alt="AutoForm AI Logo" width="34" height="34" class="brand-icon">
+                </div>
+                <div class="brand-info">
+                    <div class="brand-title-row">
+                        <h1 class="brand-title">AutoForm Memory Vault</h1>
+                        <span class="version-tag">v2.0.1</span>
+                    </div>
+                    <p class="brand-subtitle">Private local memory used to auto-fill form questions, bios, and essays with precision.</p>
+                </div>
+            </div>
+            <div class="header-pills">
+                <div class="privacy-pill" title="All memory stays in your browser's local storage. Never uploaded to servers.">
+                    <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <span>100% Private</span>
+                </div>
+                <div id="saveStatus" class="save-status" aria-live="polite">Saved ✓</div>
+            </div>
+        </header>
+
+        <!-- Segmented Tab Navigation -->
+        <nav class="tab-nav" aria-label="Memory Sections">
+            <button class="tab-btn active" data-tab="tab-import" type="button">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                <span>Instant Import</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-profile" type="button">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Profile Details</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-snippets" type="button">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <span>Memory Cards</span>
+                <span id="tabSnippetCount" class="tab-count-badge">0</span>
+            </button>
+        </nav>
+
+        <!-- ====================================================================
+             TAB 1: INSTANT IMPORT
+             ==================================================================== -->
+        <div id="tab-import" class="tab-panel active">
+            <!-- AI Memory Export Card -->
+            <section class="card quick-prompt-card">
+                <div class="prompt-card-header">
+                    <div class="prompt-badge">
+                        <svg class="prompt-badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                        <span>Step 1: Get Context from your AI</span>
+                    </div>
+                    <p class="prompt-desc">
+                        Ask ChatGPT, Gemini, or Claude to export everything they remember about you into a format AutoForm AI can automatically parse.
+                    </p>
+                </div>
+
+                <div class="prompt-actions">
+                    <button id="btnCopyPrompt" class="btn btn-primary btn-copy-prompt" title="Copy export prompt to clipboard" type="button">
+                        <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                        </svg>
+                        <span id="copyPromptText">Copy Export Prompt</span>
+                    </button>
+                    <button id="btnTogglePromptPreview" class="btn btn-secondary btn-small" type="button">
+                        <span id="togglePromptText">View Prompt</span>
+                    </button>
+                    <div class="ai-quick-links">
+                        <a href="https://chatgpt.com" target="_blank" rel="noopener noreferrer" class="ai-link" title="Open ChatGPT in new tab">ChatGPT ↗</a>
+                        <a href="https://gemini.google.com" target="_blank" rel="noopener noreferrer" class="ai-link" title="Open Gemini in new tab">Gemini ↗</a>
+                        <a href="https://claude.ai" target="_blank" rel="noopener noreferrer" class="ai-link" title="Open Claude in new tab">Claude ↗</a>
+                    </div>
+                </div>
+
+                <div id="promptPreviewBox" class="prompt-preview-box hidden">
+                    <div class="prompt-preview-header">
+                        <span>Export Prompt Preview</span>
+                        <button id="btnCopyFromPreview" class="btn-link-action" type="button">Copy</button>
+                    </div>
+                    <pre id="promptPreviewContent"></pre>
+                </div>
+            </section>
+
+            <!-- 3-Step Flow Visual Guide -->
+            <div class="flow-steps">
+                <div class="flow-step">
+                    <div class="step-num">1</div>
+                    <div class="step-text">Copy our prompt</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-num">2</div>
+                    <div class="step-text">Send to ChatGPT / Gemini</div>
+                </div>
+                <div class="step-arrow">→</div>
+                <div class="flow-step">
+                    <div class="step-num">3</div>
+                    <div class="step-text">Paste response below</div>
+                </div>
+            </div>
+
+            <!-- Import Textarea Card -->
+            <section class="card import-section">
+                <div class="section-title-row">
+                    <h2>Step 2: Paste & Import</h2>
+                    <span class="card-subtitle">Also accepts raw resumes, LinkedIn summaries, or bio text</span>
+                </div>
+                <textarea id="importText" placeholder="Paste your AI memory export or resume text here..."></textarea>
+                <div class="import-footer-row">
+                    <button id="btnImport" class="btn btn-primary" type="button">
+                        <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="9 11 12 14 22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <span>Parse & Save to Memory</span>
+                    </button>
+                    <span class="import-hint">Auto-detects identity, links, education, and creates tagged memory snippets</span>
+                </div>
+            </section>
+        </div>
+
+        <!-- ====================================================================
+             TAB 2: PROFILE DETAILS
+             ==================================================================== -->
+        <div id="tab-profile" class="tab-panel">
+            <section class="card profile-section">
+                <div class="section-title-row">
+                    <h2>Identity & Contact</h2>
+                    <span class="card-subtitle">Auto-filled on standard form inputs</span>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label for="identity-fullName">Full Name</label>
+                        <input type="text" id="identity-fullName" data-group="identity" data-field="fullName" placeholder="e.g. Alex Rivera">
+                    </div>
+                    <div class="input-group">
+                        <label for="identity-email">Email Address</label>
+                        <input type="email" id="identity-email" data-group="identity" data-field="email" placeholder="e.g. alex@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="identity-phone">Phone Number</label>
+                        <input type="tel" id="identity-phone" data-group="identity" data-field="phone" placeholder="e.g. +1 (555) 019-2834">
+                    </div>
+                    <div class="input-group">
+                        <label for="identity-whatsapp">WhatsApp Number</label>
+                        <input type="tel" id="identity-whatsapp" data-group="identity" data-field="whatsapp" placeholder="e.g. +91 98765 43210 (leave empty to use phone)">
+                    </div>
+                    <div class="input-group">
+                        <label for="identity-location">Location / Residence</label>
+                        <input type="text" id="identity-location" data-group="identity" data-field="location" placeholder="e.g. San Francisco, CA">
+                    </div>
+                </div>
+            </section>
+
+            <section class="card links-section">
+                <div class="section-title-row">
+                    <h2>Web Profiles & Links</h2>
+                    <span class="card-subtitle">Social handles & portfolio URLs</span>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label for="links-github">GitHub Profile</label>
+                        <input type="url" id="links-github" data-group="links" data-field="github" placeholder="https://github.com/username">
+                    </div>
+                    <div class="input-group">
+                        <label for="links-linkedin">LinkedIn Profile</label>
+                        <input type="url" id="links-linkedin" data-group="links" data-field="linkedin" placeholder="https://linkedin.com/in/username">
+                    </div>
+                    <div class="input-group">
+                        <label for="links-portfolio">Portfolio / Website</label>
+                        <input type="url" id="links-portfolio" data-group="links" data-field="portfolio" placeholder="https://yourwebsite.com">
+                    </div>
+                    <div class="input-group">
+                        <label for="links-twitter">Twitter / X</label>
+                        <input type="url" id="links-twitter" data-group="links" data-field="twitter" placeholder="https://x.com/handle">
+                    </div>
+                </div>
+            </section>
+
+            <section class="card education-section">
+                <div class="section-title-row">
+                    <h2>Education & Academics</h2>
+                    <span class="card-subtitle">University, degree, major, and graduation details</span>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label for="education-university">University / Institution</label>
+                        <input type="text" id="education-university" data-group="education" data-field="university" placeholder="e.g. UC Berkeley">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-college">College / Campus</label>
+                        <input type="text" id="education-college" data-group="education" data-field="college" placeholder="e.g. College of Engineering">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-degree">Degree</label>
+                        <input type="text" id="education-degree" data-group="education" data-field="degree" placeholder="e.g. Bachelor of Science">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-major">Department / Major / Branch</label>
+                        <input type="text" id="education-major" data-group="education" data-field="major" placeholder="e.g. IT, Computer Science, etc.">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-currentYear">Current Year of Study</label>
+                        <input type="text" id="education-currentYear" data-group="education" data-field="currentYear" placeholder="e.g. 4th Year / Senior">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-graduationYear">Graduation Year</label>
+                        <input type="text" id="education-graduationYear" data-group="education" data-field="graduationYear" placeholder="e.g. 2026">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-gpa">GPA / Grade</label>
+                        <input type="text" id="education-gpa" data-group="education" data-field="gpa" placeholder="e.g. 3.90">
+                    </div>
+                    <div class="input-group">
+                        <label for="education-rollNumber">Roll / Register No / Student ID</label>
+                        <input type="text" id="education-rollNumber" data-group="education" data-field="rollNumber" placeholder="e.g. 21IT045 or USN / Reg No">
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ====================================================================
+             TAB 3: MEMORY CARDS
+             ==================================================================== -->
+        <div id="tab-snippets" class="tab-panel">
+            <section class="card snippets-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Memory Cards <span id="snippetCount" class="badge">0</span></h2>
+                        <span class="card-subtitle">Retrieved dynamically via RAG for open-ended and essay questions</span>
+                    </div>
+                    <button id="btnShowAddSnippet" class="btn btn-secondary btn-small" type="button">
+                        <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        <span>New Card</span>
+                    </button>
+                </div>
+
+                <!-- Filter Category Pills -->
+                <div class="filter-pills" id="filterPills">
+                    <button class="filter-pill active" data-category="all" type="button">All</button>
+                    <button class="filter-pill" data-category="experience" type="button">Experience</button>
+                    <button class="filter-pill" data-category="project" type="button">Projects</button>
+                    <button class="filter-pill" data-category="skill" type="button">Skills</button>
+                    <button class="filter-pill" data-category="perspective" type="button">Perspectives</button>
+                    <button class="filter-pill" data-category="other" type="button">Other</button>
+                </div>
+                
+                <!-- Inline Add / Edit Snippet Form -->
+                <div id="snippetFormContainer" class="snippet-form hidden">
+                    <input type="hidden" id="snippet-id">
+                    <div class="input-group">
+                        <label for="snippet-category">Category</label>
+                        <select id="snippet-category">
+                            <option value="experience">Experience</option>
+                            <option value="project">Project</option>
+                            <option value="skill">Skill</option>
+                            <option value="perspective">Perspective</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="snippet-title">Card Title / Label</label>
+                        <input type="text" id="snippet-title" placeholder="e.g. Role at Acme Corp or Engineering Philosophy">
+                    </div>
+                    <div class="input-group">
+                        <label for="snippet-content">Content / Story</label>
+                        <textarea id="snippet-content" placeholder="Details of this experience, project, or viewpoint..."></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="snippet-tags">Tags (comma-separated)</label>
+                        <input type="text" id="snippet-tags" placeholder="e.g. python, react, leadership">
+                    </div>
+                    <div class="form-actions">
+                        <button id="btnSaveSnippet" class="btn btn-primary" type="button">Save Memory Card</button>
+                        <button id="btnCancelSnippet" class="btn btn-secondary" type="button">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Dynamic Snippet List -->
+                <div id="snippetsList" class="snippets-list">
+                    <!-- Populated via options.js -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="snippetsEmptyState" class="empty-state hidden">
+                    <div class="empty-state-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                        </svg>
+                    </div>
+                    <div class="empty-state-title">No memory cards yet</div>
+                    <p class="empty-state-desc">Import your profile from ChatGPT or Gemini, or click "New Card" to add your first memory.</p>
+                </div>
+            </section>
+
+            <!-- Danger Zone -->
+            <section class="card danger-zone">
+                <div class="danger-header">
+                    <div>
+                        <h2>Reset Memory Vault</h2>
+                        <p class="danger-desc">Clears all stored profile information, links, education, and memory cards from this browser.</p>
+                    </div>
+                    <button id="btnClearAll" class="btn btn-danger btn-small" type="button">Clear All Memory</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>100% Client-Side Privacy. Your data stays in your browser's local storage and is never uploaded.</p>
+        </footer>
+    </div>
+
+    <script src="options.js"></script>
+</body>
+</html>

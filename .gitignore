@@ -31,6 +31,7 @@ build/
 logs/
 *.log
 scratch/
+analytics/
 
 # Python cache
 __pycache__/
@@ -43,4 +44,6 @@ __pycache__/
 _agents/
 _agent/
 
-
+# Temporary / debug assets
+error/
+image.png

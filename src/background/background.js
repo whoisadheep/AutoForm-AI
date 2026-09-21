@@ -4,8 +4,48 @@
  * Handles backend proxy requests, client identity management, and direct API fallback.
  */
 
-// Default Production Cloud Backend Proxy URL
-const DEFAULT_SERVER_URL = "https://autoform-ai-production.up.railway.app";
+// Backend Proxy Endpoints
+const LOCAL_SERVER_URL = "http://localhost:3000";
+const PRODUCTION_SERVER_URL = "https://web-production-d1895.up.railway.app";
+const DEFAULT_SERVER_URL = PRODUCTION_SERVER_URL;
+
+// Load MemoryRetriever Hybrid RAG Engine
+try {
+    importScripts('../services/memoryRetriever.js');
+} catch (e) {
+    try {
+        importScripts('src/services/memoryRetriever.js');
+    } catch (e2) {
+        console.warn('[AutoForm] memoryRetriever load error:', e2.message);
+    }
+}
+
+/**
+ * Resolves the active backend proxy URL.
+ * Automatically detects and prioritizes local development server on port 3000,
+ * falling back to the production Railway proxy when local server is offline.
+ * @returns {Promise<string>}
+ */
+async function getEffectiveServerUrl() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['serverUrl'], async (stored) => {
+            if (stored.serverUrl) {
+                return resolve(stored.serverUrl);
+            }
+            try {
+                const res = await fetch(`${LOCAL_SERVER_URL}/healthz`, {
+                    signal: AbortSignal.timeout(600)
+                });
+                if (res.ok) {
+                    return resolve(LOCAL_SERVER_URL);
+                }
+            } catch (e) {
+                // Local dev server not reachable, fallback to cloud production
+            }
+            resolve(PRODUCTION_SERVER_URL);
+        });
+    });
+}
 
 
 /**
@@ -30,6 +70,56 @@ async function getOrCreateClientId() {
 }
 
 /**
+ * Builds an intelligent contextual memory string from the user's stored profile.
+ * Uses the Hybrid RAG MemoryRetriever engine to classify intent, rank snippets,
+ * cross-reference choices, and budget tokens.
+ * @param {Object} questionData - { question, type, choices }
+ * @param {string} customContext - Manual user persona / instructions
+ * @returns {Promise<string>} Structured memory context block
+ */
+async function buildMemoryContext(questionData = {}, customContext = '') {
+    return new Promise((resolve) => {
+        chrome.storage.local.get(['memoryProfile'], (stored) => {
+            const profile = stored.memoryProfile;
+            const hasPrior = questionData.priorAnswers && questionData.priorAnswers.length > 0;
+            if (!profile && !customContext && !questionData.formDigest && !hasPrior) {
+                return resolve({ context: '', retrievedSnippetIds: [] });
+            }
+
+            const retriever = (typeof MemoryRetriever !== 'undefined') 
+                ? MemoryRetriever 
+                : (typeof globalThis !== 'undefined' ? globalThis.MemoryRetriever : null);
+
+            if (retriever && typeof retriever.buildSmartMemoryContext === 'function') {
+                const smartResult = retriever.buildSmartMemoryContext({
+                    question: questionData.question || '',
+                    type: questionData.type || '',
+                    choices: questionData.choices || [],
+                    memoryProfile: profile,
+                    customContext: customContext || '',
+                    formDigest: questionData.formDigest || null,
+                    priorAnswers: questionData.priorAnswers || [],
+                    usedSnippetIds: questionData.usedSnippetIds || [],
+                    returnMetadata: true
+                });
+                if (typeof smartResult === 'object' && smartResult.context !== undefined) {
+                    return resolve(smartResult);
+                }
+                return resolve({ context: smartResult || '', retrievedSnippetIds: [] });
+            }
+
+            // Fallback simple concatenation if retriever not loaded
+            const parts = [];
+            if (customContext) parts.push(customContext);
+            if (profile?.identity?.fullName) parts.push(`Name: ${profile.identity.fullName}`);
+            if (profile?.identity?.email) parts.push(`Email: ${profile.identity.email}`);
+            if (profile?.identity?.phone) parts.push(`Phone: ${profile.identity.phone}`);
+            resolve({ context: parts.join('. '), retrievedSnippetIds: [] });
+        });
+    });
+}
+
+/**
  * Solves a question using the backend AI proxy server (Groq / Gemini / NVIDIA).
  * @param {Object} questionData
  * @param {Object} preferences
@@ -37,7 +127,7 @@ async function getOrCreateClientId() {
  */
 async function solveViaBackendProxy(questionData, preferences = {}) {
     const clientId = await getOrCreateClientId();
-    const serverUrl = preferences.serverUrl || DEFAULT_SERVER_URL;
+    const serverUrl = preferences.serverUrl || await getEffectiveServerUrl();
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
@@ -79,23 +169,31 @@ async function solveViaBackendProxy(questionData, preferences = {}) {
  * @param {string[]} keys
  * @returns {Promise<Object>}
  */
-async function solveDirectGemini(questionData, keys) {
+async function solveDirectGemini(questionData, keys, customContext = '') {
     const currentKey = keys[0];
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${currentKey}`;
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent";
 
     const optionsText = questionData.choices && questionData.choices.length > 0
         ? `AVAILABLE OPTIONS (Select EXACTLY one):\n${questionData.choices.map((c, i) => `${i + 1}. "${c}"`).join('\n')}`
         : 'Open-ended question.';
 
+    const contextPart = customContext 
+        ? `\nUSER CONTEXT & VERIFIED MEMORY:\n${customContext}\n(CRITICAL: Always use verified profile details for email, phone, whatsapp, department, and year. Never output dummy placeholders like example@gmail.com)\n` 
+        : '';
+
     const promptText = `QUESTION: "${questionData.question}"
 TYPE: ${questionData.type}
+${contextPart}
 ${optionsText}
 
 Return ONLY a valid JSON object matching: {"answer": "exact text"}`;
 
     const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+            "Content-Type": "application/json",
+            "x-goog-api-key": currentKey
+        },
         body: JSON.stringify({
             contents: [{ parts: [{ text: promptText }] }]
         })
@@ -117,21 +215,50 @@ Return ONLY a valid JSON object matching: {"answer": "exact text"}`;
     };
 }
 
+// ---------------------------------------------------------------------------
+// Keep-Alive Connection Listener for Active Solving Sessions
+// ---------------------------------------------------------------------------
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onConnect) {
+    chrome.runtime.onConnect.addListener((port) => {
+        if (port.name === 'autoform-keepalive') {
+            port.onDisconnect.addListener(() => {
+                // Port cleanly closed when solving completes or tab unloads
+            });
+        }
+    });
+}
+
 /**
  * Listener for extension runtime messages.
  */
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
+    if (request.action === "PING") {
+        sendResponse({ success: true, status: "alive" });
+        return false;
+    }
+
     if (request.action === "SOLVE_SINGLE_QUESTION") {
-        chrome.storage.local.get([
-            'serverUrl', 
-            'customContext', 
-            'tone', 
-            'useDirectKey', 
-            'geminiApiKeys', 
-            'geminiApiKey'
-        ], async (stored) => {
+        (async () => {
             try {
+                const stored = await chrome.storage.local.get([
+                    'serverUrl', 
+                    'customContext', 
+                    'tone', 
+                    'useDirectKey', 
+                    'geminiApiKeys', 
+                    'geminiApiKey'
+                ]);
+
+                // Build intelligent enriched context via Hybrid RAG engine
+                const memoryResult = await buildMemoryContext(request.data, stored.customContext || '');
+                const combinedContext = (typeof memoryResult === 'object' && memoryResult.context !== undefined)
+                    ? memoryResult.context
+                    : (typeof memoryResult === 'string' ? memoryResult : '');
+                const retrievedSnippetIds = (typeof memoryResult === 'object' && Array.isArray(memoryResult.retrievedSnippetIds))
+                    ? memoryResult.retrievedSnippetIds
+                    : [];
+
                 // If user enabled direct BYOK mode
                 if (stored.useDirectKey) {
                     const keys = stored.geminiApiKeys || (stored.geminiApiKey ? [stored.geminiApiKey] : []);
@@ -139,7 +266,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         sendResponse({ success: false, error: "Direct key mode enabled but no keys provided." });
                         return;
                     }
-                    const res = await solveDirectGemini(request.data, keys);
+                    const res = await solveDirectGemini(request.data, keys, combinedContext);
+                    res.retrievedSnippetIds = retrievedSnippetIds;
                     sendResponse(res);
                     return;
                 }
@@ -147,7 +275,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 // Default: Solve via Multi-Provider Backend Proxy (Groq / Gemini / NVIDIA)
                 const result = await solveViaBackendProxy(request.data, {
                     serverUrl: stored.serverUrl || DEFAULT_SERVER_URL,
-                    customContext: stored.customContext || '',
+                    customContext: combinedContext,
                     tone: stored.tone || 'accurate'
                 });
 
@@ -156,7 +284,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     answer: result.answer,
                     answers: result.answers,
                     provider: result.provider,
-                    latencyMs: result.latencyMs
+                    latencyMs: result.latencyMs,
+                    retrievedSnippetIds: retrievedSnippetIds
                 });
 
             } catch (error) {
@@ -166,24 +295,74 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     error: error.message || 'Failed to solve question'
                 });
             }
-        });
+        })();
 
-        return true; // Keep message channel open
+        return true; // Keep message channel open for async response
     }
 
     if (request.action === "CHECK_SERVER_HEALTH") {
-        chrome.storage.local.get(['serverUrl'], async (stored) => {
-            const serverUrl = stored.serverUrl || DEFAULT_SERVER_URL;
+        (async () => {
             try {
+                const serverUrl = await getEffectiveServerUrl();
                 const res = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/health`, {
                     signal: AbortSignal.timeout(4000)
                 });
                 const data = await res.json();
-                sendResponse({ success: res.ok, data });
+                sendResponse({ success: res.ok, data, serverUrl });
             } catch (e) {
                 sendResponse({ success: false, error: e.message });
             }
-        });
+        })();
+        return true;
+    }
+
+    if (request.action === "GET_CLIENT_QUOTA") {
+        (async () => {
+            try {
+                const serverUrl = await getEffectiveServerUrl();
+                const clientId = await getOrCreateClientId();
+                const res = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/quota?clientId=${encodeURIComponent(clientId)}`, {
+                    headers: { 'X-Client-ID': clientId },
+                    signal: AbortSignal.timeout(4000)
+                });
+                const data = await res.json();
+                sendResponse({ success: res.ok, data, serverUrl });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
         return true;
     }
 });
+
+// ---------------------------------------------------------------------------
+// Global Keyboard Shortcut Command Listener (Alt+Shift+F)
+// ---------------------------------------------------------------------------
+if (typeof chrome !== 'undefined' && chrome.commands && chrome.commands.onCommand) {
+    chrome.commands.onCommand.addListener(async (command) => {
+        if (command === "start_solving") {
+            try {
+                const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+                const tab = tabs[0];
+                if (tab && tab.id && tab.url && !tab.url.startsWith('chrome://') && !tab.url.startsWith('about:') && !tab.url.startsWith('chrome-extension://') && !tab.url.startsWith('edge://')) {
+                    chrome.tabs.sendMessage(tab.id, { action: "START_SOLVING" }, (res) => {
+                        if (chrome.runtime.lastError) {
+                            // Script might need on-demand injection
+                            chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                files: ['src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
+                            }).then(() => {
+                                setTimeout(() => {
+                                    chrome.tabs.sendMessage(tab.id, { action: "START_SOLVING" });
+                                }, 250);
+                            }).catch(() => {});
+                        }
+                    });
+                }
+            } catch (err) {
+                console.warn('[AutoForm Background] Command dispatch error:', err.message);
+            }
+        }
+    });
+}
+

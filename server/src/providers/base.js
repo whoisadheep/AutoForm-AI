@@ -40,10 +40,13 @@ Format: {"answer": "Exact option string"}`;
             ? 'Provide a comprehensive and well-explained answer (2-4 paragraphs).'
             : 'Provide a clear, accurate, and natural response.';
         instructions = `Provide an appropriate and accurate written answer. ${lengthGuidance}
+CRITICAL ACCURACY RULE: If the question asks for personal or contact facts (Email, Gmail, Phone, WhatsApp, Name, Department, Year of Study), use the exact verified details from USER CONTEXT & VERIFIED MEMORY. NEVER invent dummy or placeholder data like example@gmail.com, 1234567890, or placeholder names.
 Format: {"answer": "Your text response here"}`;
     }
 
-    const contextPart = customContext ? `\nUSER CONTEXT / PREFERENCE: "${customContext}"\n` : '';
+    const contextPart = customContext 
+        ? `\nUSER CONTEXT & VERIFIED MEMORY:\n${customContext}\n(CRITICAL: Prioritize the user's verified profile details and relevant memories above. Never contradict or invent placeholder contact information.)\n` 
+        : '';
 
     const userPrompt = `QUESTION: "${question}"
 TYPE: ${type}
@@ -63,7 +66,7 @@ Ensure the output is ONLY a valid JSON object without markdown fences.`;
  * @param {string} type 
  * @returns {{ answer?: string, answers?: string[] }}
  */
-function parseAiResponse(rawText, type) {
+function parseAiResponse(rawText, type, choices = []) {
     if (!rawText || typeof rawText !== 'string') {
         throw new Error('Empty response from AI model');
     }
@@ -72,7 +75,19 @@ function parseAiResponse(rawText, type) {
     const match = clean.match(/\{[\s\S]*\}/);
 
     if (!match) {
-        // Fallback if model returned plain text instead of JSON
+        // If options/choices were provided, check if model simply echoed one of the choices
+        if (choices && choices.length > 0) {
+            const matchedChoice = choices.find(c => 
+                clean.toLowerCase() === c.toLowerCase() || 
+                new RegExp(`\\b${c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(clean)
+            );
+            if (matchedChoice) {
+                return type === 'checkbox' ? { answers: [matchedChoice] } : { answer: matchedChoice };
+            }
+            throw new Error(`AI returned non-JSON output that matches no options: "${clean.slice(0, 80)}"`);
+        }
+
+        // Fallback for open-ended text input
         if (type === 'checkbox') {
             return { answers: [clean.split('\n')[0].trim()] };
         }
@@ -96,23 +111,126 @@ function parseAiResponse(rawText, type) {
 }
 
 /**
- * Round-robin key selector for a provider with multiple keys.
+ * Intelligent key rotator with rate-limit tracking (429) and cooldown mitigation.
  */
 class KeyRotator {
-    constructor(keys = []) {
+    /**
+     * @param {string[]} keys - List of API keys
+     * @param {number} [defaultCooldownMs=60000] - Base cooldown duration for rate-limited keys
+     */
+    constructor(keys = [], defaultCooldownMs = 60000) {
         this.keys = keys;
         this.index = 0;
+        this.defaultCooldownMs = defaultCooldownMs;
+
+        /** @type {Map<string, { cooldownUntil: number, consecutive429s: number, lastUsed: number|null }>} */
+        this.keyStates = new Map();
+        for (const k of keys) {
+            this.keyStates.set(k, { cooldownUntil: 0, consecutive429s: 0, lastUsed: null });
+        }
     }
 
+    /**
+     * Retrieves the next available, healthy API key.
+     * Automatically skips keys in cooldown.
+     * @returns {string|null}
+     */
     getKey() {
         if (!this.keys || this.keys.length === 0) return null;
-        const key = this.keys[this.index % this.keys.length];
-        this.index = (this.index + 1) % this.keys.length;
-        return key;
+
+        const now = Date.now();
+        const len = this.keys.length;
+
+        // Search for a healthy key starting from current index
+        for (let i = 0; i < len; i++) {
+            const candidateIdx = (this.index + i) % len;
+            const key = this.keys[candidateIdx];
+            const state = this.keyStates.get(key) || { cooldownUntil: 0 };
+
+            if (now >= state.cooldownUntil) {
+                this.index = (candidateIdx + 1) % len;
+                state.lastUsed = now;
+                return key;
+            }
+        }
+
+        // All keys are currently in cooldown!
+        return null;
     }
 
+    /**
+     * Marks an API key as rate-limited (429) with a cooldown duration.
+     * @param {string} key
+     * @param {number} [retryAfterSeconds] - Optional duration from Retry-After header
+     */
+    markKeyRateLimited(key, retryAfterSeconds) {
+        if (!key) return;
+        const state = this.keyStates.get(key) || { cooldownUntil: 0, consecutive429s: 0, lastUsed: null };
+        const now = Date.now();
+
+        state.consecutive429s = (state.consecutive429s || 0) + 1;
+        // Exponential multiplier for repeated 429s, capped at 10x
+        const multiplier = Math.min(Math.pow(1.5, state.consecutive429s - 1), 10);
+        const cooldownMs = retryAfterSeconds && !isNaN(retryAfterSeconds) && retryAfterSeconds > 0
+            ? retryAfterSeconds * 1000
+            : Math.round(this.defaultCooldownMs * multiplier);
+
+        state.cooldownUntil = now + cooldownMs;
+        this.keyStates.set(key, state);
+
+        const masked = key.length > 8 ? `...${key.slice(-4)}` : '***';
+        console.warn(`[KeyRotator] Key ${masked} rate-limited (429). Placed on cooldown for ${Math.round(cooldownMs / 1000)}s.`);
+    }
+
+    /**
+     * Marks an API key execution as successful, resetting any 429 penalty counters.
+     * @param {string} key
+     */
+    markKeySuccess(key) {
+        if (!key) return;
+        const state = this.keyStates.get(key);
+        if (state) {
+            state.consecutive429s = 0;
+            state.cooldownUntil = 0;
+        }
+    }
+
+    /**
+     * Checks if provider has any configured keys.
+     * @returns {boolean}
+     */
     hasKeys() {
         return this.keys && this.keys.length > 0;
+    }
+
+    /**
+     * Checks if provider has at least one key not currently on cooldown.
+     * @returns {boolean}
+     */
+    hasAvailableKey() {
+        if (!this.hasKeys()) return false;
+        const now = Date.now();
+        return this.keys.some(k => {
+            const s = this.keyStates.get(k);
+            return !s || now >= s.cooldownUntil;
+        });
+    }
+
+    /**
+     * Returns a summary status of all keys (without leaking secrets).
+     * @returns {Array<{ index: number, available: boolean, cooldownSecondsRemaining: number }>}
+     */
+    getStatus() {
+        const now = Date.now();
+        return this.keys.map((k, idx) => {
+            const s = this.keyStates.get(k) || { cooldownUntil: 0 };
+            const remaining = Math.max(0, Math.ceil((s.cooldownUntil - now) / 1000));
+            return {
+                index: idx + 1,
+                available: remaining === 0,
+                cooldownSecondsRemaining: remaining
+            };
+        });
     }
 }
 

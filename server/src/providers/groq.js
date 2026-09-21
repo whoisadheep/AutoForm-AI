@@ -16,7 +16,7 @@ class GroqProvider {
     async solve(questionData) {
         const apiKey = this.rotator.getKey();
         if (!apiKey) {
-            throw new Error('No Groq API keys available');
+            throw new Error('No Groq API keys available (all keys on cooldown or unconfigured)');
         }
 
         const { systemPrompt, userPrompt } = buildPrompt(questionData);
@@ -51,6 +51,12 @@ class GroqProvider {
                 if (!res.ok) {
                     const errBody = await res.text();
                     lastError = new Error(`Groq HTTP ${res.status}: ${errBody}`);
+
+                    if (res.status === 429) {
+                        const retryAfter = parseInt(res.headers.get('retry-after') || '60', 10);
+                        this.rotator.markKeyRateLimited(apiKey, retryAfter);
+                    }
+
                     if (res.status === 404 || res.status === 410 || errBody.includes('model_not_found') || errBody.includes('does not exist')) {
                         console.warn(`[Groq] Model ${model} unavailable (${res.status}), trying fallback candidate...`);
                         continue;
@@ -61,7 +67,8 @@ class GroqProvider {
                 const data = await res.json();
                 const content = data.choices?.[0]?.message?.content;
                 this.activeModel = model;
-                return parseAiResponse(content, questionData.type);
+                this.rotator.markKeySuccess(apiKey);
+                return parseAiResponse(content, questionData.type, questionData.choices);
 
             } catch (err) {
                 if (err.name === 'AbortError') {

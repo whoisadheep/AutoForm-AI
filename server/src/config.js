@@ -3,7 +3,11 @@
  * @description Centralized server configuration and provider key manager.
  */
 
-require('dotenv').config();
+const path = require('path');
+
+// Support loading .env from both server/ directory and root repository directory
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 
 /**
  * Splits comma-separated key strings into an array of sanitized keys.
@@ -21,7 +25,7 @@ function parseKeyList(keyString) {
 module.exports = {
     port: parseInt(process.env.PORT || '3000', 10),
     env: process.env.NODE_ENV || 'development',
-    rateLimitPerHour: parseInt(process.env.RATE_LIMIT_PER_HOUR || '60', 10),
+    rateLimitPerHour: parseInt(process.env.RATE_LIMIT_PER_HOUR || '150', 10),
     apiSecretKey: process.env.API_SECRET_KEY || null,
 
     providers: {
@@ -42,6 +46,21 @@ module.exports = {
             fallbackModels: ['gemini-3.5-flash-lite', 'gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'],
             endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
             timeoutMs: 12000
+        },
+        openrouter: {
+            name: 'openrouter',
+            enabled: parseKeyList(process.env.OPENROUTER_API_KEYS).length > 0,
+            keys: parseKeyList(process.env.OPENROUTER_API_KEYS),
+            model: process.env.OPENROUTER_MODEL || 'openrouter/free',
+            fallbackModels: [
+                'openrouter/free',
+                'nvidia/nemotron-3.5-lightning:free',
+                'google/gemma-4-26b-a4b-it:free',
+                'minimax/minimax-m3:free',
+                'z-ai/glm-5.2:free'
+            ],
+            endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+            timeoutMs: 15000
         },
         nvidia: {
             name: 'nvidia',

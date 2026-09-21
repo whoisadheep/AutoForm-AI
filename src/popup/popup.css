@@ -61,7 +61,8 @@ html {
 }
 
 body {
-    width: 100%;
+    width: 360px;
+    min-width: 360px;
     min-height: 100%;
     margin: 0;
     padding: 0;
@@ -159,13 +160,15 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 8px;
     padding-bottom: 2px;
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 7px;
+    flex-shrink: 0;
 }
 
 .brand-logo {
@@ -186,6 +189,7 @@ body {
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.3px;
+    white-space: nowrap;
 }
 
 .version-tag {
@@ -196,33 +200,102 @@ body {
     border: var(--border-subtle);
     padding: 1px 6px;
     border-radius: var(--radius-full);
+    white-space: nowrap;
 }
 
-/* Connection Status Pill (Clean text only, NO green/red dots) */
-.connection-pill {
+.header-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Hourly Solve Quota Badge */
+.quota-badge {
     display: inline-flex;
     align-items: center;
-    padding: 3px 9px;
+    gap: 4px;
+    padding: 2.5px 8px;
     border-radius: var(--radius-full);
     font-size: 11px;
     font-weight: 600;
+    color: var(--text-secondary);
     background-color: var(--bg-card);
     border: var(--border-medium);
+    box-shadow: var(--shadow-sm);
+    cursor: default;
+    transition: var(--transition-fast);
+    user-select: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.3;
+}
+
+.quota-svg {
+    width: 11px;
+    height: 11px;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+.quota-badge.quota-low {
+    border-color: #fde68a;
+    background-color: #fffbeb;
+    color: #b45309;
+}
+
+.quota-badge.quota-low .quota-svg {
+    color: #d97706;
+}
+
+.quota-badge.quota-exhausted {
+    border-color: #fca5a5;
+    background-color: #fef2f2;
+    color: #b91c1c;
+}
+
+.quota-badge.quota-exhausted .quota-svg {
+    color: #dc2626;
+}
+
+/* Connection Status Pill — Ultra-minimalist typography pill (No dots, No emojis) */
+.connection-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2.5px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: -0.1px;
+    background-color: var(--bg-surface);
+    border: var(--border-subtle);
     color: var(--text-secondary);
     box-shadow: var(--shadow-sm);
-    transition: var(--transition-normal);
+    transition: var(--transition-fast);
+    user-select: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.3;
 }
 
 .status-online {
-    color: var(--text-primary);
-    background-color: #ffffff;
-    border-color: #d1d5db;
+    color: var(--text-secondary);
+    background-color: var(--bg-surface);
+    border-color: var(--border-subtle);
 }
 
 .status-offline {
+    color: #dc2626;
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    opacity: 0.9;
+}
+
+.status-connecting {
     color: var(--text-muted);
     background-color: var(--bg-surface);
-    border-color: var(--border-medium);
+    border-color: var(--border-subtle);
 }
 
 /* ==========================================================================
@@ -298,20 +371,29 @@ body {
    Action Buttons (Royal Violet #7241FF as in Reference Design)
    ========================================================================== */
 
-.btn {
+.action-buttons-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     width: 100%;
-    min-height: 42px;
-    padding: 10px 16px;
-    border-radius: var(--radius-md);
-    font-size: 13.5px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
+}
+
+.btn {
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    transition: transform var(--transition-fast), background-color var(--transition-fast), box-shadow var(--transition-fast);
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 14px;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
     font-family: inherit;
     user-select: none;
     touch-action: manipulation;
@@ -324,20 +406,39 @@ body {
     transform: none !important;
 }
 
-/* Primary Action Button (#7241FF) */
+/* Primary Action Button (#7241FF) with smooth light sweep shimmer */
 .btn-primary {
     background-color: var(--primary);
     color: #ffffff;
     box-shadow: var(--shadow-btn);
 }
 
+.btn-primary:not(:disabled)::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -75%;
+    width: 50%;
+    height: 200%;
+    background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+    transform: rotate(25deg);
+    transition: none;
+    pointer-events: none;
+}
+
 .btn-primary:hover:not(:disabled) {
     background-color: var(--primary-hover);
     transform: translateY(-1px);
+    box-shadow: 0 6px 18px 0 rgba(114, 65, 255, 0.32), 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.btn-primary:hover:not(:disabled)::after {
+    left: 125%;
+    transition: left 0.75s cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .btn-primary:active:not(:disabled) {
-    transform: translateY(1px);
+    transform: scale(0.98);
     background-color: var(--primary-active);
 }
 
@@ -398,6 +499,103 @@ body {
 
 @keyframes spin {
     to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Live Solving Progress Card
+   ========================================================================== */
+
+.popup-progress-card {
+    background-color: var(--bg-card);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    box-shadow: var(--shadow-sm);
+    animation: statusSlide 0.25s var(--ease-spring);
+}
+
+.popup-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.popup-progress-status {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.popup-progress-percent {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--primary);
+    font-variant-numeric: tabular-nums;
+    transition: transform 0.2s var(--ease-spring);
+}
+
+.popup-progress-track {
+    background: #f1f2f6;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    height: 9px;
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.popup-progress-bar {
+    height: 100%;
+    width: 0%;
+    border-radius: var(--radius-full);
+    position: relative;
+    background-image:
+        linear-gradient(
+            -45deg,
+            rgba(255, 255, 255, 0.25) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.25) 50%,
+            rgba(255, 255, 255, 0.25) 75%,
+            transparent 75%,
+            transparent
+        ),
+        linear-gradient(90deg, #6366f1 0%, #7241ff 35%, #a855f7 65%, #6366f1 100%);
+    background-size: 24px 24px, 200% 100%;
+    animation: popupProgressStripes 1.2s linear infinite, popupProgressFlow 2.4s linear infinite;
+    box-shadow: 0 1px 8px rgba(114, 65, 255, 0.45);
+    transition: width 0.5s cubic-bezier(0.34, 1.25, 0.64, 1);
+}
+
+.popup-progress-bar::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 12px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 20%, rgba(255, 255, 255, 0.6) 50%, transparent 80%);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 10px #a855f7, 0 0 4px #ffffff;
+    animation: popupProgressGlow 1.2s infinite ease-in-out;
+}
+
+@keyframes popupProgressStripes {
+    0% { background-position: 0 0, 0 0; }
+    100% { background-position: 32px 0, -200% 0; }
+}
+
+@keyframes popupProgressFlow {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@keyframes popupProgressGlow {
+    0%, 100% { opacity: 0.7; box-shadow: 0 0 8px rgba(114, 65, 255, 0.7), 0 0 3px #fff; }
+    50% { opacity: 1; box-shadow: 0 0 16px rgba(167, 139, 250, 1), 0 0 6px #fff; }
 }
 
 /* ==========================================================================
@@ -541,6 +739,84 @@ body {
 }
 
 /* ==========================================================================
+   Memory & Profile Link
+   ========================================================================== */
+
+.memory-link-row {
+    margin-top: 2px;
+}
+
+.memory-link-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    background-color: var(--bg-surface);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition-fast);
+    font-family: inherit;
+    text-align: left;
+    line-height: 1.4;
+}
+
+.memory-link-btn:hover {
+    background-color: #eee9ff;
+    border-color: #d4c8ff;
+    color: var(--primary);
+}
+
+.memory-link-btn:active {
+    background-color: #e0d6ff;
+}
+
+.memory-link-icon {
+    width: 15px;
+    height: 15px;
+    flex-shrink: 0;
+    color: var(--primary);
+    opacity: 0.75;
+}
+
+.memory-link-btn:hover .memory-link-icon {
+    opacity: 1;
+}
+
+.memory-link-chevron {
+    width: 13px;
+    height: 13px;
+    margin-left: auto;
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: var(--transition-fast);
+}
+
+.memory-link-btn:hover .memory-link-chevron {
+    color: var(--primary);
+    transform: translateX(2px);
+}
+
+.memory-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: var(--radius-full);
+    font-size: 10px;
+    font-weight: 700;
+    background-color: var(--primary);
+    color: #ffffff;
+    line-height: 1;
+}
+
+/* ==========================================================================
    Footer
    ========================================================================== */
 
@@ -548,10 +824,12 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     font-size: 10px;
     color: var(--text-muted);
     border-top: var(--border-subtle);
     padding-top: 10px;
+    white-space: nowrap;
 }
 
 /* Accessibility */

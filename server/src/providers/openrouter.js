@@ -1,22 +1,22 @@
 /**
- * @file server/src/providers/nvidia.js
- * @description NVIDIA NIM API adapter with dynamic multi-model fallback.
+ * @file server/src/providers/openrouter.js
+ * @description OpenRouter API adapter with free tier multi-model fallback and auto-routing.
  */
 
 const { buildPrompt, parseAiResponse, KeyRotator } = require('./base');
 
-class NvidiaProvider {
+class OpenRouterProvider {
     constructor(config) {
         this.config = config;
         this.rotator = new KeyRotator(config.keys);
-        this.activeModel = config.model;
+        this.activeModel = config.model || 'openrouter/free';
         this.candidates = Array.from(new Set([config.model, ...(config.fallbackModels || [])]));
     }
 
     async solve(questionData) {
         const apiKey = this.rotator.getKey();
         if (!apiKey) {
-            throw new Error('No NVIDIA API keys available (all keys on cooldown or unconfigured)');
+            throw new Error('No OpenRouter API keys available (all keys on cooldown or unconfigured)');
         }
 
         const { systemPrompt, userPrompt } = buildPrompt(questionData);
@@ -26,13 +26,15 @@ class NvidiaProvider {
 
         for (const model of modelsToTry) {
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs || 12000);
+            const timeout = setTimeout(() => controller.abort(), this.config.timeoutMs || 15000);
 
             try {
                 const res = await fetch(this.config.endpoint, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${apiKey}`,
+                        'HTTP-Referer': 'https://github.com/whoisadheep/AutoForm-AI',
+                        'X-Title': 'AutoForm AI',
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
@@ -49,15 +51,16 @@ class NvidiaProvider {
 
                 if (!res.ok) {
                     const errBody = await res.text();
-                    lastError = new Error(`NVIDIA HTTP ${res.status}: ${errBody}`);
+                    lastError = new Error(`OpenRouter HTTP ${res.status}: ${errBody}`);
 
                     if (res.status === 429) {
                         const retryAfter = parseInt(res.headers.get('retry-after') || '60', 10);
                         this.rotator.markKeyRateLimited(apiKey, retryAfter);
                     }
 
-                    if (res.status === 404 || res.status === 410 || errBody.includes('end of life') || errBody.includes('Gone')) {
-                        console.warn(`[NVIDIA] Model ${model} unavailable (${res.status}), trying fallback candidate...`);
+                    // If model is rate-limited, unavailable, or not found on free pool, try next candidate
+                    if (res.status === 404 || res.status === 410 || res.status === 429 || errBody.includes('temporarily rate-limited') || errBody.includes('unavailable')) {
+                        console.warn(`[OpenRouter] Model ${model} returned ${res.status}, trying next fallback candidate...`);
                         continue;
                     }
                     throw lastError;
@@ -71,10 +74,10 @@ class NvidiaProvider {
 
             } catch (err) {
                 if (err.name === 'AbortError') {
-                    throw new Error(`NVIDIA timeout after ${this.config.timeoutMs || 12000}ms`);
+                    throw new Error(`OpenRouter timeout after ${this.config.timeoutMs || 15000}ms`);
                 }
                 lastError = err;
-                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('Gone')) {
+                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('429')) {
                     throw err;
                 }
             } finally {
@@ -82,8 +85,8 @@ class NvidiaProvider {
             }
         }
 
-        throw lastError || new Error('All NVIDIA candidate models failed');
+        throw lastError || new Error('All OpenRouter candidate models failed');
     }
 }
 
-module.exports = NvidiaProvider;
+module.exports = OpenRouterProvider;

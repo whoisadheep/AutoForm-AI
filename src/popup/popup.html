@@ -18,8 +18,16 @@
                 </div>
             </div>
 
-            <div id="connectionPill" class="connection-pill status-connecting" aria-live="polite">
-                <span id="connectionText" class="connection-text">Checking</span>
+            <div class="header-status">
+                <div id="quotaBadge" class="quota-badge" style="display: none;" title="Hourly AI solve quota remaining" aria-label="Quota Remaining">
+                    <svg class="quota-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span id="quotaCount">--</span>
+                </div>
+                <div id="connectionPill" class="connection-pill status-online" aria-live="polite" title="4 AI Engines: Groq • Gemini • OpenRouter • NVIDIA">
+                    <span id="connectionText" class="connection-text">4 Engines</span>
+                </div>
             </div>
         </header>
 
@@ -41,21 +49,58 @@
             <span id="questionBadge" class="badge" style="display: none;">0 Qs</span>
         </section>
 
-        <!-- Primary Solve Action Button -->
-        <button id="solveBtn" class="btn btn-primary" disabled aria-label="Fill Current Form">
-            <span id="solveBtnIcon" class="btn-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-            </span>
-            <span id="solveBtnText" class="btn-text">Fill Current Form</span>
-            <div id="solveSpinner" class="spinner" style="display: none;" aria-hidden="true"></div>
-        </button>
+        <!-- Action Buttons Group -->
+        <div class="action-buttons-group">
+            <button id="solveBtn" class="btn btn-primary" disabled aria-label="Fill Current Form">
+                <span id="solveBtnIcon" class="btn-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                </span>
+                <span id="solveBtnText" class="btn-text">Fill Current Form</span>
+                <div id="solveSpinner" class="spinner" style="display: none;" aria-hidden="true"></div>
+            </button>
+
+            <button id="instantAutofillBtn" class="btn btn-secondary" disabled aria-label="Instant Profile Autofill" title="Fills verified personal & contact fields instantly without using AI quota">
+                <span class="btn-icon" style="color: #7241ff;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                    </svg>
+                </span>
+                <span class="btn-text">Instant Profile Fill</span>
+                <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(114, 65, 255, 0.08); color: #7241ff; border: 1px solid rgba(114, 65, 255, 0.2);">0ms</span>
+            </button>
+        </div>
+
+        <!-- Live Solving Progress Card -->
+        <div id="popupProgressCard" class="popup-progress-card" style="display: none;" aria-live="polite">
+            <div class="popup-progress-header">
+                <span id="popupProgressStatus" class="popup-progress-status">Solving questions...</span>
+                <span id="popupProgressPercent" class="popup-progress-percent">0%</span>
+            </div>
+            <div class="popup-progress-track">
+                <div id="popupProgressBar" class="popup-progress-bar"></div>
+            </div>
+        </div>
 
         <!-- Configuration Section -->
         <section class="section">
             <div class="section-header">
                 <span class="section-title">Preferences</span>
+            </div>
+
+            <div class="input-group">
+                <label for="pacingSelect" class="label">Pacing & Speed</label>
+                <div class="select-wrapper">
+                    <select id="pacingSelect" class="select">
+                        <option value="turbo">Turbo (~150ms • Fastest)</option>
+                        <option value="natural" selected>Natural (~800ms • Balanced)</option>
+                        <option value="stealth">Stealth Human (~1.5s • Human-like)</option>
+                    </select>
+                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
             </div>
 
             <div class="input-group">
@@ -79,6 +124,20 @@
                 </label>
                 <input type="text" id="customContext" class="input" placeholder="e.g. Computer Science student...">
             </div>
+
+            <div class="memory-link-row">
+                <button id="openMemoryBtn" class="memory-link-btn" title="Open Memory & Profile manager">
+                    <svg class="memory-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z"/>
+                        <path d="M6 13v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/>
+                    </svg>
+                    <span>Memory & Profile</span>
+                    <span id="memoryCount" class="memory-count" style="display: none;">0</span>
+                    <svg class="memory-link-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+            </div>
         </section>
 
         <!-- Status Notification Toast -->
@@ -86,8 +145,8 @@
 
         <!-- Footer -->
         <footer class="footer">
-            <span>Production Ready • v2.0.1</span>
-            <span>Groq • Gemini • NVIDIA</span>
+            <span id="quotaFooterText">150 Qs/hr • Resets hourly</span>
+            <span>Groq • Gemini • OpenRouter • NVIDIA</span>
         </footer>
     </div>
 

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node server/src/index.js",
     "postinstall": "cd server && npm install",
+    "test": "node --test server/tests/*.test.js",
     "validate": "node scripts/validate_manifest.js",
     "package": "node scripts/package_extension.js",
     "server:install": "cd server && npm install",
