@@ -1,7 +1,7 @@
 {
   "name": "AutoForm AI",
   "description": "Automatically fill and solve Google Forms, Job Boards & Web Forms with AI (Groq, Gemini, NVIDIA NIM).",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "manifest_version": 3,
   "permissions": [
     "scripting", 
