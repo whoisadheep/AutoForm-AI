@@ -108,9 +108,11 @@ async function checkServerHealth() {
     chrome.runtime.sendMessage({ action: "CHECK_SERVER_HEALTH" }, (res) => {
         if (!chrome.runtime.lastError && res && res.success) {
             connectionPill.className = 'connection-pill status-online';
-            // AutoForm AI features 4 multi-provider engines: Groq, Gemini, OpenRouter, NVIDIA
-            connectionText.innerText = '4 Engines';
-            connectionPill.title = '4 AI Engines Online: Groq • Gemini • OpenRouter • NVIDIA (Auto-Failover)';
+            const providers = res.data?.activeProviders || [];
+            const count = providers.length || 1;
+            connectionText.innerText = `${count} Engine${count > 1 ? 's' : ''}`;
+            const providerNames = providers.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' • ');
+            connectionPill.title = `AI Engines Online: ${providerNames || 'Active'} (Connected to ${res.serverUrl || 'Cloud'})`;
         } else {
             connectionPill.className = 'connection-pill status-offline';
             connectionText.innerText = 'Offline';

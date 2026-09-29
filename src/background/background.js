@@ -20,17 +20,33 @@ try {
     }
 }
 
+// Purge obsolete Railway endpoints from storage on service worker init
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get(['serverUrl'], (data) => {
+        if (data.serverUrl && (data.serverUrl.includes('railway.app') || data.serverUrl.includes('web-production'))) {
+            console.log('[AutoForm] Purging obsolete Railway URL from local storage');
+            chrome.storage.local.remove('serverUrl');
+        }
+    });
+}
+
 /**
  * Resolves the active backend proxy URL.
  * Automatically detects and prioritizes local development server on port 3000,
- * falling back to the production Railway proxy when local server is offline.
+ * falling back to the production Render proxy when local server is offline.
  * @returns {Promise<string>}
  */
 async function getEffectiveServerUrl() {
     return new Promise((resolve) => {
         chrome.storage.local.get(['serverUrl'], async (stored) => {
             if (stored.serverUrl) {
-                return resolve(stored.serverUrl);
+                // If it's a legacy or dead Railway URL, remove it immediately
+                if (stored.serverUrl.includes('railway.app') || stored.serverUrl.includes('web-production')) {
+                    chrome.storage.local.remove('serverUrl');
+                } else {
+                    const clean = stored.serverUrl.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+                    return resolve(clean);
+                }
             }
             try {
                 const res = await fetch(`${LOCAL_SERVER_URL}/healthz`, {
@@ -272,9 +288,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     return;
                 }
 
-                // Default: Solve via Multi-Provider Backend Proxy (Groq / Gemini / NVIDIA)
+                // Default: Solve via Multi-Provider Backend Proxy (Groq / Gemini / NVIDIA / OpenRouter)
+                const effectiveServerUrl = await getEffectiveServerUrl();
                 const result = await solveViaBackendProxy(request.data, {
-                    serverUrl: stored.serverUrl || DEFAULT_SERVER_URL,
+                    serverUrl: effectiveServerUrl,
                     customContext: combinedContext,
                     tone: stored.tone || 'accurate'
                 });
