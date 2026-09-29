@@ -6,7 +6,7 @@
 
 // Backend Proxy Endpoints
 const LOCAL_SERVER_URL = "http://localhost:3000";
-const PRODUCTION_SERVER_URL = "https://web-production-d1895.up.railway.app";
+const PRODUCTION_SERVER_URL = "https://autoform-ai.onrender.com";
 const DEFAULT_SERVER_URL = PRODUCTION_SERVER_URL;
 
 // Load MemoryRetriever Hybrid RAG Engine

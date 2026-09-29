@@ -29,6 +29,13 @@ module.exports = {
     apiSecretKey: process.env.API_SECRET_KEY || null,
 
     providers: {
+        laya: {
+            name: 'laya',
+            enabled: process.env.ENABLE_LAYA === 'true' || process.env.ENABLE_LAYA === '1',
+            autoLoad: process.env.LAYA_AUTOLOAD !== 'false',
+            confidenceThreshold: parseFloat(process.env.LAYA_CONFIDENCE_THRESHOLD || '0.70'),
+            cacheDir: process.env.LAYA_CACHE || undefined
+        },
         groq: {
             name: 'groq',
             enabled: parseKeyList(process.env.GROQ_API_KEYS).length > 0,

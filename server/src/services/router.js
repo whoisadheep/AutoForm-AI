@@ -8,6 +8,7 @@ const GroqProvider = require('../providers/groq');
 const GeminiProvider = require('../providers/gemini');
 const NvidiaProvider = require('../providers/nvidia');
 const OpenRouterProvider = require('../providers/openrouter');
+const LayaProvider = require('../providers/laya');
 const { CircuitBreaker } = require('./circuitBreaker');
 
 class ProviderRouter {
@@ -20,6 +21,10 @@ class ProviderRouter {
         });
 
         // Initialize enabled providers
+        if (config.providers.laya && config.providers.laya.enabled) {
+            this.providers.set('laya', new LayaProvider(config.providers.laya));
+            this.metrics.set('laya', { success: 0, failures: 0, avgLatencyMs: 0 });
+        }
         if (config.providers.groq.enabled) {
             this.providers.set('groq', new GroqProvider(config.providers.groq));
             this.metrics.set('groq', { success: 0, failures: 0, avgLatencyMs: 0 });
@@ -37,8 +42,8 @@ class ProviderRouter {
             this.metrics.set('nvidia', { success: 0, failures: 0, avgLatencyMs: 0 });
         }
 
-        // Priority order: Groq (ultra fast) -> Gemini (ultra reliable) -> OpenRouter (free backup) -> NVIDIA (backup)
-        this.priority = ['groq', 'gemini', 'openrouter', 'nvidia'];
+        // Priority order: Laya (System-1 local reflex) -> Groq (ultra fast) -> Gemini (ultra reliable) -> OpenRouter (free backup) -> NVIDIA (backup)
+        this.priority = ['laya', 'groq', 'gemini', 'openrouter', 'nvidia'];
     }
 
     /**
@@ -92,9 +97,15 @@ class ProviderRouter {
             } catch (err) {
                 const latencyMs = Date.now() - startTime;
                 this.recordMetric(providerName, false, latencyMs);
-                this.circuitBreaker.recordFailure(providerName, err);
 
-                console.warn(`[Router] Provider '${providerName}' failed (${err.message}). Attempting failover...`);
+                // Graceful handoffs (e.g., Laya delegating an essay or low-confidence question) should not trip the circuit breaker
+                if (!err.isHandoff) {
+                    this.circuitBreaker.recordFailure(providerName, err);
+                    console.warn(`[Router] Provider '${providerName}' failed (${err.message}). Attempting failover...`);
+                } else {
+                    console.log(`[Router] Provider '${providerName}' delegated (${err.message}). Proceeding down priority chain...`);
+                }
+
                 errors.push({ provider: providerName, error: err.message });
             }
         }

@@ -13,7 +13,7 @@
     "https://docs.google.com/*",
     "http://*/*",
     "https://*/*",
-    "https://web-production-d1895.up.railway.app/*",
+    "https://autoform-ai.onrender.com/*",
     "http://localhost:3000/*",
     "http://127.0.0.1:3000/*"
   ],

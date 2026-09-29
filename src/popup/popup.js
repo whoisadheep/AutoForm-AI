@@ -5,7 +5,7 @@
  * Zero-config, clean, minimal implementation.
  */
 
-const DEFAULT_SERVER_URL = "https://web-production-d1895.up.railway.app";
+const DEFAULT_SERVER_URL = "https://autoform-ai.onrender.com";
 
 // DOM Elements
 const connectionPill = document.getElementById('connectionPill');
