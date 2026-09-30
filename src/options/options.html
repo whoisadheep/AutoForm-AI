@@ -17,7 +17,7 @@
                 <div class="brand-info">
                     <div class="brand-title-row">
                         <h1 class="brand-title">AutoForm Memory Vault</h1>
-                        <span class="version-tag">v2.0.1</span>
+                        <span class="version-tag">v2.0.2</span>
                     </div>
                     <p class="brand-subtitle">Private local memory used to auto-fill form questions, bios, and essays with precision.</p>
                 </div>
@@ -58,6 +58,15 @@
                 </svg>
                 <span>Memory Cards</span>
                 <span id="tabSnippetCount" class="tab-count-badge">0</span>
+            </button>
+            <button class="tab-btn" data-tab="tab-server" type="button">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                </svg>
+                <span>Server</span>
             </button>
         </nav>
 
@@ -330,6 +339,100 @@
                     </div>
                     <button id="btnClearAll" class="btn btn-danger btn-small" type="button">Clear All Memory</button>
                 </div>
+            </section>
+        </div>
+
+        <!-- ====================================================================
+             TAB 4: SERVER & CONNECTION SETTINGS
+             ==================================================================== -->
+        <div id="tab-server" class="tab-panel">
+            <!-- Connection Status Card -->
+            <section class="card server-status-card">
+                <div class="section-title-row">
+                    <h2>Connection Status</h2>
+                    <span class="card-subtitle">Real-time backend server health and configuration</span>
+                </div>
+                <div class="server-status-grid">
+                    <div class="server-stat">
+                        <span class="server-stat-label">Server</span>
+                        <span id="serverStatusUrl" class="server-stat-value server-url-display">Checking...</span>
+                    </div>
+                    <div class="server-stat">
+                        <span class="server-stat-label">Status</span>
+                        <span id="serverStatusHealth" class="server-stat-value">
+                            <span class="status-dot status-dot-checking"></span> Checking...
+                        </span>
+                    </div>
+                    <div class="server-stat">
+                        <span class="server-stat-label">Latency</span>
+                        <span id="serverStatusLatency" class="server-stat-value">—</span>
+                    </div>
+                    <div class="server-stat">
+                        <span class="server-stat-label">Active Engines</span>
+                        <span id="serverStatusProviders" class="server-stat-value">—</span>
+                    </div>
+                    <div class="server-stat">
+                        <span class="server-stat-label">Config Source</span>
+                        <span id="serverConfigSource" class="server-stat-value">—</span>
+                    </div>
+                    <div class="server-stat">
+                        <span class="server-stat-label">Last Synced</span>
+                        <span id="serverLastSync" class="server-stat-value">—</span>
+                    </div>
+                </div>
+                <div class="server-actions-row">
+                    <button id="btnTestConnection" class="btn btn-primary btn-small" type="button">
+                        <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                        </svg>
+                        <span id="btnTestText">Test Connection</span>
+                    </button>
+                    <button id="btnRefreshConfig" class="btn btn-secondary btn-small" type="button">
+                        <span>↻ Refresh Config</span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Custom Server URL Card -->
+            <section class="card">
+                <div class="section-title-row">
+                    <h2>Custom Server URL</h2>
+                    <span class="card-subtitle">Override the auto-discovered server. Leave empty to use the cloud default.</span>
+                </div>
+                <div class="input-group">
+                    <label for="customServerUrl">Backend Server URL</label>
+                    <input type="url" id="customServerUrl" placeholder="e.g. https://your-server.onrender.com (leave empty for auto)">
+                </div>
+                <div class="server-actions-row" style="margin-top: 12px;">
+                    <button id="btnSaveServerUrl" class="btn btn-primary btn-small" type="button">Save & Apply</button>
+                    <button id="btnResetServerUrl" class="btn btn-secondary btn-small" type="button">Reset to Cloud Default</button>
+                </div>
+            </section>
+
+            <!-- How It Works Info Card -->
+            <section class="card server-info-card">
+                <div class="section-title-row">
+                    <h2>How Dynamic Server Discovery Works</h2>
+                </div>
+                <div class="server-info-steps">
+                    <div class="server-info-step">
+                        <div class="step-num">1</div>
+                        <div class="step-text">Extension checks for a custom URL you've set above</div>
+                    </div>
+                    <div class="server-info-step">
+                        <div class="step-num">2</div>
+                        <div class="step-text">Auto-detects local dev server on localhost:3000</div>
+                    </div>
+                    <div class="server-info-step">
+                        <div class="step-num">3</div>
+                        <div class="step-text">Fetches cloud config from GitHub (cached 6 hours)</div>
+                    </div>
+                    <div class="server-info-step">
+                        <div class="step-num">4</div>
+                        <div class="step-text">Falls back to hardcoded default if all else fails</div>
+                    </div>
+                </div>
+                <p class="server-info-note">Server migrations happen instantly by updating <code>config/remote-config.json</code> on GitHub — no extension store update needed.</p>
             </section>
         </div>
 

@@ -6,8 +6,10 @@
 
 // Backend Proxy Endpoints
 const LOCAL_SERVER_URL = "http://localhost:3000";
-const PRODUCTION_SERVER_URL = "https://autoform-ai.onrender.com";
-const DEFAULT_SERVER_URL = PRODUCTION_SERVER_URL;
+const HARDCODED_FALLBACK_URL = "https://autoform-ai.onrender.com";
+const REMOTE_CONFIG_URL = "https://raw.githubusercontent.com/whoisadheep/AutoForm-AI/main/config/remote-config.json";
+const CONFIG_CACHE_KEY = '_remoteConfig';
+const CONFIG_TTL_MS = 6 * 60 * 60 * 1000; // 6 hours default, overridable by server
 
 // Load MemoryRetriever Hybrid RAG Engine
 try {
@@ -20,34 +22,74 @@ try {
     }
 }
 
-// Purge obsolete Railway endpoints from storage on service worker init
-if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-    chrome.storage.local.get(['serverUrl'], (data) => {
-        if (data.serverUrl && (data.serverUrl.includes('railway.app') || data.serverUrl.includes('web-production'))) {
-            console.log('[AutoForm] Purging obsolete Railway URL from local storage');
-            chrome.storage.local.remove('serverUrl');
-        }
+// ---------------------------------------------------------------------------
+// Remote Configuration System
+// Fetches backend URL from GitHub-hosted config, caches locally, and falls back
+// gracefully. Allows server migrations without extension store updates.
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetches and caches the remote configuration from GitHub.
+ * Returns cached config if fresh, otherwise fetches new config.
+ * @returns {Promise<Object|null>} Remote config object or null if unavailable
+ */
+async function fetchRemoteConfig() {
+    return new Promise((resolve) => {
+        chrome.storage.local.get([CONFIG_CACHE_KEY], async (stored) => {
+            const cached = stored[CONFIG_CACHE_KEY];
+            const now = Date.now();
+
+            // Use cache if fresh
+            if (cached && cached.fetchedAt && (now - cached.fetchedAt) < (cached.configTtlMs || CONFIG_TTL_MS)) {
+                return resolve(cached);
+            }
+
+            // Fetch fresh config from GitHub
+            try {
+                const res = await fetch(REMOTE_CONFIG_URL, {
+                    signal: AbortSignal.timeout(5000),
+                    cache: 'no-cache'
+                });
+                if (res.ok) {
+                    const config = await res.json();
+                    const enriched = {
+                        ...config,
+                        fetchedAt: now,
+                        configTtlMs: (config.configTtlMinutes || 360) * 60 * 1000
+                    };
+                    chrome.storage.local.set({ [CONFIG_CACHE_KEY]: enriched });
+                    console.log('[AutoForm] Remote config synced:', config.activeServerUrl);
+                    return resolve(enriched);
+                }
+            } catch (e) {
+                console.warn('[AutoForm] Remote config fetch failed:', e.message);
+            }
+
+            // Return stale cache if available, otherwise null
+            resolve(cached || null);
+        });
     });
 }
 
 /**
- * Resolves the active backend proxy URL.
- * Automatically detects and prioritizes local development server on port 3000,
- * falling back to the production Render proxy when local server is offline.
+ * Resolves the active backend proxy URL with intelligent fallback chain:
+ * 1. User-configured custom URL (from options page)
+ * 2. Local dev server on port 3000 (auto-detected)
+ * 3. Remote config activeServerUrl (from GitHub)
+ * 4. Remote config fallbackServerUrls (tried in order)
+ * 5. Hardcoded fallback URL (last resort)
  * @returns {Promise<string>}
  */
 async function getEffectiveServerUrl() {
     return new Promise((resolve) => {
-        chrome.storage.local.get(['serverUrl'], async (stored) => {
-            if (stored.serverUrl) {
-                // If it's a legacy or dead Railway URL, remove it immediately
-                if (stored.serverUrl.includes('railway.app') || stored.serverUrl.includes('web-production')) {
-                    chrome.storage.local.remove('serverUrl');
-                } else {
-                    const clean = stored.serverUrl.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
-                    return resolve(clean);
-                }
+        chrome.storage.local.get(['customServerUrl'], async (stored) => {
+            // 1. User-configured custom server URL (set from Options page)
+            if (stored.customServerUrl && stored.customServerUrl.trim()) {
+                const clean = stored.customServerUrl.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+                return resolve(clean);
             }
+
+            // 2. Local dev server auto-detection
             try {
                 const res = await fetch(`${LOCAL_SERVER_URL}/healthz`, {
                     signal: AbortSignal.timeout(600)
@@ -56,12 +98,59 @@ async function getEffectiveServerUrl() {
                     return resolve(LOCAL_SERVER_URL);
                 }
             } catch (e) {
-                // Local dev server not reachable, fallback to cloud production
+                // Local dev server not reachable
             }
-            resolve(PRODUCTION_SERVER_URL);
+
+            // 3. Remote config from GitHub
+            const remoteConfig = await fetchRemoteConfig();
+            if (remoteConfig && remoteConfig.activeServerUrl) {
+                // Try primary server
+                try {
+                    const res = await fetch(`${remoteConfig.activeServerUrl.replace(/\/+$/, '')}/healthz`, {
+                        signal: AbortSignal.timeout(3000)
+                    });
+                    if (res.ok) {
+                        return resolve(remoteConfig.activeServerUrl.replace(/\/+$/, ''));
+                    }
+                } catch (e) {
+                    // Primary from remote config is down
+                }
+
+                // 4. Try fallback URLs from remote config
+                const fallbacks = remoteConfig.fallbackServerUrls || [];
+                for (const fallbackUrl of fallbacks) {
+                    try {
+                        const res = await fetch(`${fallbackUrl.replace(/\/+$/, '')}/healthz`, {
+                            signal: AbortSignal.timeout(3000)
+                        });
+                        if (res.ok) {
+                            return resolve(fallbackUrl.replace(/\/+$/, ''));
+                        }
+                    } catch (e) {
+                        // Fallback also down, try next
+                    }
+                }
+
+                // Even if health check failed, still use primary (might be waking from cold start)
+                return resolve(remoteConfig.activeServerUrl.replace(/\/+$/, ''));
+            }
+
+            // 5. Hardcoded last-resort fallback
+            resolve(HARDCODED_FALLBACK_URL);
         });
     });
 }
+
+/**
+ * Returns the cached remote config object (maintenance mode, announcements, etc.).
+ * @returns {Promise<Object|null>}
+ */
+async function getRemoteConfig() {
+    return fetchRemoteConfig();
+}
+
+// Sync remote config on service worker startup
+fetchRemoteConfig().catch(() => {});
 
 
 /**
@@ -321,13 +410,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 const serverUrl = await getEffectiveServerUrl();
+                const remoteConfig = await getRemoteConfig();
                 const res = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/health`, {
                     signal: AbortSignal.timeout(4000)
                 });
                 const data = await res.json();
-                sendResponse({ success: res.ok, data, serverUrl });
+                sendResponse({
+                    success: res.ok,
+                    data,
+                    serverUrl,
+                    maintenance: remoteConfig?.maintenanceMode || false,
+                    maintenanceMessage: remoteConfig?.maintenanceMessage || '',
+                    announcement: remoteConfig?.announcement || ''
+                });
             } catch (e) {
-                sendResponse({ success: false, error: e.message });
+                const remoteConfig = await getRemoteConfig().catch(() => null);
+                sendResponse({
+                    success: false,
+                    error: e.message,
+                    maintenance: remoteConfig?.maintenanceMode || false,
+                    maintenanceMessage: remoteConfig?.maintenanceMessage || '',
+                    announcement: remoteConfig?.announcement || ''
+                });
             }
         })();
         return true;
@@ -346,6 +450,72 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({ success: res.ok, data, serverUrl });
             } catch (e) {
                 sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "GET_REMOTE_CONFIG") {
+        (async () => {
+            try {
+                const config = await getRemoteConfig();
+                const serverUrl = await getEffectiveServerUrl();
+                sendResponse({ success: true, config, serverUrl });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "FORCE_REFRESH_CONFIG") {
+        (async () => {
+            try {
+                // Clear cache to force fresh fetch
+                await chrome.storage.local.remove(CONFIG_CACHE_KEY);
+                const config = await fetchRemoteConfig();
+                const serverUrl = await getEffectiveServerUrl();
+                sendResponse({ success: true, config, serverUrl });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "SET_CUSTOM_SERVER_URL") {
+        (async () => {
+            try {
+                const url = request.url;
+                if (url && url.trim()) {
+                    const clean = url.trim().replace(/\/api\/v1\/?$/, '').replace(/\/+$/, '');
+                    await chrome.storage.local.set({ customServerUrl: clean });
+                } else {
+                    await chrome.storage.local.remove('customServerUrl');
+                }
+                const serverUrl = await getEffectiveServerUrl();
+                sendResponse({ success: true, serverUrl });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "TEST_SERVER_CONNECTION") {
+        (async () => {
+            const testUrl = request.url || await getEffectiveServerUrl();
+            const startTime = Date.now();
+            try {
+                const res = await fetch(`${testUrl.replace(/\/+$/, '')}/api/v1/health`, {
+                    signal: AbortSignal.timeout(6000)
+                });
+                const data = await res.json();
+                const latencyMs = Date.now() - startTime;
+                sendResponse({ success: res.ok, data, latencyMs, serverUrl: testUrl });
+            } catch (e) {
+                const latencyMs = Date.now() - startTime;
+                sendResponse({ success: false, error: e.message, latencyMs, serverUrl: testUrl });
             }
         })();
         return true;

@@ -81,4 +81,18 @@ describe('HTTP API & Security Hardening', () => {
         assert.equal(data.success, false);
         assert.ok(data.error.includes('question'));
     });
+
+    it('returns dynamic runtime config on /api/v1/config', async () => {
+        const res = await fetch(`${baseUrl}/api/v1/config`);
+        assert.equal(res.status, 200);
+        const data = await res.json();
+
+        assert.equal(data.version, '2.0.2');
+        assert.ok(Array.isArray(data.providers));
+        assert.ok(typeof data.rateLimitPerHour === 'number');
+        assert.equal(data.maintenanceMode, false);
+        assert.ok(data.features);
+        assert.equal(data.features.instantProfile, true);
+        assert.ok(data.timestamp);
+    });
 });

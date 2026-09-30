@@ -845,3 +845,26 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* Announcement / Maintenance Banner */
+.announcement-banner {
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.4;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.announcement-banner.maintenance {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+
+.announcement-banner.info {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}

@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "activeServerUrl": "https://autoform-ai.onrender.com",
+  "fallbackServerUrls": [],
+  "maintenanceMode": false,
+  "maintenanceMessage": "",
+  "announcement": "",
+  "minExtensionVersion": "2.0.0",
+  "configTtlMinutes": 360
+}

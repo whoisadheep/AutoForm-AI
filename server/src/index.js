@@ -88,6 +88,28 @@ app.get('/api/v1/quota', (req, res) => {
     });
 });
 
+// Dynamic Extension Configuration Endpoint
+// Returns runtime config that extensions can cache locally.
+// Allows model changes, selector patches, and announcements without store updates.
+app.get('/api/v1/config', (req, res) => {
+    const status = router.getStatus();
+    res.json({
+        version: '2.0.2',
+        providers: status.activeProviders || [],
+        rateLimitPerHour: config.rateLimitPerHour,
+        maintenanceMode: false,
+        announcement: process.env.ANNOUNCEMENT_TEXT || '',
+        features: {
+            instantProfile: true,
+            hybridRag: true,
+            wholeFormReasoning: true,
+            storyDeduplication: true
+        },
+        selectorPatches: {},
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Primary Solve Endpoint
 app.post('/api/v1/solve', rateLimiter, validateSolveRequest, async (req, res) => {
     try {

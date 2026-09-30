@@ -8,13 +8,16 @@
 </head>
 <body>
     <div class="container">
+        <!-- Dynamic Announcement / Maintenance Banner (controlled by remote config) -->
+        <div id="announcementBanner" class="announcement-banner" style="display: none;" role="alert"></div>
+
         <!-- Header -->
         <header class="header">
             <div class="brand">
                 <img src="../../assets/icons/icon48.png" alt="AutoForm" class="brand-logo" width="22" height="22">
                 <div class="brand-text">
                     <h1 class="title">AutoForm</h1>
-                    <span class="version-tag">2.0.1</span>
+                    <span class="version-tag" id="versionTag">2.0.2</span>
                 </div>
             </div>
 
@@ -146,7 +149,7 @@
         <!-- Footer -->
         <footer class="footer">
             <span id="quotaFooterText">150 Qs/hr • Resets hourly</span>
-            <span>Groq • Gemini • OpenRouter • NVIDIA</span>
+            <span id="footerProviders">Connecting...</span>
         </footer>
     </div>
 

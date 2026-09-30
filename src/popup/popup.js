@@ -106,6 +106,25 @@ function showStatus(msg, type = 'info') {
  */
 async function checkServerHealth() {
     chrome.runtime.sendMessage({ action: "CHECK_SERVER_HEALTH" }, (res) => {
+        // Handle announcement / maintenance banners
+        const banner = document.getElementById('announcementBanner');
+        if (banner) {
+            if (res?.maintenance) {
+                banner.textContent = res.maintenanceMessage || 'AutoForm AI is under maintenance. Solving may be temporarily unavailable.';
+                banner.className = 'announcement-banner maintenance';
+                banner.style.display = 'block';
+            } else if (res?.announcement) {
+                banner.textContent = res.announcement;
+                banner.className = 'announcement-banner info';
+                banner.style.display = 'block';
+            } else {
+                banner.style.display = 'none';
+            }
+        }
+
+        // Update footer provider names dynamically
+        const footerProviders = document.getElementById('footerProviders');
+
         if (!chrome.runtime.lastError && res && res.success) {
             connectionPill.className = 'connection-pill status-online';
             const providers = res.data?.activeProviders || [];
@@ -113,11 +132,13 @@ async function checkServerHealth() {
             connectionText.innerText = `${count} Engine${count > 1 ? 's' : ''}`;
             const providerNames = providers.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' • ');
             connectionPill.title = `AI Engines Online: ${providerNames || 'Active'} (Connected to ${res.serverUrl || 'Cloud'})`;
+            if (footerProviders) footerProviders.textContent = providerNames || 'Connected';
         } else {
             connectionPill.className = 'connection-pill status-offline';
             connectionText.innerText = 'Offline';
             connectionPill.title = 'Backend proxy server offline or unreachable';
             if (quotaBadge) quotaBadge.style.display = 'none';
+            if (footerProviders) footerProviders.textContent = 'Offline';
         }
     });
 }

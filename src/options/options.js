@@ -689,3 +689,157 @@ async function handleClearAll() {
     showSaveStatus('Cleared all data');
   }
 }
+
+// ---------------------------------------------------------------------------
+// Tab 4: Server & Connection Settings
+// ---------------------------------------------------------------------------
+
+/**
+ * Loads current server connection status and displays it in the Server tab.
+ */
+function loadServerStatus() {
+    const urlEl = document.getElementById('serverStatusUrl');
+    const healthEl = document.getElementById('serverStatusHealth');
+    const latencyEl = document.getElementById('serverStatusLatency');
+    const providersEl = document.getElementById('serverStatusProviders');
+    const configSourceEl = document.getElementById('serverConfigSource');
+    const lastSyncEl = document.getElementById('serverLastSync');
+
+    if (!urlEl) return; // Tab not in DOM
+
+    // Get remote config status
+    chrome.runtime.sendMessage({ action: "GET_REMOTE_CONFIG" }, (res) => {
+        if (chrome.runtime.lastError || !res) return;
+
+        if (res.serverUrl) {
+            urlEl.textContent = res.serverUrl;
+        }
+
+        if (res.config) {
+            const config = res.config;
+            configSourceEl.textContent = config.activeServerUrl ? 'GitHub Remote Config' : 'Hardcoded Default';
+            if (config.fetchedAt) {
+                const ago = Math.round((Date.now() - config.fetchedAt) / 60000);
+                lastSyncEl.textContent = ago < 1 ? 'Just now' : `${ago}m ago`;
+            }
+        } else {
+            configSourceEl.textContent = 'Hardcoded Default';
+            lastSyncEl.textContent = 'Never';
+        }
+    });
+
+    // Test connection
+    const startTime = Date.now();
+    chrome.runtime.sendMessage({ action: "TEST_SERVER_CONNECTION" }, (res) => {
+        if (chrome.runtime.lastError || !res) {
+            healthEl.innerHTML = '<span class="status-dot status-dot-offline"></span> Unreachable';
+            latencyEl.textContent = '—';
+            providersEl.textContent = '—';
+            return;
+        }
+
+        if (res.success) {
+            healthEl.innerHTML = '<span class="status-dot status-dot-online"></span> Online';
+            latencyEl.textContent = `${res.latencyMs}ms`;
+            const providers = res.data?.activeProviders || [];
+            providersEl.textContent = providers.length > 0
+                ? providers.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(', ')
+                : 'None configured';
+        } else {
+            healthEl.innerHTML = '<span class="status-dot status-dot-offline"></span> Offline';
+            latencyEl.textContent = res.latencyMs ? `${res.latencyMs}ms (timeout)` : '—';
+            providersEl.textContent = '—';
+        }
+    });
+
+    // Load custom server URL if set
+    chrome.storage.local.get(['customServerUrl'], (stored) => {
+        const input = document.getElementById('customServerUrl');
+        if (input && stored.customServerUrl) {
+            input.value = stored.customServerUrl;
+        }
+    });
+}
+
+// Server Settings Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Load server status when Server tab exists
+    loadServerStatus();
+
+    // Test Connection button
+    const btnTest = document.getElementById('btnTestConnection');
+    if (btnTest) {
+        btnTest.addEventListener('click', () => {
+            const btnText = document.getElementById('btnTestText');
+            if (btnText) btnText.textContent = 'Testing...';
+            btnTest.disabled = true;
+
+            const customUrl = document.getElementById('customServerUrl')?.value?.trim();
+            const msg = customUrl
+                ? { action: "TEST_SERVER_CONNECTION", url: customUrl }
+                : { action: "TEST_SERVER_CONNECTION" };
+
+            chrome.runtime.sendMessage(msg, (res) => {
+                btnTest.disabled = false;
+                if (btnText) btnText.textContent = 'Test Connection';
+
+                if (res && res.success) {
+                    showSaveStatus(`✓ Connected (${res.latencyMs}ms)`);
+                    loadServerStatus();
+                } else {
+                    showSaveStatus(`✕ Failed: ${res?.error || 'Unreachable'}`);
+                }
+            });
+        });
+    }
+
+    // Refresh Config button
+    const btnRefresh = document.getElementById('btnRefreshConfig');
+    if (btnRefresh) {
+        btnRefresh.addEventListener('click', () => {
+            btnRefresh.disabled = true;
+            chrome.runtime.sendMessage({ action: "FORCE_REFRESH_CONFIG" }, (res) => {
+                btnRefresh.disabled = false;
+                if (res && res.success) {
+                    showSaveStatus('Config refreshed ✓');
+                    loadServerStatus();
+                } else {
+                    showSaveStatus('Could not refresh config');
+                }
+            });
+        });
+    }
+
+    // Save Custom Server URL button
+    const btnSave = document.getElementById('btnSaveServerUrl');
+    if (btnSave) {
+        btnSave.addEventListener('click', () => {
+            const url = document.getElementById('customServerUrl')?.value?.trim() || '';
+            chrome.runtime.sendMessage({ action: "SET_CUSTOM_SERVER_URL", url }, (res) => {
+                if (res && res.success) {
+                    showSaveStatus(url ? `Server URL saved: ${res.serverUrl}` : 'Using cloud default ✓');
+                    loadServerStatus();
+                } else {
+                    showSaveStatus('Failed to save URL');
+                }
+            });
+        });
+    }
+
+    // Reset to Cloud Default button
+    const btnReset = document.getElementById('btnResetServerUrl');
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            const input = document.getElementById('customServerUrl');
+            if (input) input.value = '';
+            chrome.runtime.sendMessage({ action: "SET_CUSTOM_SERVER_URL", url: '' }, (res) => {
+                if (res && res.success) {
+                    showSaveStatus('Reset to cloud default ✓');
+                    loadServerStatus();
+                } else {
+                    showSaveStatus('Failed to reset');
+                }
+            });
+        });
+    }
+});
