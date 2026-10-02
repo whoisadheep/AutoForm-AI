@@ -346,7 +346,7 @@
     <script>
         function gradeQuiz() {
             let score = 0;
-            let total = 5; // Grading the 5 objective quiz questions
+            let total = 6; // Grading all 6 quiz questions
             let feedback = [];
 
             // Q2: Gas
@@ -393,6 +393,18 @@
                 feedback.push('✓ Q6 (BST Search Complexity): Correct! (O(log n))');
             } else {
                 feedback.push('✗ Q6 (BST Search Complexity): Incorrect. Expected: O(log n).');
+            }
+
+            // Q7: Process vs Thread
+            const pvt = document.getElementById('processVsThread')?.value || '';
+            const pvtLower = pvt.toLowerCase();
+            const hasProcessConcept = pvtLower.includes('process') || pvtLower.includes('memory') || pvtLower.includes('resource') || pvtLower.includes('isolation') || pvtLower.includes('independent');
+            const hasThreadConcept = pvtLower.includes('thread') || pvtLower.includes('share') || pvtLower.includes('lightweight') || pvtLower.includes('execution');
+            if (pvt.length > 20 && hasProcessConcept && hasThreadConcept && !pvtLower.includes('user safety')) {
+                score++;
+                feedback.push('✓ Q7 (Process vs Thread): Correct! (' + pvt.slice(0, 50) + '...)');
+            } else {
+                feedback.push('✗ Q7 (Process vs Thread): Incomplete or incorrect answer.');
             }
 
             const resultBox = document.getElementById('gradeResult');

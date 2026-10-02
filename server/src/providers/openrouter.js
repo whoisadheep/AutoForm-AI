@@ -77,7 +77,7 @@ class OpenRouterProvider {
                     throw new Error(`OpenRouter timeout after ${this.config.timeoutMs || 15000}ms`);
                 }
                 lastError = err;
-                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('429') && !err.message.includes('rate-limited') && !err.message.includes('unavailable') && !err.message.includes('Provider returned error')) {
+                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('429') && !err.message.includes('rate-limited') && !err.message.includes('unavailable') && !err.message.includes('Provider returned error') && !err.message.includes('safety classifier')) {
                     throw err;
                 }
             } finally {

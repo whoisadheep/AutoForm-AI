@@ -58,12 +58,12 @@ module.exports = {
             name: 'openrouter',
             enabled: parseKeyList(process.env.OPENROUTER_API_KEYS).length > 0,
             keys: parseKeyList(process.env.OPENROUTER_API_KEYS),
-            model: process.env.OPENROUTER_MODEL || 'openrouter/free',
+            model: process.env.OPENROUTER_MODEL || 'liquid/lfm-2.5-2.6b:free',
             fallbackModels: [
-                'openrouter/free',
+                'liquid/lfm-2.5-2.6b:free',
                 'nvidia/nemotron-3-ultra-550b-a55b:free',
                 'nvidia/nemotron-3-super-120b-a12b:free',
-                'liquid/lfm-2.5-2.6b:free'
+                'openrouter/free'
             ],
             endpoint: 'https://openrouter.ai/api/v1/chat/completions',
             timeoutMs: 15000

@@ -72,6 +72,11 @@ function parseAiResponse(rawText, type, choices = []) {
     }
 
     const clean = rawText.replace(/```json|```/g, '').trim();
+    const cleanLower = clean.toLowerCase();
+    if (cleanLower.includes('user safety:') || cleanLower === 'safe' || cleanLower === 'unsafe') {
+        throw new Error('Model returned safety classifier text instead of answer');
+    }
+
     const match = clean.match(/\{[\s\S]*\}/);
 
     if (!match) {
@@ -100,7 +105,11 @@ function parseAiResponse(rawText, type, choices = []) {
     }
 
     if (parsed.answer !== undefined) {
-        return { answer: String(parsed.answer).trim() };
+        const ans = String(parsed.answer).trim();
+        if (ans.toLowerCase().includes('user safety:') || ans.toLowerCase() === 'safe') {
+            throw new Error('Model returned safety classifier text instead of answer');
+        }
+        return { answer: ans };
     }
 
     if (parsed.answers && Array.isArray(parsed.answers)) {

@@ -226,9 +226,8 @@ function setNativeValue(element, value) {
             const descriptor = Object.getOwnPropertyDescriptor(proto || {}, 'value');
             if (descriptor && descriptor.set) {
                 descriptor.set.call(element, value);
-            } else {
-                element.value = value;
             }
+            element.value = value;
         } else {
             element.value = value;
         }
@@ -1001,17 +1000,23 @@ const FormEngine = {
             for (const radio of inputs) {
                 const label = resolveFieldLabel(radio, doc).toLowerCase();
                 const val = (radio.value || '').toLowerCase();
-                if (normalizedAnswers.some(ans => ans === label || label.includes(ans) || ans === val)) {
-                    radio.checked = true;
-                    setNativeValue(radio, radio.value);
-                    if (typeof radio.click === 'function') radio.click();
+                if (normalizedAnswers.some(ans => ans === label || label.includes(ans) || ans === val || val.includes(ans))) {
+                    if (!radio.checked) {
+                        if (typeof radio.click === 'function') radio.click();
+                        if (!radio.checked) radio.checked = true;
+                        radio.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                        radio.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                    }
                     return true;
                 }
             }
             if (inputs.length > 0) {
-                inputs[0].checked = true;
-                setNativeValue(inputs[0], inputs[0].value);
-                if (typeof inputs[0].click === 'function') inputs[0].click();
+                if (!inputs[0].checked) {
+                    if (typeof inputs[0].click === 'function') inputs[0].click();
+                    if (!inputs[0].checked) inputs[0].checked = true;
+                    inputs[0].dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                    inputs[0].dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                }
                 return true;
             }
             return false;
@@ -1024,14 +1029,22 @@ const FormEngine = {
                 const label = resolveFieldLabel(checkbox, doc).toLowerCase();
                 const val = (checkbox.value || '').toLowerCase();
                 const shouldCheck = normalizedAnswers.some(ans => {
-                    return ans === 'yes' || ans === 'true' || ans === label || label.includes(ans) || ans === val;
+                    return ans === 'yes' || ans === 'true' || ans === label || label.includes(ans) || ans === val || val.includes(ans);
                 });
 
-                if (shouldCheck && !checkbox.checked) {
-                    checkbox.checked = true;
-                    setNativeValue(checkbox, checkbox.value);
-                    if (typeof checkbox.click === 'function') checkbox.click();
+                if (shouldCheck) {
+                    if (!checkbox.checked) {
+                        if (typeof checkbox.click === 'function') checkbox.click();
+                        if (!checkbox.checked) checkbox.checked = true;
+                        checkbox.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                        checkbox.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                    }
                     anyChecked = true;
+                } else if (checkbox.checked) {
+                    if (typeof checkbox.click === 'function') checkbox.click();
+                    if (checkbox.checked) checkbox.checked = false;
+                    checkbox.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                    checkbox.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
                 }
             }
             return anyChecked;
