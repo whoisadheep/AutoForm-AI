@@ -59,7 +59,7 @@ class OpenRouterProvider {
                     }
 
                     // If model is rate-limited, unavailable, or not found on free pool, try next candidate
-                    if (res.status === 404 || res.status === 410 || res.status === 429 || errBody.includes('temporarily rate-limited') || errBody.includes('unavailable')) {
+                    if (res.status === 404 || res.status === 410 || res.status === 429 || res.status === 400 || errBody.includes('temporarily rate-limited') || errBody.includes('unavailable') || errBody.includes('Provider returned error')) {
                         console.warn(`[OpenRouter] Model ${model} returned ${res.status}, trying next fallback candidate...`);
                         continue;
                     }
@@ -77,7 +77,7 @@ class OpenRouterProvider {
                     throw new Error(`OpenRouter timeout after ${this.config.timeoutMs || 15000}ms`);
                 }
                 lastError = err;
-                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('429')) {
+                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('429') && !err.message.includes('rate-limited') && !err.message.includes('unavailable') && !err.message.includes('Provider returned error')) {
                     throw err;
                 }
             } finally {

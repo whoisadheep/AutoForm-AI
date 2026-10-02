@@ -61,10 +61,9 @@ module.exports = {
             model: process.env.OPENROUTER_MODEL || 'openrouter/free',
             fallbackModels: [
                 'openrouter/free',
-                'nvidia/nemotron-3.5-lightning:free',
-                'google/gemma-4-26b-a4b-it:free',
-                'minimax/minimax-m3:free',
-                'z-ai/glm-5.2:free'
+                'nvidia/nemotron-3-ultra-550b-a55b:free',
+                'nvidia/nemotron-3-super-120b-a12b:free',
+                'liquid/lfm-2.5-2.6b:free'
             ],
             endpoint: 'https://openrouter.ai/api/v1/chat/completions',
             timeoutMs: 15000
