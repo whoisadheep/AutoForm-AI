@@ -1000,7 +1000,15 @@ const FormEngine = {
             for (const radio of inputs) {
                 const label = resolveFieldLabel(radio, doc).toLowerCase();
                 const val = (radio.value || '').toLowerCase();
-                if (normalizedAnswers.some(ans => ans === label || label.includes(ans) || ans === val || val.includes(ans))) {
+                const isMatch = normalizedAnswers.some(ans => {
+                    if (ans === label || ans === val) return true;
+                    if (ans.length >= 3 && !/^\d+$/.test(ans)) {
+                        return label.includes(ans) || val.includes(ans);
+                    }
+                    return false;
+                });
+
+                if (isMatch) {
                     if (!radio.checked) {
                         if (typeof radio.click === 'function') radio.click();
                         if (!radio.checked) radio.checked = true;
@@ -1029,7 +1037,12 @@ const FormEngine = {
                 const label = resolveFieldLabel(checkbox, doc).toLowerCase();
                 const val = (checkbox.value || '').toLowerCase();
                 const shouldCheck = normalizedAnswers.some(ans => {
-                    return ans === 'yes' || ans === 'true' || ans === label || label.includes(ans) || ans === val || val.includes(ans);
+                    if (ans === 'yes' || ans === 'true') return true;
+                    if (ans === label || ans === val) return true;
+                    if (ans.length >= 3 && !/^\d+$/.test(ans)) {
+                        return label.includes(ans) || val.includes(ans);
+                    }
+                    return false;
                 });
 
                 if (shouldCheck) {
