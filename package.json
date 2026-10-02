@@ -9,6 +9,7 @@
     "test": "node --test server/tests/*.test.js",
     "validate": "node scripts/validate_manifest.js",
     "package": "node scripts/package_extension.js",
+    "testbench": "node testbench/server.js",
     "server:install": "cd server && npm install",
     "server:start": "cd server && npm start",
     "server:dev": "cd server && npm run dev"

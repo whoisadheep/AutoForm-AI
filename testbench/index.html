@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edge-Case Universal Quiz & Form Testbench</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --border: #334155;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --success: #10b981;
+            --error: #ef4444;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 20px;
+        }
+        h1 { margin: 0 0 10px; font-size: 26px; }
+        p.subtitle { color: var(--text-muted); margin: 0; font-size: 14px; }
+        .badge {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.15);
+            color: #818cf8;
+            padding: 4px 10px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .form-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .section-header {
+            font-size: 17px;
+            font-weight: 700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .section-number {
+            background: var(--primary);
+            color: white;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .field-group {
+            margin-bottom: 20px;
+        }
+        label.field-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14.5px;
+        }
+        .helper-text {
+            color: var(--text-muted);
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        input[type="text"], input[type="email"], select, textarea {
+            width: 100%;
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus, input[type="email"]:focus, select:focus, textarea:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        textarea { resize: vertical; min-height: 80px; }
+        fieldset {
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px 16px;
+            margin: 0 0 20px;
+        }
+        legend {
+            font-weight: 600;
+            padding: 0 8px;
+            font-size: 14.5px;
+        }
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        .radio-option, .checkbox-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: #0f172a;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .radio-option:hover, .checkbox-option:hover {
+            border-color: var(--surface-hover);
+            background: #1e293b;
+        }
+        .radio-option input, .checkbox-option input {
+            cursor: pointer;
+            accent-color: var(--primary);
+            width: 16px;
+            height: 16px;
+            margin: 0;
+        }
+        .btn-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 30px;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: var(--primary-hover); }
+        .btn-secondary {
+            background: #334155;
+        }
+        .btn-secondary:hover { background: #475569; }
+        #gradeResult {
+            margin-top: 20px;
+            padding: 16px;
+            border-radius: 8px;
+            display: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="badge">Universal Form Engine Testbench</div>
+            <h1>Universal Edge-Case Quiz & Web Form</h1>
+            <p class="subtitle">This page contains non-Google form elements, custom frameworks, negative questions, multi-select, and deep nesting to test AutoForm AI's Universal Form Engine.</p>
+        </header>
+
+        <form id="quizForm" onsubmit="event.preventDefault(); gradeQuiz();">
+            <!-- SECTION 1: Verified Identity (Profile Autofill Test) -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">1</span>
+                    <span>Applicant Verification (Tests Instant Profile Autofill)</span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="fullName">Full Name</label>
+                    <input type="text" id="fullName" name="applicant_name" placeholder="Your complete legal name" required>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="emailAddr">Email Address</label>
+                    <input type="email" id="emailAddr" name="contact_email" placeholder="example@gmail.com" required>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="universityName">University / College</label>
+                    <input type="text" id="universityName" name="education_institution" placeholder="University or institution name">
+                </div>
+            </div>
+
+            <!-- SECTION 2: Standard Fieldset & Radios (Multiple Choice Trivia) -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">2</span>
+                    <span>Multiple Choice Trivia (Standard Fieldset + Legend)</span>
+                </div>
+                <fieldset>
+                    <legend>What is the primary gas found in Earth's atmosphere?</legend>
+                    <div class="options-list">
+                        <label class="radio-option">
+                            <input type="radio" name="atmosphere_gas" value="Oxygen">
+                            <span>Oxygen</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="atmosphere_gas" value="Nitrogen">
+                            <span>Nitrogen</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="atmosphere_gas" value="Carbon Dioxide">
+                            <span>Carbon Dioxide</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="atmosphere_gas" value="Hydrogen">
+                            <span>Hydrogen</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- SECTION 3: Negative / Trick Question -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">3</span>
+                    <span>Negative "Trick" Question (Tests AI Prompt Inversion Logic)</span>
+                </div>
+                <fieldset>
+                    <legend>Which of the following HTTP status codes is NOT a client-side error?</legend>
+                    <div class="options-list">
+                        <label class="radio-option">
+                            <input type="radio" name="http_error_trick" value="400 Bad Request">
+                            <span>400 Bad Request</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="http_error_trick" value="403 Forbidden">
+                            <span>403 Forbidden</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="http_error_trick" value="502 Bad Gateway">
+                            <span>502 Bad Gateway</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="http_error_trick" value="404 Not Found">
+                            <span>404 Not Found</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- SECTION 4: Native Dropdown Select -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">4</span>
+                    <span>Dropdown Selection (&lt;select&gt; Element)</span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="sortingComplexity">Which sorting algorithm has a worst-case time complexity of O(n²)?</label>
+                    <select id="sortingComplexity" name="sorting_algo">
+                        <option value="">-- Choose an algorithm --</option>
+                        <option value="Merge Sort">Merge Sort</option>
+                        <option value="Quick Sort">Quick Sort</option>
+                        <option value="Bubble Sort">Bubble Sort</option>
+                        <option value="Heap Sort">Heap Sort</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- SECTION 5: Multi-Select Checkboxes -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">5</span>
+                    <span>Multi-Select Checkboxes (Multiple Correct Answers)</span>
+                </div>
+                <fieldset>
+                    <legend>Which of the following numbers are prime numbers? (Select all that apply)</legend>
+                    <div class="options-list">
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="prime_numbers" value="2">
+                            <span>2</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="prime_numbers" value="9">
+                            <span>9</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="prime_numbers" value="13">
+                            <span>13</span>
+                        </label>
+                        <label class="checkbox-option">
+                            <input type="checkbox" name="prime_numbers" value="21">
+                            <span>21</span>
+                        </label>
+                    </div>
+                </fieldset>
+            </div>
+
+            <!-- SECTION 6: Unlabeled Container & Preceding Sibling (Edge-Case Label Resolution) -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">6</span>
+                    <span>Obfuscated Container (Tests 10-Tier Label Cascader)</span>
+                </div>
+                <div class="custom-card-wrapper" style="padding: 10px; border-left: 3px solid #6366f1;">
+                    <span style="font-weight: 600; display: block; margin-bottom: 6px;">What is the worst-case time complexity of searching in a Balanced Binary Search Tree (AVL/Red-Black)?</span>
+                    <!-- Input with NO id and NO 'for' attribute, testing preceding-sibling detection -->
+                    <input type="text" name="bst_search_complexity" placeholder="e.g. O(1), O(n), O(log n)...">
+                </div>
+            </div>
+
+            <!-- SECTION 7: Short Reasoning Essay / Textarea -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">7</span>
+                    <span>Open-Ended Reasoning (Textarea Essay Solver)</span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="processVsThread">Explain the fundamental difference between a Process and a Thread in 1–2 sentences.</label>
+                    <textarea id="processVsThread" name="concurrency_concept" placeholder="State memory space and execution context differences..."></textarea>
+                </div>
+            </div>
+
+            <div class="btn-row">
+                <button type="submit" class="btn">Grade My Quiz</button>
+                <button type="button" class="btn btn-secondary" onclick="document.getElementById('quizForm').reset(); document.getElementById('gradeResult').style.display='none';">Reset All Fields</button>
+            </div>
+
+            <div id="gradeResult"></div>
+        </form>
+    </div>
+
+    <script>
+        function gradeQuiz() {
+            let score = 0;
+            let total = 5; // Grading the 5 objective quiz questions
+            let feedback = [];
+
+            // Q2: Gas
+            const gas = document.querySelector('input[name="atmosphere_gas"]:checked')?.value;
+            if (gas === 'Nitrogen') {
+                score++;
+                feedback.push('✓ Q2 (Atmosphere Gas): Correct! (Nitrogen ~78%)');
+            } else {
+                feedback.push('✗ Q2 (Atmosphere Gas): Incorrect. Expected: Nitrogen.');
+            }
+
+            // Q3: Trick negative HTTP
+            const http = document.querySelector('input[name="http_error_trick"]:checked')?.value;
+            if (http && http.includes('502')) {
+                score++;
+                feedback.push('✓ Q3 (NOT Client-Side Error): Correct! (502 Bad Gateway is 5xx Server-Side)');
+            } else {
+                feedback.push('✗ Q3 (NOT Client-Side Error): Incorrect. Expected: 502 Bad Gateway.');
+            }
+
+            // Q4: Dropdown sorting
+            const sort = document.getElementById('sortingComplexity').value;
+            if (sort === 'Bubble Sort') {
+                score++;
+                feedback.push('✓ Q4 (O(n²) Sort): Correct! (Bubble Sort is O(n²))');
+            } else {
+                feedback.push('✗ Q4 (O(n²) Sort): Incorrect. Expected: Bubble Sort.');
+            }
+
+            // Q5: Primes (2 and 13)
+            const primes = [...document.querySelectorAll('input[name="prime_numbers"]:checked')].map(c => c.value);
+            const isPrimesCorrect = primes.includes('2') && primes.includes('13') && !primes.includes('9') && !primes.includes('21');
+            if (isPrimesCorrect) {
+                score++;
+                feedback.push('✓ Q5 (Prime Numbers): Correct! (2 and 13 selected)');
+            } else {
+                feedback.push('✗ Q5 (Prime Numbers): Partial/Incorrect. Expected 2 and 13 only.');
+            }
+
+            // Q6: BST complexity
+            const bst = document.querySelector('input[name="bst_search_complexity"]')?.value || '';
+            if (bst.toLowerCase().includes('log') || bst.toLowerCase().includes('o(log n)')) {
+                score++;
+                feedback.push('✓ Q6 (BST Search Complexity): Correct! (O(log n))');
+            } else {
+                feedback.push('✗ Q6 (BST Search Complexity): Incorrect. Expected: O(log n).');
+            }
+
+            const resultBox = document.getElementById('gradeResult');
+            resultBox.style.display = 'block';
+            const percentage = Math.round((score / total) * 100);
+            
+            if (percentage >= 80) {
+                resultBox.style.background = 'rgba(16, 185, 129, 0.15)';
+                resultBox.style.color = '#34d399';
+                resultBox.style.border = '1px solid #059669';
+            } else {
+                resultBox.style.background = 'rgba(239, 68, 68, 0.15)';
+                resultBox.style.color = '#f87171';
+                resultBox.style.border = '1px solid #dc2626';
+            }
+
+            resultBox.innerHTML = `<h3>Score: ${score} / ${total} (${percentage}%)</h3>` +
+                '<ul style="margin: 10px 0 0; padding-left: 20px; font-weight: normal; font-size: 13.5px;">' +
+                feedback.map(f => `<li>${f}</li>`).join('') +
+                '</ul>';
+        }
+    </script>
+</body>
+</html>
