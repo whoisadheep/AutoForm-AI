@@ -1981,6 +1981,51 @@ function setFloatingButtonDOM(btn, isSolvingState, count) {
         badge.textContent = String(count);
         btn.appendChild(badge);
     }
+
+    // Subtle in-situ dismiss '✕' button when idle
+    if (!isSolvingState) {
+        const dismissBtn = document.createElement('span');
+        dismissBtn.className = 'autoform-fab-dismiss';
+        dismissBtn.textContent = '✕';
+        dismissBtn.title = 'Dismiss AutoForm for this session';
+        dismissBtn.setAttribute('role', 'button');
+        dismissBtn.setAttribute('aria-label', 'Dismiss AutoForm for this session');
+        dismissBtn.style.cssText = `
+            margin-left: 6px;
+            font-size: 11px;
+            font-weight: 700;
+            opacity: 0.65;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 9999px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+            transition: opacity 0.15s, background-color 0.15s, transform 0.15s;
+        `;
+        dismissBtn.onmouseover = (e) => {
+            e.stopPropagation();
+            dismissBtn.style.opacity = '1';
+            dismissBtn.style.background = 'rgba(255, 255, 255, 0.25)';
+            dismissBtn.style.transform = 'scale(1.15)';
+        };
+        dismissBtn.onmouseout = (e) => {
+            e.stopPropagation();
+            dismissBtn.style.opacity = '0.65';
+            dismissBtn.style.background = 'transparent';
+            dismissBtn.style.transform = 'scale(1)';
+        };
+        dismissBtn.onclick = (e) => {
+            e.stopPropagation();
+            e.preventDefault();
+            btn.style.display = 'none';
+            try {
+                sessionStorage.setItem('autoform_fab_dismissed_' + window.location.host, 'true');
+            } catch (_) {}
+        };
+        btn.appendChild(dismissBtn);
+    }
 }
 
 function updateFloatingButtonState(questionCount) {
@@ -3621,9 +3666,67 @@ function createFloatingButton() {
 }
 
 function checkAndMountFab() {
+    // 1. Session dismissal check
+    try {
+        if (sessionStorage.getItem('autoform_fab_dismissed_' + window.location.host)) {
+            const existingBtn = document.getElementById('ai-floating-btn');
+            if (existingBtn && !isSolving) existingBtn.style.display = 'none';
+            return;
+        }
+    } catch (_) {}
+
+    // 2. Storage preferences check (fabVisibility and excludedDomains)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.get(['fabVisibility', 'excludedDomains'], (data) => {
+            if (chrome.runtime.lastError) return;
+
+            const visibility = data.fabVisibility || 'smart';
+            const existingBtn = document.getElementById('ai-floating-btn');
+
+            if (visibility === 'hidden') {
+                if (existingBtn && !isSolving) existingBtn.style.display = 'none';
+                return;
+            }
+
+            const excluded = data.excludedDomains || [];
+            const currentHost = (window.location.host || '').toLowerCase();
+            if (excluded.some(d => d && (currentHost === d.toLowerCase() || currentHost.endsWith('.' + d.toLowerCase())))) {
+                if (existingBtn && !isSolving) existingBtn.style.display = 'none';
+                return;
+            }
+
+            if (visibility === 'dedicated_only') {
+                const adapter = getActiveFormAdapter();
+                const isDedicated = adapter && (adapter.name === 'Google Forms' || adapter.name === 'Greenhouse' || adapter.name === 'Lever');
+                if (!isDedicated) {
+                    if (existingBtn && !isSolving) existingBtn.style.display = 'none';
+                    return;
+                }
+            }
+
+            const questions = getQuestions();
+            if (existingBtn) {
+                if (!isSolving) {
+                    if (questions.length > 0) {
+                        existingBtn.style.display = 'flex';
+                        updateFloatingButtonState(questions.length);
+                    } else {
+                        existingBtn.style.display = 'none';
+                    }
+                }
+                return;
+            }
+
+            if (questions && questions.length > 0) {
+                createFloatingButton();
+            }
+        });
+        return;
+    }
+
+    // Fallback if chrome.storage is not available
     const questions = getQuestions();
     const existingBtn = document.getElementById('ai-floating-btn');
-
     if (existingBtn) {
         if (!isSolving) {
             if (questions.length > 0) {

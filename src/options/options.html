@@ -486,6 +486,38 @@
                 </div>
             </section>
 
+            <!-- Form Detection & Excluded Sites Card -->
+            <section class="card">
+                <div class="section-title-row">
+                    <h2>Form Detection & Excluded Websites</h2>
+                    <span class="card-subtitle">Control where AutoForm AI displays the floating action button and automatically detects forms.</span>
+                </div>
+                
+                <div class="input-group">
+                    <label for="optionsFabVisibility">Floating Button Display Mode</label>
+                    <select id="optionsFabVisibility" class="input" style="padding: 8px 12px; border-radius: 8px; border: 1px solid var(--border-medium); background: var(--bg-card); color: var(--text-primary); font-size: 13px;">
+                        <option value="smart">Smart (Verified Forms Only — ignores search bars & chat boxes)</option>
+                        <option value="dedicated_only">Google Forms & Job ATS Only (boards.greenhouse.io, jobs.lever.co, etc.)</option>
+                        <option value="hidden">Hidden Everywhere (Activate via Alt+Shift+F or extension popup)</option>
+                    </select>
+                </div>
+
+                <div class="input-group" style="margin-top: 16px;">
+                    <label for="newExcludedDomain">Add Excluded Website Domain</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" id="newExcludedDomain" placeholder="e.g. customsite.com" style="flex: 1;">
+                        <button id="btnAddExcludedDomain" class="btn btn-primary btn-small" type="button">Add Domain</button>
+                    </div>
+                </div>
+
+                <div style="margin-top: 12px;">
+                    <span style="font-size: 12px; font-weight: 600; color: var(--text-secondary);">Excluded Domains:</span>
+                    <div id="excludedDomainsList" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
+                        <!-- Injected dynamically -->
+                    </div>
+                </div>
+            </section>
+
             <!-- How It Works Info Card -->
             <section class="card server-info-card">
                 <div class="section-title-row">

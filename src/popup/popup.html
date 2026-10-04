@@ -52,6 +52,17 @@
             <span id="questionBadge" class="badge" style="display: none;">0 Qs</span>
         </section>
 
+        <!-- Site Detection / Exclusion Bar -->
+        <div id="siteExclusionRow" class="site-exclusion-row" style="display: none;">
+            <div class="site-exclusion-info">
+                <span id="siteStatusDot" class="site-status-dot site-dot-active"></span>
+                <span id="siteExclusionHost" class="site-host-name">example.com</span>
+            </div>
+            <button id="siteExclusionBtn" class="site-exclusion-btn" type="button" title="Toggle AutoForm detection on this domain">
+                Disable on this site
+            </button>
+        </div>
+
         <!-- Action Buttons Group -->
         <div class="action-buttons-group">
             <button id="solveBtn" class="btn btn-primary" disabled aria-label="Fill Current Form">
@@ -104,6 +115,20 @@
                     <input type="checkbox" id="previewBeforeFill" checked>
                     <span class="slider"></span>
                 </label>
+            </div>
+
+            <div class="input-group">
+                <label for="fabVisibilitySelect" class="label">Floating AI Button</label>
+                <div class="select-wrapper">
+                    <select id="fabVisibilitySelect" class="select">
+                        <option value="smart" selected>Smart (Verified Forms Only)</option>
+                        <option value="dedicated_only">Google Forms & Job ATS Only</option>
+                        <option value="hidden">Hidden (Shortcut & Popup Only)</option>
+                    </select>
+                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polyline points="6 9 12 15 18 9"/>
+                    </svg>
+                </div>
             </div>
 
             <div class="input-group">

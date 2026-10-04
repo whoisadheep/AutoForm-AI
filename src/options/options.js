@@ -1108,4 +1108,100 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+
+    // Form Detection & Excluded Domains Controls
+    loadFormDetectionSettings();
+
+    const visibilitySelect = document.getElementById('optionsFabVisibility');
+    if (visibilitySelect) {
+        visibilitySelect.addEventListener('change', () => {
+            chrome.storage.local.set({ fabVisibility: visibilitySelect.value }, () => {
+                showSaveStatus('Display mode updated ✓');
+            });
+        });
+    }
+
+    const btnAddDomain = document.getElementById('btnAddExcludedDomain');
+    const inputDomain = document.getElementById('newExcludedDomain');
+    if (btnAddDomain && inputDomain) {
+        const handleAdd = () => {
+            const raw = inputDomain.value.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+            if (!raw) return;
+            chrome.storage.local.get(['excludedDomains'], (stored) => {
+                const list = stored.excludedDomains || [];
+                if (!list.includes(raw)) {
+                    list.push(raw);
+                    chrome.storage.local.set({ excludedDomains: list }, () => {
+                        inputDomain.value = '';
+                        renderExcludedDomains(list);
+                        showSaveStatus(`Added ${raw} to excluded sites ✓`);
+                    });
+                } else {
+                    showSaveStatus(`${raw} is already in the list`);
+                }
+            });
+        };
+        btnAddDomain.addEventListener('click', handleAdd);
+        inputDomain.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleAdd();
+            }
+        });
+    }
 });
+
+// ---------------------------------------------------------------------------
+// Form Detection & Excluded Domains Management
+// ---------------------------------------------------------------------------
+
+function loadFormDetectionSettings() {
+    const visibilitySelect = document.getElementById('optionsFabVisibility');
+    const domainsContainer = document.getElementById('excludedDomainsList');
+    if (!visibilitySelect || !domainsContainer) return;
+
+    chrome.storage.local.get(['fabVisibility', 'excludedDomains'], (data) => {
+        if (data.fabVisibility) {
+            visibilitySelect.value = data.fabVisibility;
+        }
+        renderExcludedDomains(data.excludedDomains || []);
+    });
+}
+
+function renderExcludedDomains(domains) {
+    const container = document.getElementById('excludedDomainsList');
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (!domains || domains.length === 0) {
+        container.innerHTML = '<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">No custom excluded domains (defaults like YouTube, ChatGPT, and Google Search are protected automatically).</span>';
+        return;
+    }
+
+    domains.forEach(d => {
+        const pill = document.createElement('span');
+        pill.style.cssText = 'display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; background: var(--bg-surface); border: 1px solid var(--border-medium); border-radius: 6px; font-size: 12px; font-family: monospace; color: var(--text-primary);';
+        
+        const text = document.createElement('span');
+        text.textContent = d;
+        pill.appendChild(text);
+
+        const removeBtn = document.createElement('span');
+        removeBtn.textContent = '✕';
+        removeBtn.style.cssText = 'cursor: pointer; opacity: 0.6; font-size: 11px; font-weight: bold; margin-left: 2px;';
+        removeBtn.title = `Remove ${d} from excluded list`;
+        removeBtn.onmouseover = () => removeBtn.style.opacity = '1';
+        removeBtn.onmouseout = () => removeBtn.style.opacity = '0.6';
+        removeBtn.onclick = () => {
+            chrome.storage.local.get(['excludedDomains'], (stored) => {
+                const updated = (stored.excludedDomains || []).filter(item => item !== d);
+                chrome.storage.local.set({ excludedDomains: updated }, () => {
+                    renderExcludedDomains(updated);
+                    showSaveStatus(`Removed ${d}`);
+                });
+            });
+        };
+        pill.appendChild(removeBtn);
+        container.appendChild(pill);
+    });
+}

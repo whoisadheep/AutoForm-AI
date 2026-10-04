@@ -32,6 +32,12 @@ const quotaCount = document.getElementById('quotaCount');
 const quotaFooterText = document.getElementById('quotaFooterText');
 const memoryCountEl = document.getElementById('memoryCount');
 const openMemoryBtn = document.getElementById('openMemoryBtn');
+const fabVisibilitySelect = document.getElementById('fabVisibilitySelect');
+const siteExclusionRow = document.getElementById('siteExclusionRow');
+const siteExclusionHost = document.getElementById('siteExclusionHost');
+const siteExclusionBtn = document.getElementById('siteExclusionBtn');
+const siteStatusDot = document.getElementById('siteStatusDot');
+let currentTabHost = '';
 let progressPollTimer = null;
 
 /**
@@ -212,6 +218,7 @@ function analyzeActiveTab() {
         const url = activeTab.url || '';
         // Ignore internal browser system pages
         if (url && (url.startsWith('chrome://') || url.startsWith('chrome-extension://') || url.startsWith('edge://') || url.startsWith('about:'))) {
+            if (siteExclusionRow) siteExclusionRow.style.display = 'none';
             formStatusTitle.innerText = "System Page";
             formStatusDesc.innerText = "Open a form or job application to use AutoForm";
             solveBtn.disabled = true;
@@ -221,6 +228,35 @@ function analyzeActiveTab() {
             return;
         }
 
+        try {
+            if (url.startsWith('http')) {
+                currentTabHost = new URL(url).hostname;
+                updateSiteExclusionUI(currentTabHost);
+            } else {
+                if (siteExclusionRow) siteExclusionRow.style.display = 'none';
+            }
+        } catch (_) {
+            if (siteExclusionRow) siteExclusionRow.style.display = 'none';
+        }
+
+        // Check if current site is excluded
+        chrome.storage.local.get(['excludedDomains'], (data) => {
+            const excluded = data.excludedDomains || [];
+            const isExcluded = currentTabHost && excluded.some(d => d && (currentTabHost.toLowerCase() === d.toLowerCase() || currentTabHost.toLowerCase().endsWith('.' + d.toLowerCase())));
+
+            if (isExcluded) {
+                formStatusTitle.innerText = "Site Disabled";
+                formStatusDesc.innerText = `AutoForm is paused on ${currentTabHost}`;
+                solveBtn.disabled = true;
+                if (instantAutofillBtn) instantAutofillBtn.disabled = true;
+                questionBadge.style.display = 'none';
+                hidePopupProgress();
+                return;
+            }
+
+            querySolverStatus();
+        });
+
         function querySolverStatus(retried = false) {
             chrome.tabs.sendMessage(activeTab.id, { action: "GET_SOLVER_STATUS" }, (res) => {
                 if (chrome.runtime.lastError) {
@@ -229,7 +265,7 @@ function analyzeActiveTab() {
                         // Attempt on-demand script injection
                         scriptingApi.executeScript({
                             target: { tabId: activeTab.id },
-                            files: ['src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
+                            files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
                         }).then(() => {
                             setTimeout(() => querySolverStatus(true), 350);
                         }).catch(() => {
@@ -272,8 +308,33 @@ function analyzeActiveTab() {
             questionBadge.style.display = 'none';
             hidePopupProgress();
         }
+    });
+}
 
-        querySolverStatus();
+/**
+ * Updates site exclusion bar state for active tab hostname.
+ * @param {string} hostname 
+ */
+function updateSiteExclusionUI(hostname) {
+    if (!siteExclusionRow || !siteExclusionHost || !siteExclusionBtn || !hostname) return;
+    siteExclusionRow.style.display = 'flex';
+    siteExclusionHost.textContent = hostname;
+
+    chrome.storage.local.get(['excludedDomains'], (data) => {
+        const excluded = data.excludedDomains || [];
+        const isExcluded = excluded.some(d => d && (hostname.toLowerCase() === d.toLowerCase() || hostname.toLowerCase().endsWith('.' + d.toLowerCase())));
+
+        if (isExcluded) {
+            if (siteStatusDot) siteStatusDot.className = 'site-status-dot site-dot-disabled';
+            siteExclusionBtn.textContent = 'Enable AutoForm';
+            siteExclusionBtn.className = 'site-exclusion-btn is-disabled';
+            siteExclusionBtn.title = 'Re-enable AutoForm detection on this domain';
+        } else {
+            if (siteStatusDot) siteStatusDot.className = 'site-status-dot site-dot-active';
+            siteExclusionBtn.textContent = 'Disable on this site';
+            siteExclusionBtn.className = 'site-exclusion-btn';
+            siteExclusionBtn.title = 'Disable AutoForm floating button and detection on this domain';
+        }
     });
 }
 
@@ -342,11 +403,13 @@ document.addEventListener('DOMContentLoaded', () => {
         'tone',
         'customContext',
         'fillPacing',
-        'previewBeforeFill'
+        'previewBeforeFill',
+        'fabVisibility'
     ], (stored) => {
         if (stored.tone) toneSelect.value = stored.tone;
         if (stored.customContext) customContext.value = stored.customContext;
         if (stored.fillPacing && pacingSelect) pacingSelect.value = stored.fillPacing;
+        if (stored.fabVisibility && fabVisibilitySelect) fabVisibilitySelect.value = stored.fabVisibility;
         if (previewBeforeFill) {
             // Default to true if not set
             previewBeforeFill.checked = stored.previewBeforeFill !== false;
@@ -366,6 +429,12 @@ if (previewBeforeFill) {
     });
 }
 
+if (fabVisibilitySelect) {
+    fabVisibilitySelect.addEventListener('change', () => {
+        chrome.storage.local.set({ fabVisibility: fabVisibilitySelect.value });
+    });
+}
+
 toneSelect.addEventListener('change', () => {
     chrome.storage.local.set({ tone: toneSelect.value });
 });
@@ -379,6 +448,32 @@ if (pacingSelect) {
 customContext.addEventListener('input', () => {
     chrome.storage.local.set({ customContext: customContext.value.trim() });
 });
+
+// Site Exclusion Toggle Button Handler
+if (siteExclusionBtn) {
+    siteExclusionBtn.addEventListener('click', () => {
+        if (!currentTabHost) return;
+        chrome.storage.local.get(['excludedDomains'], (data) => {
+            let excluded = data.excludedDomains || [];
+            const isExcluded = excluded.some(d => d && (currentTabHost.toLowerCase() === d.toLowerCase() || currentTabHost.toLowerCase().endsWith('.' + d.toLowerCase())));
+
+            if (isExcluded) {
+                // Remove from excluded list
+                excluded = excluded.filter(d => d && d.toLowerCase() !== currentTabHost.toLowerCase());
+                showStatus(`Re-enabled AutoForm on ${currentTabHost}`, 'success');
+            } else {
+                // Add to excluded list
+                if (!excluded.includes(currentTabHost)) excluded.push(currentTabHost);
+                showStatus(`Disabled AutoForm on ${currentTabHost}`, 'info');
+            }
+
+            chrome.storage.local.set({ excludedDomains: excluded }, () => {
+                updateSiteExclusionUI(currentTabHost);
+                analyzeActiveTab();
+            });
+        });
+    });
+}
 
 // Click status card to trigger an immediate re-scan
 const formStatusCard = document.getElementById('formStatusCard');

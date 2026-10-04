@@ -35,7 +35,7 @@ AutoForm-AI/
 │   ├── Dockerfile
 │   ├── railway.json / render.yaml
 │   ├── .env.example
-│   ├── tests/                     # Automated test suites (130 tests, 30 suites)
+│   ├── tests/                     # Automated test suites (134 tests, 31 suites)
 │   │   ├── apiSecurity.test.js
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js
@@ -199,6 +199,6 @@ AutoForm-AI/
 3. **Resilient Selectors:** Maintain ARIA fallbacks (`div[role="listitem"]`, `[role="heading"]`, `[role="radio"]`, `[role="checkbox"]`) instead of relying solely on obfuscated classes.
 4. **Mobile & Viewport Standards:** Keep input font sizes $\ge 16$px on screens $\le 600$px to prevent iOS Safari viewport zooming. Maintain $\ge 44$px touch targets.
 5. **Always Run Validation & Tests:**
-   - `npm test`: Must pass 100% (130 tests, 30 test suites).
+   - `npm test`: Must pass 100% (134 tests, 31 test suites).
    - `npm run validate`: Manifest and all referenced files must validate successfully.
    - `npm run package`: Generates release bundles for Chrome, Edge, and Firefox AMO in `dist/`.

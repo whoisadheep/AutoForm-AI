@@ -12,6 +12,8 @@ const {
     humanizeFieldName,
     resolveFieldLabel,
     setNativeValue,
+    isNoiseDomain,
+    isNonFormField,
     GoogleFormsAdapter,
     GreenhouseAdapter,
     LeverAdapter,
@@ -750,5 +752,144 @@ describe('FormAdapters — FormEngine Orchestrator', () => {
         assert.ok(Array.isArray(choices));
         assert.strictEqual(choices.length, 3);
         assert.deepStrictEqual(choices, ['Andhra Pradesh', 'Karnataka', 'Maharashtra']);
+    });
+});
+
+// ---------------------------------------------------------------------------
+// 6. Non-Form & Search Bar Suppression Heuristic Tests
+// ---------------------------------------------------------------------------
+
+describe('FormAdapters — Non-Form & Search Bar Suppression Heuristics', () => {
+    test('isNoiseDomain correctly identifies non-form websites', () => {
+        assert.strictEqual(isNoiseDomain('https://www.youtube.com/watch?v=dQw4w9WgXcQ'), true);
+        assert.strictEqual(isNoiseDomain('https://chatgpt.com/c/12345'), true);
+        assert.strictEqual(isNoiseDomain('https://claude.ai/chat/abc'), true);
+        assert.strictEqual(isNoiseDomain('https://www.google.com/search?q=test'), true);
+        assert.strictEqual(isNoiseDomain('https://twitter.com/home'), true);
+        assert.strictEqual(isNoiseDomain('https://x.com/home'), true);
+        assert.strictEqual(isNoiseDomain('https://github.com/whoisadheep/AutoForm-AI'), true);
+        assert.strictEqual(isNoiseDomain('https://reddit.com/r/webdev'), true);
+
+        // Does NOT flag legitimate job boards or forms
+        assert.strictEqual(isNoiseDomain('https://docs.google.com/forms/d/e/123/viewform'), false);
+        assert.strictEqual(isNoiseDomain('https://careers.google.com/jobs/results/'), true); // google domain
+        assert.strictEqual(isNoiseDomain('https://boards.greenhouse.io/acme/jobs/123'), false);
+        assert.strictEqual(isNoiseDomain('https://jobs.lever.co/stripe/123'), false);
+        assert.strictEqual(isNoiseDomain('https://myworkdayjobs.com/careers'), false);
+        assert.strictEqual(isNoiseDomain('https://example.com/apply'), false);
+    });
+
+    test('isNonFormField correctly identifies search bars, chat prompts, and comments', () => {
+        // Search inputs
+        const searchInput = new MockElement({ tagName: 'input', type: 'search', placeholder: 'Search...' });
+        assert.strictEqual(isNonFormField(searchInput), true);
+
+        const youtubeSearch = new MockElement({ tagName: 'input', id: 'search', name: 'search_query', placeholder: 'Search' });
+        assert.strictEqual(isNonFormField(youtubeSearch), true);
+
+        const googleSearch = new MockElement({ tagName: 'input', name: 'q', attributes: { role: 'searchbox' } });
+        assert.strictEqual(isNonFormField(googleSearch), true);
+
+        // Chat prompts & LLMs
+        const chatGptPrompt = new MockElement({
+            tagName: 'textarea',
+            id: 'prompt-textarea',
+            placeholder: 'Message ChatGPT',
+            attributes: { 'aria-label': 'Prompt' }
+        });
+        assert.strictEqual(isNonFormField(chatGptPrompt), true);
+
+        const claudePrompt = new MockElement({
+            tagName: 'div',
+            placeholder: 'Reply to Claude...',
+            attributes: { class: 'composer-parent', 'data-placeholder': 'Ask Claude anything' }
+        });
+        assert.strictEqual(isNonFormField(claudePrompt), true);
+
+        // Social comment & tweet boxes
+        const tweetBox = new MockElement({ tagName: 'textarea', placeholder: 'What is happening?!' });
+        assert.strictEqual(isNonFormField(tweetBox), true);
+
+        const commentBox = new MockElement({ tagName: 'textarea', placeholder: 'Leave a comment...' });
+        assert.strictEqual(isNonFormField(commentBox), true);
+
+        // Elements inside search / nav containers
+        const header = new MockElement({ tagName: 'header' });
+        const headerInput = new MockElement({ tagName: 'input', type: 'text', placeholder: 'Find in docs' });
+        header.appendChild(headerInput);
+        assert.strictEqual(isNonFormField(headerInput), true);
+
+        // Legitimate form fields should NOT be flagged
+        const nameInput = new MockElement({ tagName: 'input', type: 'text', id: 'applicant_name', placeholder: 'Full Name' });
+        assert.strictEqual(isNonFormField(nameInput), false);
+
+        const emailInput = new MockElement({ tagName: 'input', type: 'email', id: 'user_email', placeholder: 'Email Address' });
+        assert.strictEqual(isNonFormField(emailInput), false);
+
+        const phoneInput = new MockElement({ tagName: 'input', type: 'tel', id: 'phone', placeholder: 'Mobile Number' });
+        assert.strictEqual(isNonFormField(phoneInput), false);
+
+        const resumeInput = new MockElement({ tagName: 'input', type: 'file', id: 'resume_upload', attributes: { 'aria-label': 'Upload Resume' } });
+        assert.strictEqual(isNonFormField(resumeInput), false);
+    });
+
+    test('GenericJobFormAdapter.canHandle rejects pages with only search or chat inputs', () => {
+        // Page with only a YouTube-style search bar
+        const docSearchOnly = new MockDocument();
+        const nav = new MockElement({ tagName: 'nav' });
+        const s = new MockElement({ tagName: 'input', id: 'search', name: 'search_query' });
+        nav.appendChild(s);
+        docSearchOnly.body.appendChild(nav);
+
+        assert.strictEqual(GenericJobFormAdapter.canHandle(docSearchOnly, 'https://www.youtube.com'), false);
+        assert.deepStrictEqual(GenericJobFormAdapter.getQuestions(docSearchOnly), []);
+
+        // Page with only a ChatGPT-style prompt textarea
+        const docChatOnly = new MockDocument();
+        const chatContainer = new MockElement({ tagName: 'div', attributes: { class: 'composer' } });
+        const prompt = new MockElement({ tagName: 'textarea', id: 'prompt-textarea', placeholder: 'Message ChatGPT' });
+        chatContainer.appendChild(prompt);
+        docChatOnly.body.appendChild(chatContainer);
+
+        assert.strictEqual(GenericJobFormAdapter.canHandle(docChatOnly, 'https://chatgpt.com'), false);
+        assert.deepStrictEqual(GenericJobFormAdapter.getQuestions(docChatOnly), []);
+
+        // Page with only a lone text input (under 2 inputs without a form)
+        const docLoneInput = new MockDocument();
+        const loneInput = new MockElement({ tagName: 'input', type: 'text', placeholder: 'Enter single value' });
+        docLoneInput.body.appendChild(loneInput);
+
+        assert.strictEqual(GenericJobFormAdapter.canHandle(docLoneInput, 'https://example.com/single'), false);
+        assert.deepStrictEqual(GenericJobFormAdapter.getQuestions(docLoneInput), []);
+    });
+
+    test('GenericJobFormAdapter.canHandle accepts genuine forms with multiple fields or resume upload', () => {
+        // Multi-field form in <form>
+        const docForm = new MockDocument();
+        const form = new MockElement({ tagName: 'form' });
+        const name = new MockElement({ tagName: 'input', type: 'text', placeholder: 'Full Name' });
+        const email = new MockElement({ tagName: 'input', type: 'email', placeholder: 'Email' });
+        form.appendChild(name);
+        form.appendChild(email);
+        docForm.body.appendChild(form);
+
+        assert.strictEqual(GenericJobFormAdapter.canHandle(docForm, 'https://example.com/apply'), true);
+        const questions = GenericJobFormAdapter.getQuestions(docForm);
+        assert.strictEqual(questions.length, 2);
+
+        // Resume upload input alone
+        const docResume = new MockDocument();
+        const resumeInput = new MockElement({
+            tagName: 'input',
+            type: 'file',
+            name: 'applicant_resume',
+            attributes: { 'aria-label': 'Upload your CV / Resume' }
+        });
+        docResume.body.appendChild(resumeInput);
+
+        assert.strictEqual(GenericJobFormAdapter.canHandle(docResume, 'https://example.com/quick-apply'), true);
+        const resumeQs = GenericJobFormAdapter.getQuestions(docResume);
+        assert.strictEqual(resumeQs.length, 1);
+        assert.strictEqual(resumeQs[0].type, 'file_upload');
     });
 });

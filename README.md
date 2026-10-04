@@ -97,7 +97,7 @@ AutoForm-AI/
 │   ├── render.yaml                # 1-click Render deploy template
 │   ├── railway.json               # 1-click Railway deploy template
 │   ├── .env.example               # Server environment template
-│   ├── tests/                     # Automated test suites (130 tests, 30 suites)
+│   ├── tests/                     # Automated test suites (134 tests, 31 suites)
 │   │   ├── apiSecurity.test.js    # Security headers & /config endpoint tests
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js   # Universal Form Engine unit tests
@@ -230,7 +230,7 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 - **Run Server Resilience & Memory RAG Test Suite:**
   ```bash
   npm test
-  # 130 tests across 30 suites passing 100%
+  # 134 tests across 31 suites passing 100%
   ```
 - **Validate extension manifest & assets:**
   ```bash

@@ -656,6 +656,125 @@ const LeverAdapter = {
 // 5. Generic Web Form / Job Board Adapter (Ashby, Workday, BambooHR, Standard HTML)
 // ---------------------------------------------------------------------------
 
+/**
+ * Fast-path check for noisy non-form domains (search engines, video streaming, AI chatbots, social media).
+ * Prevents unnecessary DOM queries and UI injection on high-traffic browsing destinations.
+ * @param {string} url 
+ * @returns {boolean}
+ */
+function isNoiseDomain(url = '') {
+    if (!url) return false;
+    try {
+        if (url.includes('docs.google.com/forms')) return false;
+        const parsed = url.startsWith('http') ? new URL(url) : null;
+        const hostname = (parsed ? parsed.hostname : url).toLowerCase().replace(/:\d+$/, '');
+        const noiseHosts = [
+            'youtube.com',
+            'chatgpt.com',
+            'chat.openai.com',
+            'claude.ai',
+            'perplexity.ai',
+            'deepseek.com',
+            'poe.com',
+            'copilot.microsoft.com',
+            'gemini.google.com',
+            'google.com',
+            'bing.com',
+            'duckduckgo.com',
+            'yahoo.com',
+            'baidu.com',
+            'twitter.com',
+            'x.com',
+            'reddit.com',
+            'facebook.com',
+            'instagram.com',
+            'tiktok.com',
+            'threads.net',
+            'twitch.tv',
+            'netflix.com',
+            'vimeo.com',
+            'spotify.com',
+            'github.com',
+            'gitlab.com',
+            'stackoverflow.com',
+            'discord.com',
+            'slack.com',
+            'whatsapp.com'
+        ];
+        return noiseHosts.some(h => hostname === h || hostname.endsWith('.' + h));
+    } catch (_) {
+        return false;
+    }
+}
+
+/**
+ * Identifies whether an input element is a search bar, AI prompt, comment box,
+ * navigation element, or interactive widget that is NOT a genuine form field.
+ * @param {HTMLElement} input 
+ * @returns {boolean}
+ */
+function isNonFormField(input) {
+    if (!input) return true;
+
+    // 1. Explicit search input types, buttons, passwords, hidden
+    const type = (input.type || '').toLowerCase();
+    if (type === 'search' || type === 'password' || type === 'submit' || type === 'button' || type === 'reset' || type === 'hidden' || type === 'image') {
+        return true;
+    }
+
+    // 2. ARIA roles indicating search or navigation
+    const role = (input.getAttribute && input.getAttribute('role')) || '';
+    if (role === 'search' || role === 'searchbox') {
+        return true;
+    }
+
+    // 3. Parent container heuristics
+    if (input.closest) {
+        // Nav / header / search containers
+        if (input.closest('header, nav, footer, aside, [role="navigation"], [role="banner"], [role="search"], .search-box, .search-form, .searchbar, #search, #search-form, ytd-searchbox, ytd-masthead')) {
+            return true;
+        }
+        // AI Chat / LLM Prompt / Social composer containers
+        if (input.closest('[data-testid*="conversation"], [data-testid*="chat"], [class*="chat-input"], [class*="composer"], form.chat-input, [class*="comment-box"], [class*="comment-form"], [class*="reply-box"], #comments, #comment-section')) {
+            return true;
+        }
+        // Code editor surfaces
+        if (input.closest('.monaco-editor, .ace_editor, .CodeMirror')) {
+            return true;
+        }
+    }
+
+    // 4. Attribute heuristics (name, id, aria-label, placeholder)
+    const rawAttrs = [
+        input.name,
+        input.id,
+        input.getAttribute ? input.getAttribute('aria-label') : '',
+        input.placeholder,
+        input.title
+    ].filter(Boolean);
+
+    for (const raw of rawAttrs) {
+        const val = String(raw).toLowerCase().trim();
+        // Exact search keywords
+        if (/^(?:q|query|s|search|search_query|k|keyword|term|filter|find)$/i.test(val)) {
+            return true;
+        }
+        if (/(?:^|\b)(?:searchbox|search_query)(?:\b|$)/i.test(val)) {
+            return true;
+        }
+        // Chatbot / Prompt inputs (ChatGPT, Claude, etc.)
+        if (/prompt|message\s*chatgpt|ask\s*(?:a\s*)?question|ask\s*anything|chat\s*with/i.test(val)) {
+            return true;
+        }
+        // Social comments / tweet composer
+        if (/what(?:'s|\s+is)\s+happening|post\s+(?:your\s+)?reply|leave\s+a\s+comment|write\s+a\s+comment/i.test(val)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 const GenericJobFormAdapter = {
     name: 'Generic Form / Job Board',
 
@@ -663,10 +782,48 @@ const GenericJobFormAdapter = {
         if (!doc) return false;
         if (url.includes('docs.google.com/forms')) return false;
 
-        const fillableInputs = doc.querySelectorAll(
+        // Fast-path exclusion for noise domains (YouTube, ChatGPT, Google Search, etc.)
+        if (isNoiseDomain(url)) return false;
+
+        const allInputs = doc.querySelectorAll(
             'input:not([type="hidden"]):not([type="submit"]):not([type="button"]):not([type="reset"]):not([type="image"]), select, textarea, [role="combobox"], [aria-haspopup="listbox"], .multiselect'
         );
-        return fillableInputs.length >= 1;
+
+        // Filter out search bars, chat prompts, comments, navigation inputs
+        const validInputs = [...allInputs].filter(el => !isNonFormField(el));
+        if (validInputs.length === 0) return false;
+
+        // Signature A: Resume or CV file upload field present -> job application
+        const hasResumeUpload = validInputs.some(el => {
+            if ((el.type || '').toLowerCase() === 'file') {
+                const text = (el.name || '') + ' ' + (el.id || '') + ' ' + (el.getAttribute?.('aria-label') || '');
+                return /resume|cv|curriculum[\s_-]*vitae/i.test(text);
+            }
+            return false;
+        });
+        if (hasResumeUpload) return true;
+
+        // Signature B: Form has an explicit <form> or .application-form container with >= 2 genuine fields
+        const forms = doc.querySelectorAll('form, .application-form, #job-application, [data-form="application"]');
+        for (const f of forms) {
+            const role = f.getAttribute ? f.getAttribute('role') : '';
+            if (role === 'search' || (f.id && f.id.includes('search')) || (f.className && typeof f.className === 'string' && f.className.includes('search'))) {
+                continue;
+            }
+            const fieldsInForm = validInputs.filter(el => {
+                if (f.contains) return f.contains(el);
+                let p = el.parentElement;
+                while (p) {
+                    if (p === f) return true;
+                    p = p.parentElement;
+                }
+                return false;
+            });
+            if (fieldsInForm.length >= 2) return true;
+        }
+
+        // Signature C: General page with >= 3 distinct genuine fields
+        return validInputs.length >= 3;
     },
 
     getFormTitle(doc) {
@@ -699,6 +856,7 @@ const GenericJobFormAdapter = {
 
         inputs.forEach(input => {
             if (processedElements.has(input)) return;
+            if (isNonFormField(input)) return;
 
             const inputType = (input.type || '').toLowerCase();
             const tagName = (input.tagName || '').toLowerCase();
@@ -883,6 +1041,10 @@ const GenericJobFormAdapter = {
             });
         });
 
+        // Standalone single field (e.g. lone search or chat input) is not a form unless it is a resume upload
+        if (questions.length < 2 && !questions.some(q => q.type === 'file_upload')) {
+            return [];
+        }
         return questions;
     },
 
@@ -1319,6 +1481,8 @@ if (typeof module !== 'undefined' && module.exports) {
         humanizeFieldName,
         resolveFieldLabel,
         setNativeValue,
+        isNoiseDomain,
+        isNonFormField,
         GoogleFormsAdapter,
         GreenhouseAdapter,
         LeverAdapter,
@@ -1333,4 +1497,6 @@ if (typeof globalThis !== 'undefined') {
     globalThis.GreenhouseAdapter = GreenhouseAdapter;
     globalThis.LeverAdapter = LeverAdapter;
     globalThis.GenericJobFormAdapter = GenericJobFormAdapter;
+    globalThis.isNoiseDomain = isNoiseDomain;
+    globalThis.isNonFormField = isNonFormField;
 }
