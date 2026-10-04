@@ -14,6 +14,7 @@ AutoForm AI v2.0 is a **Manifest V3 cross-browser extension** (Chrome, Firefox, 
 - **Sliding-Window Rate Limiting:** 150 questions/hour per client UUID with real-time countdown reset tracking.
 - **Universal Form Engine (`formAdapters.js`):** Pluggable adapters for Google Forms, Greenhouse ATS, Lever ATS, and Generic Job/HTML Forms. Resolves questions via 10-tier cascading labels and dispatches through native prototype setters to bypass React/Vue/Angular synthetic event traps.
 - **Client-Side Hybrid RAG (`memoryRetriever.js`):** User personal profile and memory snippets are stored locally in `chrome.storage.local`. The retriever tokenizes question text, classifies intent, cross-references choices, scores snippets using BM25/TF-IDF, and injects high-precision context dynamically.
+- **Smart Resume Vault & File Upload Auto-Attach (`resumeExtractor.js`):** Client-side PDF/Word/TXT extraction, Data URL encoding, and profile parsing with backend LLM fallback. Stores resume binary locally in `chrome.storage.local` (`unlimitedStorage`) and dynamically injects files into `<input type="file">` elements using the HTML5 `DataTransfer` API across Greenhouse, Lever, Workday, and standard HTML job forms.
 - **Preview & Verify Before Fill (`content.js`):** Human-in-the-loop verification modal showing proposed solutions with intelligent confidence scoring (`high` vs `unsure`), visual amber callouts on negative trick questions (`NOT/EXCEPT`), live in-line editing, and 1-click batch application.
 - **Universal Manifest:** Compatible with Chromium (service worker), Firefox (background scripts), and mobile extension browsers (Kiwi, Firefox Android, Orion).
 - **ARIA-First DOM Selectors:** Semantic ARIA attributes and `data-value` resolution to interact with Google Forms safely.
@@ -34,7 +35,7 @@ AutoForm-AI/
 │   ├── Dockerfile
 │   ├── railway.json / render.yaml
 │   ├── .env.example
-│   ├── tests/                     # Automated test suites (119 tests, 27 suites)
+│   ├── tests/                     # Automated test suites (130 tests, 30 suites)
 │   │   ├── apiSecurity.test.js
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js
@@ -43,6 +44,7 @@ AutoForm-AI/
 │   │   ├── memoryRetriever.test.js
 │   │   ├── openrouter.test.js
 │   │   ├── previewConfidence.test.js
+│   │   ├── resumeUpload.test.js
 │   │   ├── routerCircuitBreaker.test.js
 │   │   └── routerKeyCooldown.test.js
 │   └── src/
@@ -59,7 +61,8 @@ AutoForm-AI/
 │   │   └── content.js             # Form scraping, instant slot autofill & runner
 │   ├── services/
 │   │   ├── formAdapters.js        # Universal Form Engine & ATS adapters
-│   │   └── memoryRetriever.js     # Client-side Hybrid RAG & instant slot resolver
+│   │   ├── memoryRetriever.js     # Client-side Hybrid RAG & instant slot resolver
+│   │   └── resumeExtractor.js     # PDF/Word/TXT parser & DataTransfer file injector
 │   ├── options/
 │   │   ├── options.html           # Memory Vault options interface
 │   │   ├── options.js             # Auto-save, smart parser & card filters
@@ -103,6 +106,10 @@ AutoForm-AI/
   - Request Headers: `Content-Type: application/json`, `X-Client-ID: <uuid>`
   - Request Body: `{ clientId, question, type, choices, customContext, tone }`
   - Response: `{ success: true, answer: string, answers?: string[], provider: string, latencyMs: number }`
+- **`POST /api/v1/parse-resume`**:
+  - Request Headers: `Content-Type: application/json`, `X-Client-ID: <uuid>`
+  - Request Body: `{ clientId, resumeText, fileName }`
+  - Response: `{ success: true, profile: object, provider: string }`
 - **`GET /api/v1/health`**:
   - Returns active providers, circuit breaker statuses, and real-time metrics.
 - **`GET /api/v1/quota`**:
@@ -112,7 +119,7 @@ AutoForm-AI/
 
 ## 4. Memory & Local Hybrid RAG Architecture
 
-### Storage Schema (`chrome.storage.local.get('memoryProfile')`)
+### Storage Schema (`chrome.storage.local.get(['memoryProfile', 'storedResume'])`)
 
 ```json
 {
@@ -148,9 +155,29 @@ AutoForm-AI/
     ],
     "rawImport": "...",
     "updatedAt": "2026-09-07T..."
+  },
+  "storedResume": {
+    "name": "alex_rivera_resume.pdf",
+    "type": "application/pdf",
+    "size": 128450,
+    "dataUrl": "data:application/pdf;base64,...",
+    "updatedAt": "2026-10-05T..."
   }
 }
 ```
+
+### Resume Extraction & File Auto-Attachment (`src/services/resumeExtractor.js`)
+
+1. **Multi-Format Ingestion:** Accepts PDF, Word (.docx via XML extraction), and plain text resumes via drag-and-drop or file selection.
+2. **Dual-Path Parsing:**
+   - **Backend LLM Structured Parser (`POST /api/v1/parse-resume`):** Extracts clean identity, contact links, education, and classified memory snippets (experience, projects, skills).
+   - **Client-Side Offline Heuristic Fallback:** Fast regex-based parser extracting email, phone, links, university, graduation year, and experiences if the backend is unreachable.
+3. **Local Binary Storage:** Stores the resume file as a Base64 Data URL in `chrome.storage.local.storedResume` (`unlimitedStorage`).
+4. **Universal `<input type="file">` Auto-Attach:**
+   - Converts Data URL back to native `File` / `Blob`.
+   - Uses the HTML5 `DataTransfer` API (`dataTransfer.items.add(file)`, `fileInput.files = dataTransfer.files`) to attach the file programmatically.
+   - Dispatches synthetic `input` and `change` events to trigger React, Vue, and Angular component state reactivity.
+   - Previews the file upload in the human-in-the-loop preview modal before submission.
 
 ### Retrieval & Whole-Form Reasoning Pipeline (`src/services/memoryRetriever.js`)
 
@@ -167,11 +194,11 @@ AutoForm-AI/
 
 ## 5. Engineering Conventions
 
-1. **Client-Side Privacy:** Never send the user's raw memory profile or full database over the network. Only dynamic, question-relevant context snippets are attached during inference.
+1. **Client-Side Privacy:** Never send the user's raw memory profile or full database over the network. Only dynamic, question-relevant context snippets are attached during inference. Resume binary is kept strictly in local storage.
 2. **Structured Clone Compliance:** Never attach DOM `HTMLElement` references to message payloads passed to `chrome.runtime.sendMessage`.
 3. **Resilient Selectors:** Maintain ARIA fallbacks (`div[role="listitem"]`, `[role="heading"]`, `[role="radio"]`, `[role="checkbox"]`) instead of relying solely on obfuscated classes.
 4. **Mobile & Viewport Standards:** Keep input font sizes $\ge 16$px on screens $\le 600$px to prevent iOS Safari viewport zooming. Maintain $\ge 44$px touch targets.
 5. **Always Run Validation & Tests:**
-   - `npm test`: Must pass 100% (119 tests, 27 test suites).
+   - `npm test`: Must pass 100% (130 tests, 30 test suites).
    - `npm run validate`: Manifest and all referenced files must validate successfully.
    - `npm run package`: Generates release bundles for Chrome, Edge, and Firefox AMO in `dist/`.

@@ -403,7 +403,19 @@ if (openMemoryBtn) {
  * Loads memory snippet count from chrome.storage and displays badge.
  */
 function loadMemoryCount() {
-    chrome.storage.local.get(['memoryProfile'], (stored) => {
+    chrome.storage.local.get(['memoryProfile', 'storedResume'], (stored) => {
+        // Handle stored resume indicator
+        const resumeRow = document.getElementById('resumeStatusRow');
+        const resumeName = document.getElementById('popupResumeName');
+        if (resumeRow && resumeName) {
+            if (stored.storedResume && stored.storedResume.fileName) {
+                resumeName.textContent = stored.storedResume.fileName;
+                resumeRow.style.display = 'flex';
+            } else {
+                resumeRow.style.display = 'none';
+            }
+        }
+
         if (!memoryCountEl) return;
         const profile = stored.memoryProfile;
         if (!profile) {
@@ -437,7 +449,7 @@ if (instantAutofillBtn) {
 
             chrome.scripting.executeScript({
                 target: { tabId },
-                files: ['src/services/memoryRetriever.js', 'src/content/content.js']
+                files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
             }).then(() => {
                 setTimeout(() => {
                     chrome.tabs.sendMessage(tabId, { action: "INSTANT_FILL_PROFILE" }, (res) => {
@@ -486,7 +498,7 @@ solveBtn.addEventListener('click', () => {
 
         chrome.scripting.executeScript({
             target: { tabId },
-            files: ['src/services/memoryRetriever.js', 'src/content/content.js']
+            files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
         }).then(() => {
             setTimeout(() => {
                 chrome.tabs.sendMessage(tabId, { action: "START_SOLVING" }, (res) => {

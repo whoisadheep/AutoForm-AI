@@ -94,7 +94,7 @@ app.get('/api/v1/quota', (req, res) => {
 app.get('/api/v1/config', (req, res) => {
     const status = router.getStatus();
     res.json({
-        version: '2.0.3',
+        version: '2.0.4',
         providers: status.activeProviders || [],
         rateLimitPerHour: config.rateLimitPerHour,
         maintenanceMode: false,
@@ -104,7 +104,9 @@ app.get('/api/v1/config', (req, res) => {
             hybridRag: true,
             wholeFormReasoning: true,
             storyDeduplication: true,
-            previewBeforeFill: true
+            previewBeforeFill: true,
+            resumeVault: true,
+            resumeAutoAttach: true
         },
         selectorPatches: {},
         timestamp: new Date().toISOString()
@@ -140,6 +142,49 @@ app.post('/api/v1/solve', rateLimiter, validateSolveRequest, async (req, res) =>
         const isProd = config.env === 'production';
         // Sanitize error message in production to prevent leaking upstream secrets/stack
         const publicError = isProd ? 'AI solving failed across all available providers' : err.message;
+        res.status(500).json({
+            success: false,
+            error: publicError,
+            requestId: req.id
+        });
+    }
+});
+
+// Resume Intelligence Parsing Endpoint
+// Extracts structured identity, education, links, and memory snippets from uploaded resume text
+app.post('/api/v1/parse-resume', rateLimiter, async (req, res) => {
+    try {
+        const { resumeText, fileName } = req.body || {};
+        if (!resumeText || typeof resumeText !== 'string' || resumeText.trim().length === 0) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required field: "resumeText" must be a non-empty string'
+            });
+        }
+
+        const cleanText = resumeText.trim().slice(0, 15000);
+        const result = await router.solve({
+            question: `Extract structured profile from resume ${fileName ? `"${fileName}"` : ''}`,
+            type: 'resume_parse',
+            resumeText: cleanText
+        });
+
+        const profile = result.profile || (result.answer ? JSON.parse(result.answer) : null);
+        if (!profile) {
+            throw new Error('Failed to parse structured profile from AI response');
+        }
+
+        res.json({
+            success: true,
+            profile,
+            provider: result.provider,
+            latencyMs: result.latencyMs,
+            requestId: req.id
+        });
+    } catch (err) {
+        console.error(`[API /parse-resume Error] [req:${req.id}]:`, err.message);
+        const isProd = config.env === 'production';
+        const publicError = isProd ? 'Resume parsing failed on available AI engines' : err.message;
         res.status(500).json({
             success: false,
             error: publicError,

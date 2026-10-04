@@ -153,6 +153,7 @@ function detectQuestionType(block) {
     if (block.querySelector('[role="listbox"]') || block.querySelector('.MocG8c')) return 'dropdown';
     if (block.querySelector('[role="radiogroup"]') && block.querySelectorAll('[role="radio"]').length > 5) return 'scale';
     if (block.querySelector('[role="radio"]') || block.querySelectorAll('label').length > 0) return 'multiple_choice';
+    if (block.querySelector('div[role="button"][aria-label*="Add file"], div[aria-label*="Upload"], input[type="file"], .freebirdFormviewerComponentsQuestionFileuploadRoot, [data-is-file-upload="true"]')) return 'file_upload';
     return 'text_input';
 }
 
@@ -2240,6 +2241,22 @@ function evaluateAnswerConfidence(q, solution, memoryProfile) {
         }
     }
 
+    // 8. File Upload (Resume / Document) confidence check
+    if (q.type === 'file_upload') {
+        if (solution.resume || (solution.answer && !solution.answer.includes('No resume'))) {
+            return {
+                confidence: 'high',
+                isUnsure: false,
+                reason: `Resume ready to attach: "${solution.answer}"`
+            };
+        }
+        return {
+            confidence: 'low',
+            isUnsure: true,
+            reason: 'No resume file uploaded in AutoForm Memory Vault. Upload in extension options.'
+        };
+    }
+
     // Default: High confidence answer
     return {
         confidence: 'high',
@@ -2260,9 +2277,22 @@ async function injectAnswerIntoField(q, block, solution) {
     let filled = false;
 
     if (q.platform && q.platform !== 'google_forms' && globalThis.AutoFormEngine) {
-        filled = await globalThis.AutoFormEngine.fillAnswer(q, solution.answers || solution.answer, document);
+        filled = await globalThis.AutoFormEngine.fillAnswer(q, solution.resume || solution.answers || solution.answer, document);
     } else {
-        if (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers)) {
+        if (q.type === 'file_upload') {
+            const fileInput = block.querySelector ? block.querySelector('input[type="file"]') : null;
+            if (fileInput) {
+                const attachFn = (typeof attachResumeToFileInput === 'function')
+                    ? attachResumeToFileInput
+                    : (globalThis.attachResumeToFileInput || globalThis.ResumeExtractor?.attachResumeToFileInput);
+                if (attachFn) {
+                    const resumeToAttach = solution.resume || await new Promise(r => chrome.storage.local.get(['storedResume'], res => r(res.storedResume || null)));
+                    if (resumeToAttach) {
+                        filled = attachFn(fileInput, resumeToAttach);
+                    }
+                }
+            }
+        } else if (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers)) {
             for (const ans of solution.answers) {
                 const target = findMatchingOption(block, ans);
                 if (target) {
@@ -2635,6 +2665,44 @@ function showPreviewModal(preparedList, formTitle = '') {
                     };
                     editorWrapper.appendChild(input);
                 }
+            } else if (item.q.type === 'file_upload') {
+                const fileBox = document.createElement('div');
+                fileBox.className = 'autoform-preview-file-box';
+                fileBox.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;gap:12px;flex-wrap:wrap;';
+
+                const fileInfo = document.createElement('div');
+                fileInfo.style.cssText = 'display:flex;align-items:center;gap:10px;';
+
+                const fileIcon = document.createElement('div');
+                fileIcon.innerHTML = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+                fileInfo.appendChild(fileIcon);
+
+                const fileDetails = document.createElement('div');
+                if (item.solution.resume) {
+                    const r = item.solution.resume;
+                    const sizeStr = r.fileSize ? ` • ${Math.round(r.fileSize / 1024)} KB` : '';
+                    fileDetails.innerHTML = `<div style="font-weight:600;font-size:13.5px;color:#0f172a;">${r.fileName || 'Resume.pdf'}</div><div style="font-size:11.5px;color:#10b981;font-weight:500;">✓ Ready to auto-attach${sizeStr}</div>`;
+                } else {
+                    fileDetails.innerHTML = `<div style="font-weight:600;font-size:13.5px;color:#ef4444;">No Resume Uploaded</div><div style="font-size:11.5px;color:#64748b;">Upload a resume in AutoForm Options to enable 1-click auto-attach</div>`;
+                }
+                fileInfo.appendChild(fileDetails);
+                fileBox.appendChild(fileInfo);
+
+                const fileActions = document.createElement('div');
+                fileActions.style.cssText = 'display:flex;gap:8px;align-items:center;';
+
+                if (item.solution.resume && item.solution.resume.dataUrl) {
+                    const downloadBtn = document.createElement('a');
+                    downloadBtn.href = item.solution.resume.dataUrl;
+                    downloadBtn.download = item.solution.resume.fileName || 'Resume.pdf';
+                    downloadBtn.className = 'autoform-preview-file-dl-btn';
+                    downloadBtn.style.cssText = 'font-size:12px;font-weight:600;padding:6px 12px;background:#6366f1;color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;';
+                    downloadBtn.innerHTML = `⬇ Download Resume`;
+                    fileActions.appendChild(downloadBtn);
+                }
+
+                fileBox.appendChild(fileActions);
+                editorWrapper.appendChild(fileBox);
             }
 
             card.appendChild(editorWrapper);
@@ -2934,9 +3002,42 @@ async function processQuestionQueue(questions) {
             try {
                 // Check 0ms Instant Profile first, then Session Cache, then AI backend
                 const cacheKey = getQuestionCacheKey(q);
-                let solution = null;
+                if (q.type === 'file_upload') {
+                    const storedResumeData = await new Promise(r => {
+                        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                            chrome.storage.local.get(['storedResume'], res => r(res.storedResume || null));
+                        } else {
+                            r(null);
+                        }
+                    });
 
-                if (directProfileMatch) {
+                    if (storedResumeData) {
+                        solution = {
+                            success: true,
+                            answer: storedResumeData.fileName,
+                            resume: storedResumeData,
+                            provider: 'stored_resume',
+                            latencyMs: 0,
+                            confidence: 'high'
+                        };
+                        if (providerBadge) providerBadge.innerText = 'RESUME • 0ms';
+                        addThought('📄', `[Q${i + 1}] Stored Resume: ${storedResumeData.fileName}`, 'match');
+                        showGhostChip(currentBlock, `Resume: ${storedResumeData.fileName}`, 'direct');
+                    } else {
+                        solution = {
+                            success: false,
+                            answer: 'No resume uploaded in Memory Vault',
+                            provider: 'stored_resume',
+                            latencyMs: 0,
+                            confidence: 'low',
+                            isUnsure: true,
+                            reason: 'No resume file found in AutoForm Memory Vault. Upload in extension options.'
+                        };
+                        if (providerBadge) providerBadge.innerText = 'RESUME • Missing';
+                        addThought('⚠️', `[Q${i + 1}] No resume uploaded in Memory Vault`, 'unsure');
+                        showGhostChip(currentBlock, 'No Resume Stored', 'warning');
+                    }
+                } else if (directProfileMatch) {
                     solution = {
                         success: true,
                         answer: directProfileMatch.answer,

@@ -74,6 +74,83 @@
              TAB 1: INSTANT IMPORT
              ==================================================================== -->
         <div id="tab-import" class="tab-panel active">
+            <!-- Resume Vault & Auto-Attach Card -->
+            <section class="card resume-vault-card">
+                <div class="section-title-row">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg class="prompt-badge-icon" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 22px; height: 22px;">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                        <h2>Resume Vault & Auto-Attach</h2>
+                    </div>
+                    <span class="card-subtitle">Upload your resume once — AutoForm AI extracts your entire profile and auto-attaches the file on job forms.</span>
+                </div>
+
+                <!-- Dropzone when no resume is uploaded or to replace -->
+                <div id="resumeDropzone" class="resume-dropzone">
+                    <input type="file" id="resumeFileInput" accept=".pdf,.docx,.doc,.txt,.md" style="display: none;">
+                    <div class="dropzone-content">
+                        <div class="dropzone-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="dropzone-text">
+                            <span class="dropzone-title">Drop your resume here, or <button type="button" id="btnBrowseResume" class="btn-link">browse files</button></span>
+                            <span class="dropzone-sub">Supports PDF, Word (.docx), or Text • Stored 100% locally on device</span>
+                        </div>
+                    </div>
+                    <div id="resumeUploadProgress" class="resume-upload-progress hidden">
+                        <div class="progress-spinner"></div>
+                        <span id="resumeUploadStatusText">Extracting text & parsing with AI...</span>
+                    </div>
+                </div>
+
+                <!-- Stored Resume Status Card (Shown when resume is stored) -->
+                <div id="storedResumeCard" class="stored-resume-card hidden">
+                    <div class="stored-resume-left">
+                        <div class="file-badge-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                            </svg>
+                        </div>
+                        <div class="stored-resume-details">
+                            <div class="stored-resume-name-row">
+                                <span id="storedResumeFileName" class="stored-resume-name">My_Resume.pdf</span>
+                                <span class="stored-resume-ready-badge">✓ Auto-Attach Ready</span>
+                            </div>
+                            <div class="stored-resume-meta">
+                                <span id="storedResumeFileSize">145 KB</span> • 
+                                <span id="storedResumeUploadedAt">Uploaded just now</span> • 
+                                <span id="storedResumeExtractedCount">14 fields extracted</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="stored-resume-actions">
+                        <button id="btnDownloadStoredResume" class="btn btn-secondary btn-small" type="button" title="Download stored resume to your computer">
+                            <svg class="btn-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                            <span>Download</span>
+                        </button>
+                        <button id="btnReplaceResume" class="btn btn-secondary btn-small" type="button" title="Upload a new version of your resume">
+                            <span>Replace</span>
+                        </button>
+                        <button id="btnRemoveResume" class="btn btn-danger-subtle btn-small" type="button" title="Remove resume from AutoForm memory">
+                            <span>Remove</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
             <!-- AI Memory Export Card -->
             <section class="card quick-prompt-card">
                 <div class="prompt-card-header">
@@ -442,6 +519,7 @@
         </footer>
     </div>
 
+    <script src="../services/resumeExtractor.js"></script>
     <script src="options.js"></script>
 </body>
 </html>

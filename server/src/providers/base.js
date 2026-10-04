@@ -13,7 +13,63 @@
  * @param {string} [params.tone] - 'accurate', 'concise', 'detailed'
  * @returns {{ systemPrompt: string, userPrompt: string }}
  */
-function buildPrompt({ question, type, choices = [], customContext = '', tone = 'accurate' }) {
+/**
+ * Builds a prompt specifically designed to extract structured memory profiles from resumes.
+ * @param {string} resumeText 
+ * @returns {{ systemPrompt: string, userPrompt: string }}
+ */
+function buildResumeParsePrompt(resumeText = '') {
+    const systemPrompt = `You are AutoForm AI's Resume Intelligence Parser. Your mission is to extract verified user profile details and memory snippets from a candidate's resume with extreme accuracy.
+Return strictly a valid JSON object matching this schema:
+{
+  "identity": {
+    "fullName": "Candidate full name",
+    "email": "Email address",
+    "phone": "Phone number with country code if present",
+    "whatsapp": "WhatsApp number or phone",
+    "location": "City, State/Country"
+  },
+  "links": {
+    "github": "https://github.com/...",
+    "linkedin": "https://linkedin.com/in/...",
+    "portfolio": "https://...",
+    "twitter": "https://x.com/..."
+  },
+  "education": {
+    "university": "Institution / University name",
+    "degree": "Degree (e.g. Bachelor of Technology)",
+    "major": "Major (e.g. Computer Science and Engineering)",
+    "graduationYear": "YYYY",
+    "gpa": "GPA or percentage (e.g. 3.90)",
+    "currentYear": "Academic year (e.g. 4th Year)",
+    "rollNumber": "Student roll number or registration ID"
+  },
+  "snippets": [
+    {
+      "category": "experience | project | skill | perspective | other",
+      "title": "Role or project name (e.g. Software Engineer Intern at Google)",
+      "content": "Description of responsibilities, technologies used, and achievements",
+      "tags": ["tag1", "tag2"]
+    }
+  ]
+}
+RULES:
+1. Do not invent details not present in the resume. Leave missing fields as empty strings "".
+2. Return ONLY raw valid JSON without markdown code blocks.`;
+
+    const userPrompt = `RESUME TEXT:
+${String(resumeText).slice(0, 12000)}
+
+Extract and return the structured JSON profile now.`;
+    return { systemPrompt, userPrompt };
+}
+
+function buildPrompt(params = {}) {
+    if (params.type === 'resume_parse' || params.resumeText) {
+        return buildResumeParsePrompt(params.resumeText || params.question);
+    }
+
+    const { question, type, choices = [], customContext = '', tone = 'accurate' } = params;
     const systemPrompt = `You are AutoForm AI, an intelligent and precise assistant specialized in accurately completing forms, quizzes, surveys, and assessments.
 Your task is to analyze form questions and return strictly a valid JSON object matching the required format.`;
 
@@ -134,6 +190,16 @@ function parseAiResponse(rawText, type, choices = []) {
             answer: String(parsed.answers[0]).trim(),
             confidence,
             reasoning
+        };
+    }
+
+    if (type === 'resume_parse' || parsed.identity || parsed.snippets || parsed.education || parsed.profile) {
+        const profile = parsed.profile || parsed;
+        return {
+            answer: JSON.stringify(profile),
+            profile,
+            confidence: 'high',
+            reasoning: 'Extracted structured resume profile'
         };
     }
 
@@ -266,6 +332,7 @@ class KeyRotator {
 
 module.exports = {
     buildPrompt,
+    buildResumeParsePrompt,
     parseAiResponse,
     KeyRotator
 };

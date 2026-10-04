@@ -522,6 +522,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         })();
         return true;
     }
+
+    if (request.action === "PARSE_RESUME") {
+        (async () => {
+            try {
+                const serverUrl = await getEffectiveServerUrl();
+                const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/parse-resume`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        resumeText: request.resumeText,
+                        fileName: request.fileName
+                    }),
+                    signal: AbortSignal.timeout(18000)
+                });
+                const data = await res.json();
+                sendResponse(data);
+            } catch (e) {
+                sendResponse({ success: false, error: e.message, fallback: true });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "GET_STORED_RESUME") {
+        chrome.storage.local.get(['storedResume'], (data) => {
+            sendResponse({ success: true, storedResume: data.storedResume || null });
+        });
+        return true;
+    }
+
+    if (request.action === "SAVE_STORED_RESUME") {
+        chrome.storage.local.set({ storedResume: request.storedResume }, () => {
+            sendResponse({ success: !chrome.runtime.lastError });
+        });
+        return true;
+    }
+
+    if (request.action === "DELETE_STORED_RESUME") {
+        chrome.storage.local.remove(['storedResume'], () => {
+            sendResponse({ success: !chrome.runtime.lastError });
+        });
+        return true;
+    }
 });
 
 // ---------------------------------------------------------------------------
@@ -539,7 +582,7 @@ if (typeof chrome !== 'undefined' && chrome.commands && chrome.commands.onComman
                             // Script might need on-demand injection
                             chrome.scripting.executeScript({
                                 target: { tabId: tab.id },
-                                files: ['src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
+                                files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
                             }).then(() => {
                                 setTimeout(() => {
                                     chrome.tabs.sendMessage(tab.id, { action: "START_SOLVING" });

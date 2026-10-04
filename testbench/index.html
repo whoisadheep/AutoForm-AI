@@ -334,6 +334,24 @@
                 </div>
             </div>
 
+            <!-- SECTION 8: Resume & Document Upload (Edge-Case File Attachment) -->
+            <div class="form-card">
+                <div class="section-header">
+                    <span class="section-number">8</span>
+                    <span>Job Application Document & Resume Attachment</span>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="applicantResume">Upload Resume / CV (PDF, DOCX, or TXT)</label>
+                    <input type="file" id="applicantResume" name="resume" accept=".pdf,.docx,.doc,.txt">
+                    <div class="helper-text">Tests automatic DataTransfer file injection from AutoForm Resume Vault.</div>
+                </div>
+                <div class="field-group">
+                    <label class="field-label" for="applicantCoverLetter">Cover Letter / Portfolio Document (Optional)</label>
+                    <input type="file" id="applicantCoverLetter" name="cover_letter" accept=".pdf,.docx,.doc,.txt">
+                    <div class="helper-text">Optional second file attachment.</div>
+                </div>
+            </div>
+
             <div class="btn-row">
                 <button type="submit" class="btn">Grade My Quiz</button>
                 <button type="button" class="btn btn-secondary" onclick="document.getElementById('quizForm').reset(); document.getElementById('gradeResult').style.display='none';">Reset All Fields</button>

@@ -320,6 +320,7 @@ const GoogleFormsAdapter = {
             else if (block.querySelector('[role="listbox"]') || block.querySelector('.MocG8c')) type = 'dropdown';
             else if (block.querySelector('[role="radiogroup"]') && block.querySelectorAll('[role="radio"]').length > 5) type = 'scale';
             else if (block.querySelector('[role="radio"]') || block.querySelectorAll('label').length > 0) type = 'multiple_choice';
+            else if (block.querySelector('div[role="button"][aria-label*="Add file"], div[aria-label*="Upload"], .freebirdFormviewerComponentsQuestionFileuploadRoot, [data-is-file-upload="true"]')) type = 'file_upload';
 
             const choices = [];
             if (type === 'multiple_choice' || type === 'checkbox') {
@@ -408,7 +409,9 @@ const GreenhouseAdapter = {
             { selector: '#phone, input[name="job_application[phone]"]', label: 'Phone', type: 'text_input' },
             { selector: 'input[autocomplete="custom-question-linkedin"], input[name*="linkedin"]', label: 'LinkedIn Profile', type: 'text_input' },
             { selector: 'input[autocomplete="custom-question-website"], input[name*="website"], input[name*="portfolio"]', label: 'Website / Portfolio', type: 'text_input' },
-            { selector: 'input[name*="github"]', label: 'GitHub Profile', type: 'text_input' }
+            { selector: 'input[name*="github"]', label: 'GitHub Profile', type: 'text_input' },
+            { selector: 'input[type="file"][id*="resume"], input[type="file"][name*="resume"], #resume, input[type="file"][name*="job_application[resume]"]', label: 'Resume / CV', type: 'file_upload', subType: 'resume' },
+            { selector: 'input[type="file"][id*="cover_letter"], input[type="file"][name*="cover_letter"]', label: 'Cover Letter', type: 'file_upload', subType: 'cover_letter' }
         ];
 
         const claimedElements = new Set();
@@ -559,6 +562,23 @@ const LeverAdapter = {
             }
         });
 
+        // 1b. Lever Resume / CV Upload
+        const resumeInput = doc.querySelector('input[name="resume"], input[type="file"][id*="resume"], input[type="file"]');
+        if (resumeInput && !claimedElements.has(resumeInput)) {
+            claimedElements.add(resumeInput);
+            questions.push({
+                id: idCounter++,
+                question: 'Resume / CV',
+                type: 'file_upload',
+                subType: 'resume',
+                choices: [],
+                element: resumeInput,
+                inputElements: [resumeInput],
+                required: !!resumeInput.required,
+                platform: 'lever'
+            });
+        }
+
         // 2. Custom Lever Application Questions (.application-question)
         const customBlocks = doc.querySelectorAll('.application-question, .custom-question');
         customBlocks.forEach(block => {
@@ -689,6 +709,27 @@ const GenericJobFormAdapter = {
 
             if (inputType === 'search') return;
             if (input.closest && input.closest('nav, header, footer, [role="search"], .search-form, #search')) return;
+
+            // File Uploads (Resume, CV, Cover Letter, Attachments)
+            if (inputType === 'file') {
+                processedElements.add(input);
+                const qText = resolveFieldLabel(input, searchRoot) || humanizeFieldName(input.name || input.id || 'File Upload');
+                const isResume = /resume|cv|curriculum[\s_-]*vitae|profile[\s_-]*doc/i.test(
+                    qText + ' ' + (input.name || '') + ' ' + (input.id || '') + ' ' + (input.accept || '')
+                );
+                questions.push({
+                    id: idCounter++,
+                    question: qText || 'Upload Resume / CV',
+                    type: 'file_upload',
+                    subType: isResume ? 'resume' : 'file',
+                    choices: [],
+                    element: input.parentElement || input,
+                    inputElements: [input],
+                    required: !!input.required,
+                    platform: 'generic'
+                });
+                return;
+            }
 
             // A. Radio Buttons
             if (inputType === 'radio') {
@@ -848,6 +889,9 @@ const GenericJobFormAdapter = {
     isFieldFilled(q) {
         if (!q || !q.inputElements || q.inputElements.length === 0) return false;
         const el = q.inputElements[0];
+        if (el.type === 'file') {
+            return !!(el.files && el.files.length > 0);
+        }
         if (el.type === 'radio' || el.type === 'checkbox') {
             return q.inputElements.some(i => i.checked);
         }
@@ -991,6 +1035,47 @@ const FormEngine = {
 
         const inputs = question.inputElements || (question.element ? [question.element] : []);
         if (inputs.length === 0) return false;
+
+        // File Upload (Resume / CV / Document)
+        if (question.type === 'file_upload') {
+            const fileInput = inputs.find(i => i.tagName && i.tagName.toLowerCase() === 'input' && i.type === 'file') || inputs[0];
+            if (!fileInput || fileInput.type !== 'file') return false;
+
+            const attachFn = (typeof attachResumeToFileInput === 'function')
+                ? attachResumeToFileInput
+                : (globalThis.attachResumeToFileInput || globalThis.ResumeExtractor?.attachResumeToFileInput);
+
+            if (attachFn) {
+                // If answer is already a storedResume object
+                if (typeof answer === 'object' && answer !== null && answer.dataUrl) {
+                    return attachFn(fileInput, answer);
+                }
+                // If answer passed is a File or Blob
+                if (typeof File !== 'undefined' && answer instanceof File) {
+                    if (typeof DataTransfer !== 'undefined') {
+                        const dt = new DataTransfer();
+                        dt.items.add(answer);
+                        fileInput.files = dt.files;
+                        fileInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
+                        fileInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                        return true;
+                    }
+                }
+                // Check chrome.storage.local for storedResume
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    return new Promise((resolve) => {
+                        chrome.storage.local.get(['storedResume'], (data) => {
+                            if (data.storedResume) {
+                                resolve(attachFn(fileInput, data.storedResume));
+                            } else {
+                                resolve(false);
+                            }
+                        });
+                    });
+                }
+            }
+            return false;
+        }
 
         const targetAnswer = Array.isArray(answer) ? answer : [String(answer)];
         const normalizedAnswers = targetAnswer.map(a => a.trim().toLowerCase());

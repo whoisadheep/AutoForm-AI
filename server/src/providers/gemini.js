@@ -47,7 +47,7 @@ class GeminiProvider {
                         generationConfig: {
                             responseMimeType: 'application/json',
                             temperature: 0.2,
-                            maxOutputTokens: 1024
+                            maxOutputTokens: questionData.type === 'resume_parse' ? 2048 : 1024
                         }
                     }),
                     signal: controller.signal

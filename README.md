@@ -1,4 +1,4 @@
-# AutoForm AI ⚡ (v2.0.3 Production)
+# AutoForm AI ⚡ (v2.0.4 Production)
 
 > Zero-config, multi-provider AI assistant with Local Hybrid RAG Memory to automatically solve and fill Google Forms, job application boards (Greenhouse, Lever, Ashby, Workday), and universal web forms across Chrome, Firefox, Edge, and mobile extension browsers.
 
@@ -9,6 +9,12 @@ AutoForm AI is a cross-browser extension backed by a high-throughput proxy serve
 ## ✨ Features
 
 - **⚡ Zero-Config & Instant:** Install and start filling forms immediately — no API keys or setup wizards required for end-users.
+- **📄 Smart Resume Vault & Universal File Auto-Attach (`<input type="file">`):**
+  - **Drag-and-Drop Resume Ingestion:** Upload resumes in PDF, Word (.docx), or plain text format directly in the extension Options page.
+  - **Dual-Path AI & Heuristic Parser:** Server-assisted LLM extraction (`POST /api/v1/parse-resume`) automatically parses identity, contact links, education, and career memory snippets, with instant client-side offline regex fallback.
+  - **Native Local Binary Storage:** Stores the file safely in `chrome.storage.local` with `unlimitedStorage` permissions — zero cloud database footprint.
+  - **Universal ATS File Injection:** Automatically detects resume/CV upload fields across Greenhouse, Lever, Workday, Ashby, and generic HTML forms, reconstructing native `File` objects via the HTML5 `DataTransfer` API and triggering React/Vue synthetic events.
+  - **Preview & Verification:** Shows a dedicated resume file card with filename, file size, download button, and auto-attach status in the preview modal.
 - **🔍 Preview & Verify Before Fill (Human-in-the-Loop AI Safety):**
   - **Full Solution Inspection:** Displays an elegant, Apple/Vercel-level modal with all proposed answers before any field is modified on the form.
   - **Intelligent Confidence Scoring & Trick Detection:** Automatically flags negative trick questions (`NOT`, `EXCEPT`, `LEAST`), complex multi-select checkboxes, legal/compensation choices, and open-ended essays without matching memories with amber `⚠️ Review Recommended` banners.
@@ -91,7 +97,7 @@ AutoForm-AI/
 │   ├── render.yaml                # 1-click Render deploy template
 │   ├── railway.json               # 1-click Railway deploy template
 │   ├── .env.example               # Server environment template
-│   ├── tests/                     # Automated test suites (119 tests, 27 suites)
+│   ├── tests/                     # Automated test suites (130 tests, 30 suites)
 │   │   ├── apiSecurity.test.js    # Security headers & /config endpoint tests
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js   # Universal Form Engine unit tests
@@ -100,6 +106,7 @@ AutoForm-AI/
 │   │   ├── memoryRetriever.test.js# Hybrid RAG & slot resolution tests
 │   │   ├── openrouter.test.js
 │   │   ├── previewConfidence.test.js # Confidence heuristics & preview tests
+│   │   ├── resumeUpload.test.js   # Resume extraction & file injection tests
 │   │   ├── routerCircuitBreaker.test.js
 │   │   └── routerKeyCooldown.test.js
 │   └── src/
@@ -116,7 +123,8 @@ AutoForm-AI/
 │   │   └── content.js             # Form scraping, DOM automation & UI overlay
 │   ├── services/
 │   │   ├── formAdapters.js        # Universal Form Engine (Google Forms, Greenhouse, Lever, Generic)
-│   │   └── memoryRetriever.js     # Client-side Hybrid RAG engine (BM25, intent, slots)
+│   │   ├── memoryRetriever.js     # Client-side Hybrid RAG engine (BM25, intent, slots)
+│   │   └── resumeExtractor.js     # Multi-format resume parser & file auto-attacher
 │   ├── options/
 │   │   ├── options.html           # Memory Vault & Server Settings tabs
 │   │   ├── options.css            # Responsive layout & theme styles
@@ -197,17 +205,18 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 
 ## 🎯 How to Use
 
-### 1. Personalize Your Memory Vault
+### 1. Upload Your Resume or Personalize Memory Vault
 1. Click the AutoForm AI extension icon and select **Memory & Profile**.
-2. Click **Copy Export Prompt** and send it to **ChatGPT**, **Gemini**, or **Claude**.
-3. Paste the AI's response into the **Import Data** box and click **Parse & Save**.
-4. Your identity, education, and career snippets are now ready for any form!
+2. **Instant Resume Upload:** Drag and drop your resume (PDF, Word `.docx`, or `.txt`) into the **Smart Resume Vault**. The AI extracts your contact links, identity, education, and career achievements into your memory vault, and stores your resume binary locally.
+3. **Alternative Manual / AI Export:** Click **Copy Export Prompt** and send it to **ChatGPT**, **Gemini**, or **Claude**, then paste the response into the **Import Data** box.
+4. Your identity, education, career snippets, and resume attachment are now ready for any job board or form!
 
 ### 2. Fill Any Form
-1. Open any [Google Form](https://docs.google.com/forms) or job application.
+1. Open any [Google Form](https://docs.google.com/forms) or job application (Greenhouse, Lever, Workday, etc.).
 2. Click the floating **"⚡ AI Fill"** button on the bottom right (or click **"Fill Current Form"** from the popup, or press `Alt+Shift+F`).
-3. Watch AutoForm AI intelligently complete all questions with real-time percentage progress!
-4. Need to halt? Press the **Escape** key or click **"Stop & Cancel"** at any moment.
+3. AutoForm AI automatically solves questions, detects resume upload fields, attaches your stored resume via native HTML5 file binding, and presents the human-in-the-loop preview modal for quick review!
+4. Review answers, adjust any flagged items, and apply with 1 click (`Ctrl + Enter`).
+5. Need to halt? Press the **Escape** key or click **"Stop & Cancel"** at any moment.
 
 ### 3. Server Diagnostics & Custom Endpoints
 1. Open the extension Options page and switch to the **Server & Connection** tab.
@@ -221,7 +230,7 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 - **Run Server Resilience & Memory RAG Test Suite:**
   ```bash
   npm test
-  # 110 tests across 25 suites passing 100%
+  # 130 tests across 30 suites passing 100%
   ```
 - **Validate extension manifest & assets:**
   ```bash

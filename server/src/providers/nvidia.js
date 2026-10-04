@@ -42,7 +42,7 @@ class NvidiaProvider {
                             { role: 'user', content: userPrompt }
                         ],
                         temperature: 0.2,
-                        max_tokens: 1024
+                        max_tokens: questionData.type === 'resume_parse' ? 2048 : 1024
                     }),
                     signal: controller.signal
                 });

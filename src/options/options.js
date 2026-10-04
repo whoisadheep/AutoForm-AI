@@ -93,7 +93,8 @@ async function loadData() {
     }
   });
   
-  updateSnippetCount();
+    updateSnippetCount();
+    loadStoredResume();
 }
 
 function setupEventListeners() {
@@ -107,6 +108,87 @@ function setupEventListeners() {
       debounceSave();
     });
   });
+
+  // Resume Vault File Upload Listeners
+  const dropzone = document.getElementById('resumeDropzone');
+  const fileInput = document.getElementById('resumeFileInput');
+  const btnBrowse = document.getElementById('btnBrowseResume');
+  const btnReplace = document.getElementById('btnReplaceResume');
+  const btnRemove = document.getElementById('btnRemoveResume');
+  const btnDownload = document.getElementById('btnDownloadStoredResume');
+
+  if (dropzone && fileInput) {
+    if (btnBrowse) {
+      btnBrowse.addEventListener('click', (e) => {
+        e.stopPropagation();
+        fileInput.click();
+      });
+    }
+
+    dropzone.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    dropzone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzone.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleResumeFileUpload(e.dataTransfer.files[0]);
+      }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files.length > 0) {
+        handleResumeFileUpload(e.target.files[0]);
+      }
+    });
+  }
+
+  if (btnReplace && fileInput) {
+    btnReplace.addEventListener('click', () => {
+      fileInput.click();
+    });
+  }
+
+  if (btnRemove) {
+    btnRemove.addEventListener('click', async () => {
+      if (confirm('Are you sure you want to remove your stored resume from AutoForm AI?')) {
+        await chrome.storage.local.remove(['storedResume']);
+        renderStoredResumeUI(null);
+        showSaveStatus('Stored resume removed');
+      }
+    });
+  }
+
+  if (btnDownload) {
+    btnDownload.addEventListener('click', () => {
+      chrome.storage.local.get(['storedResume'], (data) => {
+        if (data.storedResume && data.storedResume.dataUrl) {
+          const a = document.createElement('a');
+          a.href = data.storedResume.dataUrl;
+          a.download = data.storedResume.fileName || 'Resume.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          showSaveStatus('No resume file stored to download');
+        }
+      });
+    });
+  }
 
   document.getElementById('btnImport').addEventListener('click', handleImport);
   document.getElementById('btnClearAll').addEventListener('click', handleClearAll);
@@ -156,6 +238,190 @@ function setupEventListeners() {
   });
   
   document.getElementById('btnSaveSnippet').addEventListener('click', handleSaveSnippet);
+}
+
+// ---------------------------------------------------------------------------
+// Resume Vault & Smart Document Uploader
+// ---------------------------------------------------------------------------
+
+function loadStoredResume() {
+  chrome.storage.local.get(['storedResume'], (data) => {
+    renderStoredResumeUI(data.storedResume || null);
+  });
+}
+
+function renderStoredResumeUI(storedResume) {
+  const dropzone = document.getElementById('resumeDropzone');
+  const card = document.getElementById('storedResumeCard');
+  const nameEl = document.getElementById('storedResumeFileName');
+  const sizeEl = document.getElementById('storedResumeFileSize');
+  const dateEl = document.getElementById('storedResumeUploadedAt');
+  const countEl = document.getElementById('storedResumeExtractedCount');
+
+  if (!dropzone || !card) return;
+
+  if (storedResume && storedResume.fileName) {
+    dropzone.classList.add('hidden');
+    card.classList.remove('hidden');
+
+    if (nameEl) nameEl.textContent = storedResume.fileName;
+    if (sizeEl) sizeEl.textContent = storedResume.fileSize ? `${Math.round(storedResume.fileSize / 1024)} KB` : '';
+    if (dateEl && storedResume.uploadedAt) {
+      const d = new Date(storedResume.uploadedAt);
+      dateEl.textContent = d.toLocaleDateString();
+    }
+    if (countEl) {
+      countEl.textContent = storedResume.fieldsExtracted ? `${storedResume.fieldsExtracted} fields extracted` : 'Profile synced';
+    }
+  } else {
+    card.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+  }
+}
+
+async function handleResumeFileUpload(file) {
+  if (!file) return;
+
+  const dropzoneContent = document.querySelector('.dropzone-content');
+  const progressBox = document.getElementById('resumeUploadProgress');
+  const statusText = document.getElementById('resumeUploadStatusText');
+
+  if (dropzoneContent) dropzoneContent.classList.add('hidden');
+  if (progressBox) progressBox.classList.remove('hidden');
+  if (statusText) statusText.textContent = 'Extracting resume text...';
+
+  try {
+    // 1. Convert file to Base64 data URL for storage & auto-attaching
+    const extractor = (typeof ResumeExtractor !== 'undefined' ? ResumeExtractor : (globalThis.ResumeExtractor || {}));
+    let dataUrl = '';
+    if (typeof extractor.fileToDataUrl === 'function') {
+      dataUrl = await extractor.fileToDataUrl(file);
+    } else {
+      dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    // 2. Extract plain text from document
+    let extractedText = '';
+    if (typeof extractor.extractTextFromFile === 'function') {
+      const res = await extractor.extractTextFromFile(file);
+      extractedText = res.text || '';
+    } else if (typeof file.text === 'function') {
+      extractedText = await file.text();
+    }
+
+    if (statusText) statusText.textContent = 'Parsing profile with AI...';
+
+    // 3. Parse resume with AI backend or local fallback
+    let parsedProfile = null;
+    let extractedCount = 0;
+
+    const bgRes = await new Promise((resolve) => {
+      chrome.runtime.sendMessage({
+        action: "PARSE_RESUME",
+        resumeText: extractedText,
+        fileName: file.name
+      }, res => {
+        if (chrome.runtime.lastError || !res || !res.success) {
+          resolve(null);
+        } else {
+          resolve(res.profile);
+        }
+      });
+    });
+
+    if (bgRes) {
+      parsedProfile = bgRes;
+    } else if (typeof extractor.parseResumeStructure === 'function') {
+      parsedProfile = extractor.parseResumeStructure(extractedText, file.name);
+    }
+
+    // 4. Merge extracted data into user memoryProfile
+    if (parsedProfile) {
+      if (parsedProfile.identity) {
+        Object.entries(parsedProfile.identity).forEach(([k, v]) => {
+          if (v && (!memoryProfile.identity[k] || !memoryProfile.identity[k].trim())) {
+            memoryProfile.identity[k] = v;
+            extractedCount++;
+          }
+        });
+      }
+      if (parsedProfile.links) {
+        Object.entries(parsedProfile.links).forEach(([k, v]) => {
+          if (v && (!memoryProfile.links[k] || !memoryProfile.links[k].trim())) {
+            memoryProfile.links[k] = v;
+            extractedCount++;
+          }
+        });
+      }
+      if (parsedProfile.education) {
+        Object.entries(parsedProfile.education).forEach(([k, v]) => {
+          if (v && (!memoryProfile.education[k] || !memoryProfile.education[k].trim())) {
+            memoryProfile.education[k] = v;
+            extractedCount++;
+          }
+        });
+      }
+      if (Array.isArray(parsedProfile.snippets) && parsedProfile.snippets.length > 0) {
+        parsedProfile.snippets.forEach(s => {
+          if (s.content && !memoryProfile.snippets.some(exist => exist.title === s.title)) {
+            memoryProfile.snippets.push({
+              id: s.id || ('snippet-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6)),
+              category: s.category || 'experience',
+              title: s.title || 'Resume Milestone',
+              content: s.content,
+              tags: s.tags || [],
+              createdAt: new Date().toISOString()
+            });
+            extractedCount++;
+          }
+        });
+      }
+    }
+
+    // 5. Store resume file object in chrome.storage.local
+    const storedResume = {
+      id: 'resume-' + Date.now(),
+      fileName: file.name,
+      fileType: file.type || 'application/pdf',
+      fileSize: file.size,
+      lastModified: file.lastModified,
+      dataUrl,
+      rawText: extractedText.slice(0, 10000),
+      fieldsExtracted: extractedCount,
+      uploadedAt: new Date().toISOString()
+    };
+
+    await chrome.storage.local.set({ storedResume, memoryProfile });
+
+    // 6. Refresh UI
+    renderStoredResumeUI(storedResume);
+    renderSnippets();
+    updateSnippetCount();
+
+    // Reload input values in Profile Details tab
+    const inputs = document.querySelectorAll('input[data-group], textarea[data-group]');
+    inputs.forEach(input => {
+      const group = input.dataset.group;
+      const field = input.dataset.field;
+      if (memoryProfile[group] && memoryProfile[group][field] !== undefined) {
+        input.value = memoryProfile[group][field];
+      }
+    });
+
+    showSaveStatus(`Resume saved! ${extractedCount} profile fields extracted ✓`);
+
+  } catch (err) {
+    console.error('[AutoForm Resume Upload Error]:', err);
+    showSaveStatus('Failed to parse resume: ' + err.message);
+  } finally {
+    if (dropzoneContent) dropzoneContent.classList.remove('hidden');
+    if (progressBox) progressBox.classList.add('hidden');
+  }
 }
 
 /**
