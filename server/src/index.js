@@ -81,8 +81,10 @@ app.get('/api/v1/health', (req, res) => {
 // Client Quota status
 app.get('/api/v1/quota', (req, res) => {
     const clientId = req.query.clientId || req.headers['x-client-id'] || req.ip || 'anonymous';
-    const quota = getQuotaStatus(clientId);
+    const isPro = (req.query.plan || req.headers['x-user-plan'] || '').toLowerCase() === 'pro';
+    const quota = getQuotaStatus(clientId, isPro);
     res.json({
+        success: true,
         clientId,
         ...quota
     });

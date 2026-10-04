@@ -90,6 +90,7 @@ function startProgressPolling(tabId) {
                 setSolvingButtonState(false);
                 hidePopupProgress();
                 fetchClientQuota();
+                refreshAuthAndSubscriptionStatus();
             }
         });
     }, 350);
@@ -174,7 +175,7 @@ function fetchClientQuota() {
                 }
             }
 
-            if (quotaFooterText) {
+            if (quotaFooterText && !window._hasMonthlyQuotaRendered) {
                 if (used === 0 || remaining === limit) {
                     quotaFooterText.innerText = `${limit} Qs/hr • Resets hourly`;
                 } else if (resetMinutes > 0) {
@@ -420,6 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchClientQuota();
     analyzeActiveTab();
     loadMemoryCount();
+    refreshAuthAndSubscriptionStatus();
 });
 
 // Save preferences on change
@@ -618,3 +620,174 @@ solveBtn.addEventListener('click', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// Auth, Subscription & Paid Plan Controller
+// ---------------------------------------------------------------------------
+
+const loggedOutView = document.getElementById('loggedOutView');
+const loggedInView = document.getElementById('loggedInView');
+const btnGoogleSignIn = document.getElementById('btnGoogleSignIn');
+const btnSignOut = document.getElementById('btnSignOut');
+const planBadgeGuest = document.getElementById('planBadgeGuest');
+const monthlyQuotaDisplayGuest = document.getElementById('monthlyQuotaDisplayGuest');
+const btnUpgradeProGuest = document.getElementById('btnUpgradeProGuest');
+const userAvatar = document.getElementById('userAvatar');
+const userNameDisplay = document.getElementById('userNameDisplay');
+const userPlanBadge = document.getElementById('userPlanBadge');
+const userMonthlyQuotaText = document.getElementById('userMonthlyQuotaText');
+const btnUpgradeProUser = document.getElementById('btnUpgradeProUser');
+const upgradeModalBackdrop = document.getElementById('upgradeModalBackdrop');
+const btnCloseUpgradeModal = document.getElementById('btnCloseUpgradeModal');
+const btnActivateDemoPro = document.getElementById('btnActivateDemoPro');
+
+/**
+ * Fetches the latest authentication and subscription quota status from background.
+ */
+function refreshAuthAndSubscriptionStatus() {
+    chrome.runtime.sendMessage({ action: "GET_AUTH_STATUS" }, (res) => {
+        if (chrome.runtime.lastError || !res || !res.success) return;
+        renderAuthUI(res.user, res.stats, res.quota);
+    });
+}
+
+/**
+ * Updates popup UI elements with authenticated user info and plan status.
+ * @param {Object} user 
+ * @param {Object} stats 
+ * @param {Object} quota 
+ */
+function renderAuthUI(user = {}, stats = {}, quota = {}) {
+    const isPro = Boolean(quota.isPro || (user?.plan === 'pro'));
+    const isGuest = !user?.id;
+
+    if (isGuest) {
+        if (loggedOutView) loggedOutView.style.display = 'flex';
+        if (loggedInView) loggedInView.style.display = 'none';
+
+        if (planBadgeGuest) {
+            planBadgeGuest.textContent = isPro ? 'PRO' : 'FREE';
+            planBadgeGuest.className = `plan-tag-badge ${isPro ? 'plan-badge-pro' : 'plan-badge-free'}`;
+        }
+        if (monthlyQuotaDisplayGuest) {
+            monthlyQuotaDisplayGuest.textContent = isPro ? 'Unlimited' : `${quota.remaining !== undefined ? quota.remaining : 25}/${quota.limit || 25} left`;
+        }
+        if (btnUpgradeProGuest) {
+            btnUpgradeProGuest.style.display = isPro ? 'none' : 'inline-flex';
+        }
+    } else {
+        if (loggedOutView) loggedOutView.style.display = 'none';
+        if (loggedInView) loggedInView.style.display = 'flex';
+
+        if (userNameDisplay) {
+            userNameDisplay.textContent = user.name || user.email || 'User';
+            userNameDisplay.title = user.email || '';
+        }
+        if (userAvatar) {
+            if (user.picture) {
+                userAvatar.textContent = '';
+                userAvatar.style.backgroundImage = `url("${user.picture}")`;
+            } else {
+                userAvatar.style.backgroundImage = 'none';
+                const initial = (user.name || user.email || 'U').charAt(0).toUpperCase();
+                userAvatar.textContent = initial;
+            }
+        }
+        if (userPlanBadge) {
+            userPlanBadge.textContent = isPro ? 'PRO' : 'FREE';
+            userPlanBadge.className = `plan-tag-badge ${isPro ? 'plan-badge-pro' : 'plan-badge-free'}`;
+        }
+        if (userMonthlyQuotaText) {
+            userMonthlyQuotaText.textContent = isPro ? 'Unlimited Qs' : `${quota.remaining !== undefined ? quota.remaining : 25}/${quota.limit || 25} left`;
+        }
+        if (btnUpgradeProUser) {
+            btnUpgradeProUser.style.display = isPro ? 'none' : 'inline-flex';
+        }
+    }
+
+    window._hasMonthlyQuotaRendered = true;
+    if (quotaFooterText) {
+        if (isPro) {
+            quotaFooterText.innerText = 'Pro: Unlimited Qs';
+        } else {
+            const rem = quota.remaining !== undefined ? quota.remaining : 25;
+            const lim = quota.limit || 25;
+            quotaFooterText.innerText = `Free: ${rem}/${lim} Qs/mo left`;
+        }
+    }
+}
+
+// Google Sign-In button
+if (btnGoogleSignIn) {
+    btnGoogleSignIn.addEventListener('click', () => {
+        btnGoogleSignIn.disabled = true;
+        btnGoogleSignIn.style.opacity = '0.7';
+        chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
+            btnGoogleSignIn.disabled = false;
+            btnGoogleSignIn.style.opacity = '1';
+            if (chrome.runtime.lastError || !res || !res.success) {
+                showStatus(res?.error || 'Sign-in cancelled', 'error');
+                return;
+            }
+            renderAuthUI(res.user, res.stats, res.quota);
+            showStatus(`Welcome, ${res.user?.name || 'User'}!`, 'success');
+        });
+    });
+}
+
+// Sign-Out button
+if (btnSignOut) {
+    btnSignOut.addEventListener('click', () => {
+        chrome.runtime.sendMessage({ action: "SIGN_OUT" }, (res) => {
+            if (chrome.runtime.lastError || !res || !res.success) return;
+            renderAuthUI(res.user, res.stats, res.quota);
+            showStatus('Signed out', 'info');
+        });
+    });
+}
+
+// Upgrade Modal controls
+function openUpgradeModal() {
+    if (upgradeModalBackdrop) {
+        upgradeModalBackdrop.style.display = 'flex';
+    }
+}
+
+function closeUpgradeModal() {
+    if (upgradeModalBackdrop) {
+        upgradeModalBackdrop.style.display = 'none';
+    }
+}
+
+if (btnUpgradeProGuest) btnUpgradeProGuest.addEventListener('click', openUpgradeModal);
+if (btnUpgradeProUser) btnUpgradeProUser.addEventListener('click', openUpgradeModal);
+if (btnCloseUpgradeModal) btnCloseUpgradeModal.addEventListener('click', closeUpgradeModal);
+
+if (upgradeModalBackdrop) {
+    upgradeModalBackdrop.addEventListener('click', (e) => {
+        if (e.target === upgradeModalBackdrop) {
+            closeUpgradeModal();
+        }
+    });
+}
+
+// Demo Pro Activation (allows testing Pro features offline)
+if (btnActivateDemoPro) {
+    btnActivateDemoPro.addEventListener('click', () => {
+        btnActivateDemoPro.disabled = true;
+        chrome.runtime.sendMessage({
+            action: "UPGRADE_TO_PRO",
+            details: { plan: 'pro', stripeCustomerId: 'cus_demo_' + Date.now() }
+        }, (res) => {
+            btnActivateDemoPro.disabled = false;
+            if (chrome.runtime.lastError || !res || !res.success) {
+                showStatus('Failed to activate Pro test mode', 'error');
+                return;
+            }
+            closeUpgradeModal();
+            renderAuthUI(res.user, res.stats, res.quota);
+            showStatus('AutoForm Pro Activated! ⭐', 'success');
+        });
+    });
+}
+

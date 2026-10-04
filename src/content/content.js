@@ -1314,6 +1314,228 @@ function injectAutoFormStyles() {
             box-shadow: 0 6px 18px rgba(114, 65, 255, 0.45) !important;
         }
 
+        /* ============================================================
+           Smart Delight Review Card
+           ============================================================ */
+        .autoform-delight-review-card {
+            position: fixed !important;
+            bottom: 24px !important;
+            right: 24px !important;
+            z-index: 999999 !important;
+            width: 320px !important;
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 14px !important;
+            box-shadow: 0 14px 38px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(99, 102, 241, 0.1) !important;
+            padding: 16px 18px !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+            transform: translateY(20px) scale(0.95) !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        }
+
+        .autoform-delight-review-card.autoform-review-visible {
+            transform: translateY(0) scale(1) !important;
+            opacity: 1 !important;
+            pointer-events: auto !important;
+        }
+
+        .autoform-review-sparkle {
+            font-size: 20px !important;
+            margin-bottom: 6px !important;
+        }
+
+        .autoform-review-close {
+            position: absolute !important;
+            top: 10px !important;
+            right: 12px !important;
+            background: transparent !important;
+            border: none !important;
+            font-size: 13px !important;
+            color: #94a3b8 !important;
+            cursor: pointer !important;
+            padding: 4px !important;
+            border-radius: 4px !important;
+        }
+
+        .autoform-review-close:hover {
+            color: #0f172a !important;
+            background: #f1f5f9 !important;
+        }
+
+        .autoform-review-title {
+            font-size: 14.5px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin-bottom: 4px !important;
+        }
+
+        .autoform-review-desc {
+            font-size: 12px !important;
+            color: #475569 !important;
+            line-height: 1.4 !important;
+            margin-bottom: 12px !important;
+        }
+
+        .autoform-review-stars {
+            display: flex !important;
+            gap: 6px !important;
+            margin-bottom: 14px !important;
+        }
+
+        .review-star {
+            font-size: 22px !important;
+            color: #fbbf24 !important;
+            cursor: pointer !important;
+            transition: transform 0.15s ease !important;
+        }
+
+        .review-star:hover {
+            transform: scale(1.25) !important;
+            color: #f59e0b !important;
+        }
+
+        .autoform-review-actions {
+            display: flex !important;
+            gap: 8px !important;
+            align-items: center !important;
+        }
+
+        .autoform-review-btn-primary {
+            flex: 1 !important;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+            color: #ffffff !important;
+            font-size: 12px !important;
+            font-weight: 600 !important;
+            padding: 8px 12px !important;
+            border-radius: 8px !important;
+            text-decoration: none !important;
+            text-align: center !important;
+            border: none !important;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3) !important;
+            cursor: pointer !important;
+        }
+
+        .autoform-review-btn-primary:hover {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%) !important;
+        }
+
+        .autoform-review-btn-secondary {
+            background: #f8fafc !important;
+            color: #64748b !important;
+            border: 1px solid #cbd5e1 !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            padding: 7px 10px !important;
+            border-radius: 8px !important;
+            cursor: pointer !important;
+        }
+
+        .autoform-review-btn-secondary:hover {
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+        }
+
+        /* ============================================================
+           In-Page Upgrade to Pro Modal
+           ============================================================ */
+        .autoform-upgrade-card {
+            background: #ffffff !important;
+            width: 100% !important;
+            max-width: 440px !important;
+            border-radius: 16px !important;
+            padding: 24px !important;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+            box-sizing: border-box !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+        }
+
+        .autoform-upgrade-header {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 12px !important;
+        }
+
+        .pro-tag-gold {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+            color: #92400e !important;
+            border: 1px solid #fcd34d !important;
+            font-size: 11px !important;
+            font-weight: 800 !important;
+            letter-spacing: 0.5px !important;
+            padding: 3px 9px !important;
+            border-radius: 6px !important;
+        }
+
+        .autoform-upgrade-title {
+            font-size: 18px !important;
+            font-weight: 800 !important;
+            color: #0f172a !important;
+            margin: 0 0 6px 0 !important;
+        }
+
+        .autoform-upgrade-desc {
+            font-size: 13px !important;
+            color: #64748b !important;
+            line-height: 1.45 !important;
+            margin: 0 0 16px 0 !important;
+        }
+
+        .autoform-upgrade-benefits {
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 10px !important;
+            padding: 12px 14px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 8px !important;
+            margin-bottom: 18px !important;
+        }
+
+        .benefit-row {
+            font-size: 12.5px !important;
+            color: #334155 !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+
+        .benefit-row span {
+            color: #10b981 !important;
+            font-weight: 700 !important;
+        }
+
+        .autoform-upgrade-actions {
+            display: flex !important;
+            gap: 10px !important;
+        }
+
+        .autoform-btn-pro-checkout {
+            flex: 1 !important;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+            color: #ffffff !important;
+            font-size: 13.5px !important;
+            font-weight: 700 !important;
+            padding: 10px 14px !important;
+            border-radius: 10px !important;
+            text-align: center !important;
+            text-decoration: none !important;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35) !important;
+        }
+
+        .autoform-btn-cancel-modal {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #64748b !important;
+            font-size: 12.5px !important;
+            font-weight: 600 !important;
+            padding: 10px 14px !important;
+            border-radius: 10px !important;
+            cursor: pointer !important;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .autoform-fab-idle,
             .autoform-shimmer-bar,
@@ -2379,6 +2601,126 @@ async function injectAnswerIntoField(q, block, solution) {
 }
 
 /**
+ * Displays the 5-star review delight prompt in the bottom-right of the page.
+ * Triggers after 2 completed forms or 15+ questions solved.
+ */
+function showDelightReviewPrompt() {
+    if (document.getElementById('autoform-delight-review-card')) return;
+
+    const card = document.createElement('div');
+    card.id = 'autoform-delight-review-card';
+    card.className = 'autoform-delight-review-card';
+    card.innerHTML = `
+        <div class="autoform-review-sparkle">✨</div>
+        <button class="autoform-review-close" id="btnDismissReview" type="button" title="Close" aria-label="Close">✕</button>
+        <div class="autoform-review-content">
+            <div class="autoform-review-title">Loving AutoForm AI?</div>
+            <div class="autoform-review-desc">You just saved time completing this form! A quick 5-star review on the Chrome Web Store helps us keep improving and adding free features.</div>
+            <div class="autoform-review-stars">
+                <span class="review-star" data-rating="1">★</span>
+                <span class="review-star" data-rating="2">★</span>
+                <span class="review-star" data-rating="3">★</span>
+                <span class="review-star" data-rating="4">★</span>
+                <span class="review-star" data-rating="5">★</span>
+            </div>
+            <div class="autoform-review-actions">
+                <a class="autoform-review-btn-primary" id="btnOpenReviewStore" href="https://chromewebstore.google.com/detail/autoform-ai/reviews" target="_blank" rel="noopener">
+                    ⭐ Rate on Web Store
+                </a>
+                <button class="autoform-review-btn-secondary" id="btnRemindLaterReview" type="button">Remind Later</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(card);
+    setTimeout(() => card.classList.add('autoform-review-visible'), 50);
+
+    const openStoreAndDone = () => {
+        chrome.runtime.sendMessage({ action: "UPDATE_REVIEW_STATE", state: "reviewed" });
+        card.classList.remove('autoform-review-visible');
+        setTimeout(() => card.remove(), 300);
+        showNotification("Thank you for supporting AutoForm AI! ⭐", "success");
+    };
+
+    const rateBtn = card.querySelector('#btnOpenReviewStore');
+    if (rateBtn) rateBtn.addEventListener('click', openStoreAndDone);
+
+    card.querySelectorAll('.review-star').forEach(star => {
+        star.addEventListener('click', () => {
+            window.open('https://chromewebstore.google.com/detail/autoform-ai/reviews', '_blank');
+            openStoreAndDone();
+        });
+    });
+
+    const remindBtn = card.querySelector('#btnRemindLaterReview');
+    if (remindBtn) {
+        remindBtn.addEventListener('click', () => {
+            chrome.runtime.sendMessage({ action: "UPDATE_REVIEW_STATE", state: "snoozed" });
+            card.classList.remove('autoform-review-visible');
+            setTimeout(() => card.remove(), 300);
+        });
+    }
+
+    const dismissBtn = card.querySelector('#btnDismissReview');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+            chrome.runtime.sendMessage({ action: "UPDATE_REVIEW_STATE", state: "dismissed" });
+            card.classList.remove('autoform-review-visible');
+            setTimeout(() => card.remove(), 300);
+        });
+    }
+}
+
+/**
+ * Displays in-page Upgrade to Pro modal when free monthly quota (25/25) is reached.
+ * @param {string} [customMsg]
+ */
+function showUpgradeModal(customMsg = '') {
+    if (document.getElementById('autoform-upgrade-backdrop')) return;
+
+    const backdrop = document.createElement('div');
+    backdrop.id = 'autoform-upgrade-backdrop';
+    backdrop.className = 'autoform-preview-backdrop autoform-visible';
+    backdrop.innerHTML = `
+        <div class="autoform-upgrade-card">
+            <div class="autoform-upgrade-header">
+                <span class="pro-tag-gold">⭐ AUTOFORM PRO</span>
+                <button class="autoform-preview-close-btn" id="btnCloseUpgradeModal" type="button" aria-label="Close">✕</button>
+            </div>
+            <h2 class="autoform-upgrade-title">Monthly Free Quota Reached</h2>
+            <p class="autoform-upgrade-desc">${customMsg || "You have reached your 25 free questions for this month. Upgrade to AutoForm Pro for unlimited questions and advanced AI models."}</p>
+            <div class="autoform-upgrade-benefits">
+                <div class="benefit-row"><span>✓</span> <strong>Unlimited Questions</strong> every month (No 25/mo cap)</div>
+                <div class="benefit-row"><span>✓</span> <strong>Claude 3.5 Sonnet & GPT-4o</strong> advanced reasoning</div>
+                <div class="benefit-row"><span>✓</span> <strong>ATS Super-Autofill</strong> on Greenhouse, Lever & Workday</div>
+                <div class="benefit-row"><span>✓</span> <strong>Priority 0ms Queue</strong> with dedicated bandwidth</div>
+            </div>
+            <div class="autoform-upgrade-actions">
+                <a class="autoform-btn-pro-checkout" href="https://buy.stripe.com/autoform-pro" target="_blank" rel="noopener">
+                    ⭐ Upgrade to Pro — $9.99/mo
+                </a>
+                <button class="autoform-btn-cancel-modal" id="btnDismissUpgrade" type="button">Maybe Later</button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    const close = () => {
+        backdrop.classList.remove('autoform-visible');
+        setTimeout(() => backdrop.remove(), 250);
+    };
+
+    const closeBtn = backdrop.querySelector('#btnCloseUpgradeModal');
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    const dismissBtn = backdrop.querySelector('#btnDismissUpgrade');
+    if (dismissBtn) dismissBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => {
+        if (e.target === backdrop) close();
+    });
+}
+
+/**
  * Displays an interactive Preview & Verification Modal before answers are injected into the form.
  * Shows all proposed answers, highlights unsure/trick questions, and allows in-line editing.
  * @param {Array<Object>} preparedList - List of { q, block, solution, confidence, isUnsure, reason }
@@ -3122,6 +3464,11 @@ async function processQuestionQueue(questions) {
                     }, 3, 350);
 
                     if (!response || !response.success) {
+                        if (response?.isQuotaExceeded) {
+                            showUpgradeModal(response.error);
+                            cancelRequested = true;
+                            break;
+                        }
                         throw new Error(response?.error || "AI failed to solve");
                     }
 
@@ -3357,6 +3704,19 @@ async function processQuestionQueue(questions) {
             } else {
                 const message = `Done! ${successCount} filled, ${skippedCount} skipped${failureCount > 0 ? `, ${failureCount} failed` : ''}`;
                 showNotification(message, successCount > 0 ? 'success' : 'info');
+            }
+
+            // Record form completion and trigger smart 5-star review prompt if qualified
+            if (!nextBtn && (submitBtn || successCount > 0)) {
+                try {
+                    chrome.runtime.sendMessage({ action: "RECORD_FORM_COMPLETED" }, (res) => {
+                        if (!chrome.runtime.lastError && res && res.shouldShowReview) {
+                            setTimeout(() => {
+                                showDelightReviewPrompt();
+                            }, 1200);
+                        }
+                    });
+                } catch (_) {}
             }
         }
     }

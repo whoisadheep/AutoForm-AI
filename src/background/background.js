@@ -22,6 +22,17 @@ try {
     }
 }
 
+// Load AuthService (Cloud Auth, Quota & Review Engine)
+try {
+    importScripts('../services/authService.js');
+} catch (e) {
+    try {
+        importScripts('src/services/authService.js');
+    } catch (e2) {
+        console.warn('[AutoForm] authService load error:', e2.message);
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Remote Configuration System
 // Fetches backend URL from GitHub-hosted config, caches locally, and falls back
@@ -237,15 +248,22 @@ async function solveViaBackendProxy(questionData, preferences = {}) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20000);
 
+    const userPlan = preferences.userPlan || 'free';
+    const userId = preferences.userId || clientId;
+
     try {
         const response = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/solve`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-Client-ID': clientId
+                'X-Client-ID': clientId,
+                'X-User-ID': userId,
+                'X-User-Plan': userPlan
             },
             body: JSON.stringify({
                 clientId,
+                userId,
+                userPlan,
                 question: questionData.question,
                 type: questionData.type,
                 choices: questionData.choices || [],
@@ -346,6 +364,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "SOLVE_SINGLE_QUESTION") {
         (async () => {
             try {
+                // 1. Quota & Paid Plan Verification
+                let authUser = { plan: 'free' };
+                let usageStats = {};
+                if (typeof getStoredAuthUser === 'function' && typeof canSolveQuestion === 'function') {
+                    authUser = await getStoredAuthUser();
+                    usageStats = await getStoredUsageStats();
+                    const quotaCheck = canSolveQuestion(authUser, usageStats);
+                    if (!quotaCheck.allowed) {
+                        sendResponse({
+                            success: false,
+                            error: quotaCheck.reason,
+                            isQuotaExceeded: true,
+                            plan: authUser.plan,
+                            remaining: 0
+                        });
+                        return;
+                    }
+                }
+
                 const stored = await chrome.storage.local.get([
                     'serverUrl', 
                     'customContext', 
@@ -382,8 +419,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const result = await solveViaBackendProxy(request.data, {
                     serverUrl: effectiveServerUrl,
                     customContext: combinedContext,
-                    tone: stored.tone || 'accurate'
+                    tone: stored.tone || 'accurate',
+                    userPlan: authUser.plan || 'free',
+                    userId: authUser.id
                 });
+
+                // Record successful solve against monthly quota & lifetime metrics
+                if (typeof recordQuestionSolved === 'function') {
+                    await recordQuestionSolved();
+                }
 
                 sendResponse({
                     success: true,
@@ -563,6 +607,108 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         chrome.storage.local.remove(['storedResume'], () => {
             sendResponse({ success: !chrome.runtime.lastError });
         });
+        return true;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Auth & Subscription Plan Handlers
+    // ---------------------------------------------------------------------------
+
+    if (request.action === "GET_AUTH_STATUS") {
+        (async () => {
+            try {
+                const user = typeof getStoredAuthUser === 'function' ? await getStoredAuthUser() : { plan: 'free' };
+                const stats = typeof getStoredUsageStats === 'function' ? await getStoredUsageStats() : {};
+                const quota = typeof getMonthlyQuotaStatus === 'function' ? getMonthlyQuotaStatus(user, stats) : { used: 0, limit: 25, remaining: 25, isPro: false };
+                sendResponse({ success: true, user, stats, quota });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "SIGN_IN_GOOGLE") {
+        (async () => {
+            try {
+                const remoteConfig = await getRemoteConfig().catch(() => null);
+                let authResult = { success: false };
+                if (typeof signInWithGoogle === 'function') {
+                    authResult = await signInWithGoogle({
+                        supabaseUrl: remoteConfig?.supabaseUrl,
+                        supabaseAnonKey: remoteConfig?.supabaseAnonKey
+                    });
+                }
+                const user = typeof getStoredAuthUser === 'function' ? await getStoredAuthUser() : { plan: 'free' };
+                const stats = typeof getStoredUsageStats === 'function' ? await getStoredUsageStats() : {};
+                const quota = typeof getMonthlyQuotaStatus === 'function' ? getMonthlyQuotaStatus(user, stats) : { used: 0, limit: 25, remaining: 25, isPro: false };
+                sendResponse({ ...authResult, user, stats, quota });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "SIGN_OUT") {
+        (async () => {
+            try {
+                if (typeof signOut === 'function') await signOut();
+                const user = typeof getStoredAuthUser === 'function' ? await getStoredAuthUser() : { plan: 'free' };
+                const stats = typeof getStoredUsageStats === 'function' ? await getStoredUsageStats() : {};
+                const quota = typeof getMonthlyQuotaStatus === 'function' ? getMonthlyQuotaStatus(user, stats) : { used: 0, limit: 25, remaining: 25, isPro: false };
+                sendResponse({ success: true, user, stats, quota });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "UPGRADE_TO_PRO") {
+        (async () => {
+            try {
+                const user = typeof updateUserPlan === 'function'
+                    ? await updateUserPlan('pro', request.details || {})
+                    : { plan: 'pro' };
+                const stats = typeof getStoredUsageStats === 'function' ? await getStoredUsageStats() : {};
+                const quota = typeof getMonthlyQuotaStatus === 'function' ? getMonthlyQuotaStatus(user, stats) : { used: 0, limit: Infinity, remaining: Infinity, isPro: true };
+                sendResponse({ success: true, user, stats, quota });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Smart Delight Review Prompt Handlers
+    // ---------------------------------------------------------------------------
+
+    if (request.action === "RECORD_FORM_COMPLETED") {
+        (async () => {
+            try {
+                const stats = typeof recordFormCompleted === 'function' ? await recordFormCompleted() : {};
+                const shouldShowReview = typeof shouldShowReviewPrompt === 'function' ? shouldShowReviewPrompt(stats) : false;
+                sendResponse({ success: true, stats, shouldShowReview });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "UPDATE_REVIEW_STATE") {
+        (async () => {
+            try {
+                const stats = typeof updateReviewPromptState === 'function'
+                    ? await updateReviewPromptState(request.state)
+                    : {};
+                sendResponse({ success: true, stats });
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
         return true;
     }
 });

@@ -8,7 +8,8 @@
     "activeTab",
     "tabs",
     "storage",
-    "unlimitedStorage"
+    "unlimitedStorage",
+    "identity"
   ],
   "host_permissions": [
     "https://docs.google.com/*",
@@ -29,6 +30,7 @@
         "https://*/*"
       ],
       "js": [
+        "src/services/authService.js",
         "src/services/resumeExtractor.js",
         "src/services/memoryRetriever.js",
         "src/services/formAdapters.js",

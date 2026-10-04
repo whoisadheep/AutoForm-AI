@@ -22,6 +22,14 @@ const cleanupInterval = setInterval(() => {
 cleanupInterval.unref();
 
 function rateLimiter(req, res, next) {
+    const isPro = (req.headers['x-user-plan'] || req.body?.userPlan || '').toLowerCase() === 'pro';
+    if (isPro) {
+        res.set('X-RateLimit-Limit', 'Unlimited');
+        res.set('X-RateLimit-Remaining', 'Unlimited');
+        res.set('X-User-Plan', 'pro');
+        return next();
+    }
+
     const clientId = req.body?.clientId || req.headers['x-client-id'] || req.ip || 'anonymous';
     const now = Date.now();
     const oneHourAgo = now - (60 * 60 * 1000);
@@ -52,7 +60,17 @@ function rateLimiter(req, res, next) {
     next();
 }
 
-function getQuotaStatus(clientId) {
+function getQuotaStatus(clientId, isPro = false) {
+    if (isPro) {
+        return {
+            used: 0,
+            limit: 'Unlimited',
+            remaining: 'Unlimited',
+            resetMinutes: 0,
+            isPro: true
+        };
+    }
+
     const now = Date.now();
     const oneHourAgo = now - (60 * 60 * 1000);
     const history = usageMap.get(clientId) || [];
@@ -71,7 +89,8 @@ function getQuotaStatus(clientId) {
         used,
         limit,
         remaining: Math.max(0, limit - used),
-        resetMinutes
+        resetMinutes,
+        isPro: false
     };
 }
 

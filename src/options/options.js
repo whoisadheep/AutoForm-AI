@@ -70,6 +70,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadData();
   setupEventListeners();
   renderSnippets();
+  loadAccountStatus();
 });
 
 async function loadData() {
@@ -1205,3 +1206,166 @@ function renderExcludedDomains(domains) {
         container.appendChild(pill);
     });
 }
+
+// ---------------------------------------------------------------------------
+// Tab 5: Account & Subscription Management
+// ---------------------------------------------------------------------------
+
+function loadAccountStatus() {
+    const avatarEl = document.getElementById('optionsUserAvatar');
+    const nameEl = document.getElementById('optionsUserName');
+    const emailEl = document.getElementById('optionsUserEmail');
+    const planBadgeEl = document.getElementById('optionsPlanBadge');
+    const btnGoogle = document.getElementById('optionsBtnGoogleSignIn');
+    const btnSignOut = document.getElementById('optionsBtnSignOut');
+    const usageTextEl = document.getElementById('optionsQuotaUsageText');
+    const progressBarEl = document.getElementById('optionsQuotaProgressBar');
+    const resetDateEl = document.getElementById('optionsQuotaResetDate');
+    const totalSolvedEl = document.getElementById('optionsTotalSolvedText');
+
+    if (!avatarEl) return; // Tab not in DOM
+
+    chrome.runtime.sendMessage({ action: "GET_AUTH_STATUS" }, (res) => {
+        if (chrome.runtime.lastError || !res || !res.success) return;
+
+        const user = res.user || {};
+        const stats = res.stats || {};
+        const quota = res.quota || {};
+        const isPro = quota.isPro || (user.plan === 'pro');
+        const isGuest = !user.id;
+
+        // User profile
+        if (isGuest) {
+            nameEl.textContent = 'Guest User';
+            emailEl.textContent = 'Anonymous Guest Mode (Local Storage Only)';
+            avatarEl.style.backgroundImage = 'none';
+            avatarEl.textContent = 'G';
+            if (btnGoogle) btnGoogle.style.display = 'inline-flex';
+            if (btnSignOut) btnSignOut.style.display = 'none';
+        } else {
+            nameEl.textContent = user.name || user.email || 'User';
+            emailEl.textContent = user.email || '';
+            if (user.picture) {
+                avatarEl.textContent = '';
+                avatarEl.style.backgroundImage = `url("${user.picture}")`;
+            } else {
+                avatarEl.style.backgroundImage = 'none';
+                avatarEl.textContent = (user.name || user.email || 'U').charAt(0).toUpperCase();
+            }
+            if (btnGoogle) btnGoogle.style.display = 'none';
+            if (btnSignOut) btnSignOut.style.display = 'inline-flex';
+        }
+
+        // Plan Badge
+        if (planBadgeEl) {
+            planBadgeEl.textContent = isPro ? 'PRO' : 'FREE';
+            planBadgeEl.className = `plan-tag-badge ${isPro ? 'plan-badge-pro' : 'plan-badge-free'}`;
+        }
+
+        // Quota Progress Meter
+        if (usageTextEl) {
+            if (isPro) {
+                usageTextEl.textContent = 'Unlimited (Pro Plan Active)';
+            } else {
+                const used = quota.used || 0;
+                const limit = quota.limit || 25;
+                usageTextEl.textContent = `${used} / ${limit} questions used this month`;
+            }
+        }
+
+        if (progressBarEl) {
+            if (isPro) {
+                progressBarEl.style.width = '100%';
+                progressBarEl.className = 'quota-meter-fill';
+            } else {
+                const used = quota.used || 0;
+                const limit = quota.limit || 25;
+                const pct = Math.min(100, Math.round((used / limit) * 100));
+                progressBarEl.style.width = `${pct}%`;
+                progressBarEl.className = pct >= 100 ? 'quota-meter-fill quota-full' : 'quota-meter-fill';
+            }
+        }
+
+        if (resetDateEl) {
+            if (isPro) {
+                resetDateEl.textContent = 'Pro plan active • Unlimited questions';
+            } else {
+                resetDateEl.textContent = quota.resetDate 
+                    ? `Monthly rollover cycle: ${quota.resetDate}` 
+                    : 'Resets at the start of next month';
+            }
+        }
+
+        if (totalSolvedEl) {
+            const total = stats.questionsSolvedTotal || 0;
+            const forms = stats.formsCompletedCount || 0;
+            totalSolvedEl.textContent = `${total} question${total === 1 ? '' : 's'} solved (${forms} form${forms === 1 ? '' : 's'} completed)`;
+        }
+    });
+}
+
+// Tab 5 Event Listeners
+document.addEventListener('DOMContentLoaded', () => {
+    const btnGoogle = document.getElementById('optionsBtnGoogleSignIn');
+    if (btnGoogle) {
+        btnGoogle.addEventListener('click', () => {
+            btnGoogle.disabled = true;
+            btnGoogle.style.opacity = '0.7';
+            chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
+                btnGoogle.disabled = false;
+                btnGoogle.style.opacity = '1';
+                if (chrome.runtime.lastError || !res || !res.success) {
+                    showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled'}`);
+                    return;
+                }
+                showSaveStatus(`Signed in as ${res.user?.name || res.user?.email} ✓`);
+                loadAccountStatus();
+            });
+        });
+    }
+
+    const btnSignOut = document.getElementById('optionsBtnSignOut');
+    if (btnSignOut) {
+        btnSignOut.addEventListener('click', () => {
+            chrome.runtime.sendMessage({ action: "SIGN_OUT" }, (res) => {
+                if (chrome.runtime.lastError || !res || !res.success) return;
+                showSaveStatus('Signed out successfully ✓');
+                loadAccountStatus();
+            });
+        });
+    }
+
+    const btnTogglePro = document.getElementById('optionsBtnToggleDemoPro');
+    if (btnTogglePro) {
+        btnTogglePro.addEventListener('click', () => {
+            btnTogglePro.disabled = true;
+            chrome.runtime.sendMessage({
+                action: "UPGRADE_TO_PRO",
+                details: { plan: 'pro', stripeCustomerId: 'cus_demo_' + Date.now() }
+            }, (res) => {
+                btnTogglePro.disabled = false;
+                if (chrome.runtime.lastError || !res || !res.success) {
+                    showSaveStatus('Failed to activate Pro');
+                    return;
+                }
+                showSaveStatus('AutoForm Pro activated! ⭐');
+                loadAccountStatus();
+            });
+        });
+    }
+
+    const btnResetFree = document.getElementById('optionsBtnResetFree');
+    if (btnResetFree) {
+        btnResetFree.addEventListener('click', () => {
+            chrome.storage.local.get(['authUser'], (data) => {
+                const user = data.authUser || {};
+                user.plan = 'free';
+                chrome.storage.local.set({ authUser: user }, () => {
+                    showSaveStatus('Reverted to Free tier ✓');
+                    loadAccountStatus();
+                });
+            });
+        });
+    }
+});
+

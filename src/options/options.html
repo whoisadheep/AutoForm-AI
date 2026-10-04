@@ -68,6 +68,12 @@
                 </svg>
                 <span>Server</span>
             </button>
+            <button class="tab-btn" data-tab="tab-account" type="button">
+                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                </svg>
+                <span>Account & Pro</span>
+            </button>
         </nav>
 
         <!-- ====================================================================
@@ -542,6 +548,136 @@
                     </div>
                 </div>
                 <p class="server-info-note">Server migrations happen instantly by updating <code>config/remote-config.json</code> on GitHub — no extension store update needed.</p>
+            </section>
+        </div>
+
+        <!-- ====================================================================
+             TAB 5: ACCOUNT & PRO SUBSCRIPTION
+             ==================================================================== -->
+        <div id="tab-account" class="tab-panel">
+            <!-- Account Overview Card -->
+            <section class="card account-status-card">
+                <div class="section-title-row">
+                    <h2>Account & Subscription</h2>
+                    <span class="card-subtitle">Manage your cloud identity, monthly solve quotas, and Pro tier perks</span>
+                </div>
+                
+                <div class="account-overview-box">
+                    <div class="account-user-row">
+                        <div id="optionsUserAvatar" class="options-avatar">U</div>
+                        <div class="options-user-details">
+                            <div class="options-user-name-line">
+                                <span id="optionsUserName" class="options-user-name">Guest User</span>
+                                <span id="optionsPlanBadge" class="plan-tag-badge plan-badge-free">FREE</span>
+                            </div>
+                            <span id="optionsUserEmail" class="options-user-email">Anonymous Guest Mode</span>
+                        </div>
+                        <div class="options-auth-actions">
+                            <button id="optionsBtnGoogleSignIn" class="btn btn-secondary btn-small" type="button" style="display: inline-flex; align-items: center; gap: 6px;">
+                                <svg class="google-svg-icon" viewBox="0 0 24 24" width="13" height="13">
+                                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                                </svg>
+                                <span>Sign In with Google</span>
+                            </button>
+                            <button id="optionsBtnSignOut" class="btn btn-secondary btn-small" type="button" style="display: none;">
+                                Sign Out
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Monthly Quota Progress Box -->
+                <div class="quota-meter-box">
+                    <div class="quota-meter-header">
+                        <span class="quota-meter-label">Monthly Usage Quota</span>
+                        <span id="optionsQuotaUsageText" class="quota-meter-numbers">0 / 25 questions used</span>
+                    </div>
+                    <div class="quota-meter-track">
+                        <div id="optionsQuotaProgressBar" class="quota-meter-fill" style="width: 0%;"></div>
+                    </div>
+                    <div class="quota-meter-footer">
+                        <span id="optionsQuotaResetDate" class="quota-meter-subtext">Resets at the start of next month</span>
+                        <span id="optionsTotalSolvedText" class="quota-meter-subtext">0 questions solved total</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Plan Comparison & Pro Upgrade Card -->
+            <section class="card pro-upgrade-card">
+                <div class="section-title-row">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="pro-tag-gold">⭐ AUTOFORM PRO</span>
+                        <h2>Unlock Full AI Power</h2>
+                    </div>
+                    <span class="card-subtitle">Designed for active job applicants, students, and power users</span>
+                </div>
+
+                <div class="plans-comparison-grid">
+                    <!-- Free Plan Column -->
+                    <div class="plan-card plan-card-free">
+                        <div class="plan-card-header">
+                            <span class="plan-name">Free Starter</span>
+                            <div class="plan-price">$0 <span>/ month</span></div>
+                        </div>
+                        <ul class="plan-features-list">
+                            <li><span class="check-icon">✓</span> 25 Questions / month</li>
+                            <li><span class="check-icon">✓</span> Client-Side Hybrid RAG Vault</li>
+                            <li><span class="check-icon">✓</span> Resume Binary Auto-Attach</li>
+                            <li><span class="check-icon">✓</span> Google Forms & Standard HTML</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> Unlimited monthly questions</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> Claude 3.5 Sonnet / GPT-4o reasoning</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> ATS Super-Autofill priority speed</li>
+                        </ul>
+                    </div>
+
+                    <!-- Pro Plan Column -->
+                    <div class="plan-card plan-card-pro">
+                        <div class="pro-card-badge">RECOMMENDED</div>
+                        <div class="plan-card-header">
+                            <span class="plan-name">AutoForm Pro</span>
+                            <div class="plan-price">$9.99 <span>/ month</span></div>
+                        </div>
+                        <ul class="plan-features-list">
+                            <li><span class="check-icon-pro">✓</span> <strong>Unlimited Questions</strong> every month</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Claude 3.5 Sonnet & GPT-4o</strong> advanced inference</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>ATS Super-Autofill</strong> for Greenhouse, Lever & Workday</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Smart Delight</strong> multi-step answer consistency</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Priority 0-Wait Queue</strong> on busy servers</li>
+                        </ul>
+                        <div class="plan-cta-block">
+                            <a id="optionsBtnStripe" class="btn btn-primary" href="https://buy.stripe.com/autoform-pro" target="_blank" rel="noopener" style="text-align: center; text-decoration: none; width: 100%;">
+                                Upgrade to Pro — $9.99/mo
+                            </a>
+                            <div style="display: flex; gap: 8px; width: 100%; margin-top: 8px;">
+                                <button id="optionsBtnToggleDemoPro" class="btn btn-secondary btn-small" type="button" style="flex: 1;">
+                                    Activate Pro (Test Mode)
+                                </button>
+                                <button id="optionsBtnResetFree" class="btn btn-secondary btn-small" type="button" style="flex: 1;">
+                                    Revert to Free
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chrome Web Store Review Card -->
+            <section class="card review-prompt-card">
+                <div class="section-title-row">
+                    <h2>Loved AutoForm AI?</h2>
+                    <span class="card-subtitle">Your review helps keep AutoForm AI fast, smart, and constantly improving!</span>
+                </div>
+                <div class="review-card-content">
+                    <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px;">
+                        Leaving a 5-star review on the Chrome Web Store takes only 30 seconds and helps other students and job seekers automate their forms safely.
+                    </p>
+                    <a class="btn btn-secondary btn-small" href="https://chromewebstore.google.com/detail/autoform-ai/reviews" target="_blank" rel="noopener" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                        <span>⭐ Rate 5 Stars on Web Store</span>
+                    </a>
+                </div>
             </section>
         </div>
 
