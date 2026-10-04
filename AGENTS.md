@@ -14,6 +14,7 @@ AutoForm AI v2.0 is a **Manifest V3 cross-browser extension** (Chrome, Firefox, 
 - **Sliding-Window Rate Limiting:** 150 questions/hour per client UUID with real-time countdown reset tracking.
 - **Universal Form Engine (`formAdapters.js`):** Pluggable adapters for Google Forms, Greenhouse ATS, Lever ATS, and Generic Job/HTML Forms. Resolves questions via 10-tier cascading labels and dispatches through native prototype setters to bypass React/Vue/Angular synthetic event traps.
 - **Client-Side Hybrid RAG (`memoryRetriever.js`):** User personal profile and memory snippets are stored locally in `chrome.storage.local`. The retriever tokenizes question text, classifies intent, cross-references choices, scores snippets using BM25/TF-IDF, and injects high-precision context dynamically.
+- **Preview & Verify Before Fill (`content.js`):** Human-in-the-loop verification modal showing proposed solutions with intelligent confidence scoring (`high` vs `unsure`), visual amber callouts on negative trick questions (`NOT/EXCEPT`), live in-line editing, and 1-click batch application.
 - **Universal Manifest:** Compatible with Chromium (service worker), Firefox (background scripts), and mobile extension browsers (Kiwi, Firefox Android, Orion).
 - **ARIA-First DOM Selectors:** Semantic ARIA attributes and `data-value` resolution to interact with Google Forms safely.
 
@@ -33,13 +34,15 @@ AutoForm-AI/
 │   ├── Dockerfile
 │   ├── railway.json / render.yaml
 │   ├── .env.example
-│   ├── tests/                     # Automated test suites (100 tests, 23 suites)
+│   ├── tests/                     # Automated test suites (119 tests, 27 suites)
 │   │   ├── apiSecurity.test.js
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js
 │   │   ├── keyRotator.test.js
+│   │   ├── laya.test.js
 │   │   ├── memoryRetriever.test.js
 │   │   ├── openrouter.test.js
+│   │   ├── previewConfidence.test.js
 │   │   ├── routerCircuitBreaker.test.js
 │   │   └── routerKeyCooldown.test.js
 │   └── src/
@@ -169,6 +172,6 @@ AutoForm-AI/
 3. **Resilient Selectors:** Maintain ARIA fallbacks (`div[role="listitem"]`, `[role="heading"]`, `[role="radio"]`, `[role="checkbox"]`) instead of relying solely on obfuscated classes.
 4. **Mobile & Viewport Standards:** Keep input font sizes $\ge 16$px on screens $\le 600$px to prevent iOS Safari viewport zooming. Maintain $\ge 44$px touch targets.
 5. **Always Run Validation & Tests:**
-   - `npm test`: Must pass 100% (100 tests, 23 test suites).
+   - `npm test`: Must pass 100% (119 tests, 27 test suites).
    - `npm run validate`: Manifest and all referenced files must validate successfully.
    - `npm run package`: Generates release bundles for Chrome, Edge, and Firefox AMO in `dist/`.

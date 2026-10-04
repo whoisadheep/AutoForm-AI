@@ -87,12 +87,13 @@ describe('HTTP API & Security Hardening', () => {
         assert.equal(res.status, 200);
         const data = await res.json();
 
-        assert.equal(data.version, '2.0.2');
+        assert.equal(data.version, '2.0.3');
         assert.ok(Array.isArray(data.providers));
         assert.ok(typeof data.rateLimitPerHour === 'number');
         assert.equal(data.maintenanceMode, false);
         assert.ok(data.features);
         assert.equal(data.features.instantProfile, true);
+        assert.equal(data.features.previewBeforeFill, true);
         assert.ok(data.timestamp);
     });
 });

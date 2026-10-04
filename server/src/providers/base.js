@@ -48,6 +48,9 @@ Format: {"answer": "Your text response here"}`;
         ? `\nUSER CONTEXT & VERIFIED MEMORY:\n${customContext}\n(CRITICAL: Prioritize the user's verified profile details and relevant memories above. Never contradict or invent placeholder contact information.)\n` 
         : '';
 
+    const confidenceInstruction = `CONFIDENCE EVALUATION:
+Include a "confidence" field ("high", "medium", or "low"). If you are not fully certain or if the question is ambiguous or contains trick phrasing, set "confidence": "medium" or "low" and optionally provide a brief "reasoning".`;
+
     const userPrompt = `QUESTION: "${question}"
 TYPE: ${type}
 ${contextPart}
@@ -55,6 +58,7 @@ ${choicesText}
 
 INSTRUCTIONS:
 ${instructions}
+${confidenceInstruction}
 Ensure the output is ONLY a valid JSON object without markdown fences.`;
 
     return { systemPrompt, userPrompt };
@@ -100,8 +104,17 @@ function parseAiResponse(rawText, type, choices = []) {
     }
 
     const parsed = JSON.parse(match[0]);
+    const confidence = (parsed.confidence && typeof parsed.confidence === 'string') 
+        ? parsed.confidence.toLowerCase().trim() 
+        : 'high';
+    const reasoning = parsed.reasoning ? String(parsed.reasoning).trim() : '';
+
     if (type === 'checkbox' && parsed.answers && Array.isArray(parsed.answers)) {
-        return { answers: parsed.answers.map(String) };
+        return { 
+            answers: parsed.answers.map(String),
+            confidence,
+            reasoning
+        };
     }
 
     if (parsed.answer !== undefined) {
@@ -109,11 +122,19 @@ function parseAiResponse(rawText, type, choices = []) {
         if (ans.toLowerCase().includes('user safety:') || ans.toLowerCase() === 'safe') {
             throw new Error('Model returned safety classifier text instead of answer');
         }
-        return { answer: ans };
+        return { 
+            answer: ans,
+            confidence,
+            reasoning
+        };
     }
 
     if (parsed.answers && Array.isArray(parsed.answers)) {
-        return { answer: String(parsed.answers[0]).trim() };
+        return { 
+            answer: String(parsed.answers[0]).trim(),
+            confidence,
+            reasoning
+        };
     }
 
     throw new Error('JSON response does not contain "answer" or "answers" key');

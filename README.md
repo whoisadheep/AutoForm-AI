@@ -1,4 +1,4 @@
-# AutoForm AI ⚡ (v2.0.2 Production)
+# AutoForm AI ⚡ (v2.0.3 Production)
 
 > Zero-config, multi-provider AI assistant with Local Hybrid RAG Memory to automatically solve and fill Google Forms, job application boards (Greenhouse, Lever, Ashby, Workday), and universal web forms across Chrome, Firefox, Edge, and mobile extension browsers.
 
@@ -9,6 +9,13 @@ AutoForm AI is a cross-browser extension backed by a high-throughput proxy serve
 ## ✨ Features
 
 - **⚡ Zero-Config & Instant:** Install and start filling forms immediately — no API keys or setup wizards required for end-users.
+- **🔍 Preview & Verify Before Fill (Human-in-the-Loop AI Safety):**
+  - **Full Solution Inspection:** Displays an elegant, Apple/Vercel-level modal with all proposed answers before any field is modified on the form.
+  - **Intelligent Confidence Scoring & Trick Detection:** Automatically flags negative trick questions (`NOT`, `EXCEPT`, `LEAST`), complex multi-select checkboxes, legal/compensation choices, and open-ended essays without matching memories with amber `⚠️ Review Recommended` banners.
+  - **In-Line Interactive Editing:** Tweak text inputs, switch radio choices, or adjust checkboxes directly inside the preview cards. Changes apply instantly.
+  - **One-Click Quick Filters:** Jump straight to flagged items with the `⚠️ Needs Review` tab, or review verified answers with `✓ High Confidence`.
+  - **Safe & Non-Destructive:** Apply all reviewed answers in one click (`Ctrl + Enter`) or discard completely (`Esc`) without altering the page.
+  - **Configurable Toggle:** Enable or disable anytime via the popup Preferences toggle.
 - **🔄 Dynamic Remote Configuration & Cloud Discovery:**
   - **Zero-Downtime Server Routing:** Discovers active backend proxies via GitHub-hosted remote configuration (`config/remote-config.json`) with intelligent local caching (6-hour TTL).
   - **Store-Independent Server Migrations:** Server host changes or failovers update instantly across all installed extensions worldwide without requiring browser store re-submissions.
@@ -84,7 +91,7 @@ AutoForm-AI/
 │   ├── render.yaml                # 1-click Render deploy template
 │   ├── railway.json               # 1-click Railway deploy template
 │   ├── .env.example               # Server environment template
-│   ├── tests/                     # Automated test suites (110 tests, 25 suites)
+│   ├── tests/                     # Automated test suites (119 tests, 27 suites)
 │   │   ├── apiSecurity.test.js    # Security headers & /config endpoint tests
 │   │   ├── circuitBreaker.test.js
 │   │   ├── formAdapters.test.js   # Universal Form Engine unit tests
@@ -92,6 +99,7 @@ AutoForm-AI/
 │   │   ├── laya.test.js
 │   │   ├── memoryRetriever.test.js# Hybrid RAG & slot resolution tests
 │   │   ├── openrouter.test.js
+│   │   ├── previewConfidence.test.js # Confidence heuristics & preview tests
 │   │   ├── routerCircuitBreaker.test.js
 │   │   └── routerKeyCooldown.test.js
 │   └── src/

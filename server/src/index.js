@@ -94,7 +94,7 @@ app.get('/api/v1/quota', (req, res) => {
 app.get('/api/v1/config', (req, res) => {
     const status = router.getStatus();
     res.json({
-        version: '2.0.2',
+        version: '2.0.3',
         providers: status.activeProviders || [],
         rateLimitPerHour: config.rateLimitPerHour,
         maintenanceMode: false,
@@ -103,7 +103,8 @@ app.get('/api/v1/config', (req, res) => {
             instantProfile: true,
             hybridRag: true,
             wholeFormReasoning: true,
-            storyDeduplication: true
+            storyDeduplication: true,
+            previewBeforeFill: true
         },
         selectorPatches: {},
         timestamp: new Date().toISOString()
@@ -129,6 +130,8 @@ app.post('/api/v1/solve', rateLimiter, validateSolveRequest, async (req, res) =>
             answers: result.answers,
             provider: result.provider,
             latencyMs: result.latencyMs,
+            confidence: result.confidence || 'high',
+            reasoning: result.reasoning || '',
             requestId: req.id
         });
 

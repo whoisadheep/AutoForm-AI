@@ -894,6 +894,425 @@ function injectAutoFormStyles() {
             box-shadow: 0 0 0 2px rgba(114, 65, 255, 0.3) !important;
         }
 
+        /* =====================================================================
+           AutoForm AI Preview & Verification Modal
+           ===================================================================== */
+        @keyframes autoform-modal-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.85; }
+        }
+
+        .autoform-preview-backdrop {
+            position: fixed !important;
+            inset: 0 !important;
+            z-index: 1000000 !important;
+            background: rgba(15, 23, 42, 0.72) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            padding: 20px !important;
+            box-sizing: border-box !important;
+            opacity: 0;
+            transition: opacity 0.25s ease !important;
+            font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif !important;
+        }
+
+        .autoform-preview-backdrop.autoform-visible {
+            opacity: 1 !important;
+        }
+
+        .autoform-preview-modal {
+            width: 100% !important;
+            max-width: 720px !important;
+            max-height: 88vh !important;
+            background: #ffffff !important;
+            border-radius: 16px !important;
+            box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+            transform: scale(0.95) translateY(12px) !important;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.28s ease !important;
+            opacity: 0;
+            box-sizing: border-box !important;
+        }
+
+        .autoform-preview-backdrop.autoform-visible .autoform-preview-modal {
+            transform: scale(1) translateY(0) !important;
+            opacity: 1 !important;
+        }
+
+        .autoform-preview-header {
+            padding: 18px 24px 14px !important;
+            border-bottom: 1px solid #e2e8f0 !important;
+            background: #fafafa !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            justify-content: space-between !important;
+            gap: 16px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .autoform-preview-title {
+            font-size: 17px !important;
+            font-weight: 700 !important;
+            color: #0f172a !important;
+            margin: 0 0 4px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+
+        .autoform-preview-subtitle {
+            font-size: 12.5px !important;
+            color: #64748b !important;
+            margin: 0 !important;
+            line-height: 1.4 !important;
+        }
+
+        .autoform-preview-pills {
+            display: flex !important;
+            gap: 8px !important;
+            align-items: center !important;
+            margin-top: 10px !important;
+            flex-wrap: wrap !important;
+        }
+
+        .autoform-preview-pill {
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            padding: 3px 10px !important;
+            border-radius: 9999px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 5px !important;
+        }
+
+        .autoform-preview-pill-total {
+            background: #f1f5f9 !important;
+            color: #334155 !important;
+            border: 1px solid #cbd5e1 !important;
+        }
+
+        .autoform-preview-pill-verified {
+            background: #ecfdf5 !important;
+            color: #059669 !important;
+            border: 1px solid #a7f3d0 !important;
+        }
+
+        .autoform-preview-pill-unsure {
+            background: #fffbeb !important;
+            color: #b45309 !important;
+            border: 1px solid #fde68a !important;
+        }
+
+        .autoform-preview-pill-unsure.pulse {
+            animation: autoform-modal-pulse 2s infinite ease-in-out !important;
+        }
+
+        .autoform-preview-close-btn {
+            background: transparent !important;
+            border: none !important;
+            color: #94a3b8 !important;
+            cursor: pointer !important;
+            padding: 6px !important;
+            border-radius: 8px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            transition: all 0.15s ease !important;
+        }
+
+        .autoform-preview-close-btn:hover {
+            background: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+
+        .autoform-preview-tabs {
+            display: flex !important;
+            gap: 6px !important;
+            padding: 10px 24px !important;
+            background: #ffffff !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            flex-shrink: 0 !important;
+        }
+
+        .autoform-preview-tab {
+            padding: 6px 14px !important;
+            border-radius: 8px !important;
+            font-size: 12.5px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            border: 1px solid transparent !important;
+            background: transparent !important;
+            color: #64748b !important;
+            transition: all 0.15s ease !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+
+        .autoform-preview-tab:hover {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+        }
+
+        .autoform-preview-tab.active {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .autoform-preview-tab-unsure.active {
+            background: #fffbeb !important;
+            color: #b45309 !important;
+            border-color: #fde68a !important;
+        }
+
+        .autoform-preview-body {
+            flex: 1 !important;
+            overflow-y: auto !important;
+            padding: 18px 24px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 14px !important;
+            background: #f8fafc !important;
+            box-sizing: border-box !important;
+        }
+
+        .autoform-preview-card {
+            background: #ffffff !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            padding: 16px !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 10px !important;
+            transition: border-color 0.2s, box-shadow 0.2s !important;
+            box-sizing: border-box !important;
+        }
+
+        .autoform-preview-card.card-unsure {
+            border: 1.5px solid #f59e0b !important;
+            background: #fffdf7 !important;
+            box-shadow: 0 4px 14px rgba(245, 158, 11, 0.12) !important;
+        }
+
+        .autoform-preview-card-header {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 8px !important;
+        }
+
+        .autoform-preview-card-badges {
+            display: flex !important;
+            align-items: center !important;
+            gap: 6px !important;
+        }
+
+        .autoform-qnum {
+            font-weight: 700 !important;
+            font-size: 12px !important;
+            color: #475569 !important;
+            background: #f1f5f9 !important;
+            padding: 2px 7px !important;
+            border-radius: 6px !important;
+        }
+
+        .autoform-qtype {
+            font-size: 11px !important;
+            font-weight: 600 !important;
+            color: #64748b !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.3px !important;
+        }
+
+        .autoform-qbadge {
+            font-size: 11px !important;
+            font-weight: 700 !important;
+            padding: 2.5px 8px !important;
+            border-radius: 9999px !important;
+            display: inline-flex !important;
+            align-items: center !important;
+            gap: 4px !important;
+        }
+
+        .autoform-qbadge-verified {
+            background: #ecfdf5 !important;
+            color: #059669 !important;
+            border: 1px solid #a7f3d0 !important;
+        }
+
+        .autoform-qbadge-profile {
+            background: #eff6ff !important;
+            color: #2563eb !important;
+            border: 1px solid #bfdbfe !important;
+        }
+
+        .autoform-qbadge-unsure {
+            background: #fffbeb !important;
+            color: #b45309 !important;
+            border: 1px solid #fde68a !important;
+        }
+
+        .autoform-qtext {
+            font-size: 13.5px !important;
+            font-weight: 600 !important;
+            color: #0f172a !important;
+            line-height: 1.45 !important;
+            margin: 0 !important;
+        }
+
+        .autoform-preview-warning {
+            padding: 8px 12px !important;
+            background: #fff7ed !important;
+            border-left: 3px solid #f97316 !important;
+            border-radius: 6px !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            color: #9a3412 !important;
+            display: flex !important;
+            align-items: flex-start !important;
+            gap: 8px !important;
+            line-height: 1.4 !important;
+        }
+
+        .autoform-preview-input {
+            width: 100% !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            border: 1.5px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            padding: 9px 12px !important;
+            font-size: 13px !important;
+            font-family: inherit !important;
+            color: #0f172a !important;
+            outline: none !important;
+            transition: border-color 0.15s, box-shadow 0.15s !important;
+            resize: vertical !important;
+        }
+
+        .autoform-preview-input:focus {
+            border-color: #7241ff !important;
+            box-shadow: 0 0 0 3px rgba(114, 65, 255, 0.15) !important;
+        }
+
+        .autoform-preview-choices {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 7px !important;
+        }
+
+        .autoform-preview-choice-label {
+            display: flex !important;
+            align-items: center !important;
+            gap: 9px !important;
+            padding: 8px 12px !important;
+            background: #f8fafc !important;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 8px !important;
+            font-size: 12.5px !important;
+            font-weight: 500 !important;
+            color: #1e293b !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+            user-select: none !important;
+        }
+
+        .autoform-preview-choice-label:hover {
+            background: #f1f5f9 !important;
+            border-color: #cbd5e1 !important;
+        }
+
+        .autoform-preview-choice-label.checked {
+            background: #f5f3ff !important;
+            border-color: #7241ff !important;
+            color: #4338ca !important;
+            font-weight: 600 !important;
+            box-shadow: 0 0 0 1px #7241ff !important;
+        }
+
+        .autoform-preview-choice-label input {
+            accent-color: #7241ff !important;
+            width: 15px !important;
+            height: 15px !important;
+            margin: 0 !important;
+            cursor: pointer !important;
+        }
+
+        .autoform-preview-card-meta {
+            font-size: 11px !important;
+            color: #94a3b8 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            padding-top: 4px !important;
+        }
+
+        .autoform-preview-footer {
+            padding: 14px 24px !important;
+            background: #ffffff !important;
+            border-top: 1px solid #e2e8f0 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            gap: 14px !important;
+            flex-shrink: 0 !important;
+        }
+
+        .autoform-preview-footer-hint {
+            font-size: 11.5px !important;
+            color: #64748b !important;
+        }
+
+        .autoform-preview-footer-actions {
+            display: flex !important;
+            gap: 10px !important;
+            align-items: center !important;
+        }
+
+        .autoform-preview-btn-cancel {
+            padding: 9px 16px !important;
+            border-radius: 8px !important;
+            border: 1px solid #cbd5e1 !important;
+            background: #ffffff !important;
+            color: #475569 !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            transition: all 0.15s ease !important;
+        }
+
+        .autoform-preview-btn-cancel:hover {
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+
+        .autoform-preview-btn-apply {
+            padding: 10px 20px !important;
+            border-radius: 8px !important;
+            border: none !important;
+            background: linear-gradient(135deg, #7241ff, #6366f1) !important;
+            color: #ffffff !important;
+            font-size: 13px !important;
+            font-weight: 600 !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 14px rgba(114, 65, 255, 0.4) !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 7px !important;
+            transition: all 0.2s cubic-bezier(0.34, 1.25, 0.64, 1) !important;
+        }
+
+        .autoform-preview-btn-apply:hover {
+            transform: translateY(-1px) scale(1.02) !important;
+            box-shadow: 0 6px 18px rgba(114, 65, 255, 0.45) !important;
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .autoform-fab-idle,
             .autoform-shimmer-bar,
@@ -1714,6 +2133,621 @@ async function sendRuntimeMessageWithRetry(payload, maxRetries = 3, baseDelayMs 
     throw lastError || new Error("Failed to communicate with extension background service worker.");
 }
 
+// ---------------------------------------------------------------------------
+// Answer Confidence Evaluation & Human-in-the-Loop Preview Modal
+// ---------------------------------------------------------------------------
+
+/**
+ * Evaluates the confidence level of a resolved answer and flags items needing human review.
+ * @param {Object} q - The question object { id, question, type, choices }
+ * @param {Object} solution - The solution object { answer, answers, provider, confidence, reasoning, retrievedSnippetIds }
+ * @param {Object} memoryProfile - User's local memory profile
+ * @returns {{ confidence: 'high'|'medium'|'low', isUnsure: boolean, reason: string }}
+ */
+function evaluateAnswerConfidence(q, solution, memoryProfile) {
+    if (!solution) {
+        return {
+            confidence: 'low',
+            isUnsure: true,
+            reason: 'Could not obtain a solution for this question'
+        };
+    }
+
+    // 1. Direct Instant Profile match (100% verified by user's personal vault)
+    if (solution.provider === 'instant_profile') {
+        return {
+            confidence: 'high',
+            isUnsure: false,
+            reason: 'Verified Personal Profile fact'
+        };
+    }
+
+    const qText = (q.question || '').toLowerCase();
+
+    // 2. Negative phrasing trick questions (Forms frequently test inverted logic: NOT, EXCEPT, LEAST, FALSE)
+    const negativeTrickRegex = /\b(not|except|neither|nor|false|incorrect|least|never|none of the above|exclude|excluding)\b/i;
+    if (negativeTrickRegex.test(qText)) {
+        return {
+            confidence: 'low',
+            isUnsure: true,
+            reason: 'Negative / trick phrasing ("NOT / EXCEPT / LEAST") detected — please confirm this choice'
+        };
+    }
+
+    // 3. Critical legal / identity / salary / authorization questions
+    const criticalRegex = /\b(salary|compensation|expected ctc|hourly rate|authorized to work|work authorization|visa sponsorship|require sponsorship|relocate|felony|criminal|veteran|disability status|ssn|social security)\b/i;
+    if (criticalRegex.test(qText)) {
+        return {
+            confidence: 'medium',
+            isUnsure: true,
+            reason: 'Important legal / compensation / eligibility preference'
+        };
+    }
+
+    // 4. Open-ended technical or behavioral essay without any retrieved personal snippets
+    if (q.type === 'text_input' && (!solution.retrievedSnippetIds || solution.retrievedSnippetIds.length === 0)) {
+        const isLongInput = q.element && (q.element.tagName === 'TEXTAREA' || q.element.querySelector('textarea'));
+        const isEssayPrompt = /\b(why|explain|describe|tell me about|how would you|what is your experience|cover letter|statement)\b/i.test(qText);
+        if (isLongInput || isEssayPrompt) {
+            return {
+                confidence: 'medium',
+                isUnsure: true,
+                reason: 'AI-generated response (no matching personal story found in Memory Vault)'
+            };
+        }
+    }
+
+    // 5. Explicit model uncertainty from backend
+    if (solution.confidence === 'low' || solution.confidence === 'medium') {
+        return {
+            confidence: solution.confidence,
+            isUnsure: true,
+            reason: solution.reasoning || 'AI model indicated moderate certainty'
+        };
+    }
+
+    // 6. Checkbox multi-select ambiguity (e.g. 0 options chosen or all options chosen)
+    if (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers)) {
+        if (solution.answers.length === 0) {
+            return {
+                confidence: 'low',
+                isUnsure: true,
+                reason: 'No options were selected for this multi-select field'
+            };
+        }
+        if (q.choices && q.choices.length > 2 && solution.answers.length === q.choices.length) {
+            return {
+                confidence: 'medium',
+                isUnsure: true,
+                reason: 'All available options were selected'
+            };
+        }
+    }
+
+    // 7. Choice validity check (did multiple_choice or dropdown match an actual option?)
+    if ((q.type === 'multiple_choice' || q.type === 'dropdown') && q.choices && q.choices.length > 0) {
+        const ans = String(solution.answer || '').toLowerCase().trim();
+        const matched = q.choices.some(c => {
+            const cleanC = c.toLowerCase().trim();
+            return cleanC === ans || cleanC.includes(ans) || ans.includes(cleanC);
+        });
+        if (!matched && !ans.startsWith('other')) {
+            return {
+                confidence: 'low',
+                isUnsure: true,
+                reason: 'Answer does not match available form choices cleanly'
+            };
+        }
+    }
+
+    // Default: High confidence answer
+    return {
+        confidence: 'high',
+        isUnsure: false,
+        reason: 'High confidence match'
+    };
+}
+
+/**
+ * Injects a single resolved answer into its target question element.
+ * @param {Object} q
+ * @param {HTMLElement} block
+ * @param {Object} solution
+ * @returns {Promise<boolean>}
+ */
+async function injectAnswerIntoField(q, block, solution) {
+    if (!block) return false;
+    let filled = false;
+
+    if (q.platform && q.platform !== 'google_forms' && globalThis.AutoFormEngine) {
+        filled = await globalThis.AutoFormEngine.fillAnswer(q, solution.answers || solution.answer, document);
+    } else {
+        if (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers)) {
+            for (const ans of solution.answers) {
+                const target = findMatchingOption(block, ans);
+                if (target) {
+                    await clickOption(target);
+                } else {
+                    const other = findOtherOption(block);
+                    if (other) {
+                        await clickOption(other.widget || other.label);
+                        if (other.input) {
+                            const cleanVal = ans.replace(/^other\s*[:\-]?\s*/i, '').trim();
+                            await fillSpecificInput(other.input, cleanVal);
+                        }
+                    }
+                }
+            }
+            filled = true;
+        } else if (q.type === 'dropdown') {
+            filled = await fillDropdown(block, solution.answer);
+        } else if (q.type === 'multiple_choice' || q.type === 'checkbox' || q.type === 'scale') {
+            const target = findMatchingOption(block, solution.answer);
+            if (target) {
+                filled = await clickOption(target);
+            } else {
+                const other = findOtherOption(block);
+                if (other) {
+                    const clicked = await clickOption(other.widget || other.label);
+                    if (other.input) {
+                        const cleanVal = solution.answer.replace(/^other\s*[:\-]?\s*/i, '').trim();
+                        await fillSpecificInput(other.input, cleanVal);
+                    }
+                    filled = clicked;
+                }
+            }
+        } else {
+            filled = await fillTextInput(block, solution.answer);
+        }
+    }
+    return filled;
+}
+
+/**
+ * Displays an interactive Preview & Verification Modal before answers are injected into the form.
+ * Shows all proposed answers, highlights unsure/trick questions, and allows in-line editing.
+ * @param {Array<Object>} preparedList - List of { q, block, solution, confidence, isUnsure, reason }
+ * @param {string} formTitle - Title of the active form
+ * @returns {Promise<{ confirmed: boolean, solutions: Array<Object> }>}
+ */
+function showPreviewModal(preparedList, formTitle = '') {
+    return new Promise((resolve) => {
+        // Clean up any existing modal
+        const existing = document.getElementById('autoform-preview-backdrop');
+        if (existing) existing.remove();
+
+        const totalCount = preparedList.length;
+        const unsureCount = preparedList.filter(item => item.isUnsure).length;
+        const verifiedCount = totalCount - unsureCount;
+
+        // Create Backdrop
+        const backdrop = document.createElement('div');
+        backdrop.id = 'autoform-preview-backdrop';
+        backdrop.className = 'autoform-preview-backdrop';
+
+        // Create Modal Card
+        const modal = document.createElement('div');
+        modal.className = 'autoform-preview-modal';
+
+        // ---------------- Header ----------------
+        const header = document.createElement('div');
+        header.className = 'autoform-preview-header';
+
+        const headerLeft = document.createElement('div');
+        headerLeft.style.cssText = 'flex: 1;';
+
+        const titleEl = document.createElement('h2');
+        titleEl.className = 'autoform-preview-title';
+        titleEl.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7241ff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Review Answers Before Filling`;
+        headerLeft.appendChild(titleEl);
+
+        const subtitleEl = document.createElement('p');
+        subtitleEl.className = 'autoform-preview-subtitle';
+        subtitleEl.textContent = `Form: "${(formTitle || 'Active Web Form').slice(0, 48)}" • Inspect solutions and tweak unsure items before applying.`;
+        headerLeft.appendChild(subtitleEl);
+
+        // Summary Pills
+        const pillsRow = document.createElement('div');
+        pillsRow.className = 'autoform-preview-pills';
+
+        const pillTotal = document.createElement('span');
+        pillTotal.className = 'autoform-preview-pill autoform-preview-pill-total';
+        pillTotal.textContent = `${totalCount} Questions`;
+        pillsRow.appendChild(pillTotal);
+
+        const pillVerified = document.createElement('span');
+        pillVerified.className = 'autoform-preview-pill autoform-preview-pill-verified';
+        pillVerified.textContent = `🟢 ${verifiedCount} High Confidence`;
+        pillsRow.appendChild(pillVerified);
+
+        if (unsureCount > 0) {
+            const pillUnsure = document.createElement('span');
+            pillUnsure.className = 'autoform-preview-pill autoform-preview-pill-unsure pulse';
+            pillUnsure.textContent = `⚠️ ${unsureCount} Review Recommended`;
+            pillsRow.appendChild(pillUnsure);
+        }
+
+        headerLeft.appendChild(pillsRow);
+        header.appendChild(headerLeft);
+
+        // Close button (✕)
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'autoform-preview-close-btn';
+        closeBtn.title = 'Cancel and close preview (Esc)';
+        closeBtn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+        header.appendChild(closeBtn);
+        modal.appendChild(header);
+
+        // ---------------- Quick Filter Tabs ----------------
+        const tabsRow = document.createElement('div');
+        tabsRow.className = 'autoform-preview-tabs';
+
+        const tabAll = document.createElement('button');
+        tabAll.className = 'autoform-preview-tab active';
+        tabAll.textContent = `All (${totalCount})`;
+        tabsRow.appendChild(tabAll);
+
+        let tabUnsure = null;
+        if (unsureCount > 0) {
+            tabUnsure = document.createElement('button');
+            tabUnsure.className = 'autoform-preview-tab autoform-preview-tab-unsure';
+            tabUnsure.textContent = `⚠️ Needs Review (${unsureCount})`;
+            tabsRow.appendChild(tabUnsure);
+        }
+
+        const tabVerified = document.createElement('button');
+        tabVerified.className = 'autoform-preview-tab';
+        tabVerified.textContent = `✓ High Confidence (${verifiedCount})`;
+        tabsRow.appendChild(tabVerified);
+
+        modal.appendChild(tabsRow);
+
+        // ---------------- Scrollable Body ----------------
+        const body = document.createElement('div');
+        body.className = 'autoform-preview-body';
+
+        // Filter state handler
+        function setFilter(filterType) {
+            [tabAll, tabUnsure, tabVerified].forEach(t => t && t.classList.remove('active'));
+            if (filterType === 'unsure' && tabUnsure) tabUnsure.classList.add('active');
+            else if (filterType === 'verified') tabVerified.classList.add('active');
+            else tabAll.classList.add('active');
+
+            const cards = body.querySelectorAll('.autoform-preview-card');
+            cards.forEach(c => {
+                const status = c.getAttribute('data-status');
+                if (filterType === 'all') c.style.display = 'flex';
+                else if (filterType === 'unsure') c.style.display = (status === 'unsure') ? 'flex' : 'none';
+                else if (filterType === 'verified') c.style.display = (status === 'verified') ? 'flex' : 'none';
+            });
+        }
+
+        tabAll.onclick = () => setFilter('all');
+        if (tabUnsure) tabUnsure.onclick = () => setFilter('unsure');
+        tabVerified.onclick = () => setFilter('verified');
+
+        // Populate Cards
+        preparedList.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.className = `autoform-preview-card ${item.isUnsure ? 'card-unsure' : ''}`;
+            card.setAttribute('data-status', item.isUnsure ? 'unsure' : 'verified');
+
+            // Card Header
+            const cardHeader = document.createElement('div');
+            cardHeader.className = 'autoform-preview-card-header';
+
+            const cardHeaderLeft = document.createElement('div');
+            cardHeaderLeft.className = 'autoform-preview-card-badges';
+
+            const qNum = document.createElement('span');
+            qNum.className = 'autoform-qnum';
+            qNum.textContent = `Q${index + 1}`;
+            cardHeaderLeft.appendChild(qNum);
+
+            const qType = document.createElement('span');
+            qType.className = 'autoform-qtype';
+            const readableType = item.q.type === 'multiple_choice' ? 'Multiple Choice'
+                : item.q.type === 'checkbox' ? 'Checkboxes'
+                : item.q.type === 'dropdown' ? 'Dropdown'
+                : item.q.type === 'scale' ? 'Linear Scale'
+                : 'Text Input';
+            qType.textContent = readableType;
+            cardHeaderLeft.appendChild(qType);
+            cardHeader.appendChild(cardHeaderLeft);
+
+            // Badge
+            const badge = document.createElement('span');
+            if (item.solution.provider === 'instant_profile') {
+                badge.className = 'autoform-qbadge autoform-qbadge-profile';
+                badge.textContent = '⚡ Profile Match';
+            } else if (item.isUnsure) {
+                badge.className = 'autoform-qbadge autoform-qbadge-unsure';
+                badge.textContent = '⚠️ Review Recommended';
+            } else {
+                badge.className = 'autoform-qbadge autoform-qbadge-verified';
+                badge.textContent = '🟢 High Confidence';
+            }
+            cardHeader.appendChild(badge);
+            card.appendChild(cardHeader);
+
+            // Question Text
+            const qTitle = document.createElement('h3');
+            qTitle.className = 'autoform-qtext';
+            qTitle.textContent = item.q.question || `Question ${index + 1}`;
+            card.appendChild(qTitle);
+
+            // If Unsure, show explanation banner
+            if (item.isUnsure) {
+                const warnBox = document.createElement('div');
+                warnBox.className = 'autoform-preview-warning';
+                warnBox.innerHTML = `<span>⚠️</span><span><strong>Why flag this?</strong> ${item.reason}</span>`;
+                card.appendChild(warnBox);
+            }
+
+            // In-line Input / Answer Editor
+            const editorWrapper = document.createElement('div');
+            editorWrapper.className = 'autoform-preview-editor';
+
+            if (item.q.type === 'text_input') {
+                const val = item.solution.answer || '';
+                const isLong = val.length > 50 || val.includes('\n');
+                if (isLong) {
+                    const textarea = document.createElement('textarea');
+                    textarea.className = 'autoform-preview-input';
+                    textarea.rows = Math.min(6, Math.max(3, Math.ceil(val.length / 50)));
+                    textarea.value = val;
+                    textarea.placeholder = 'Enter or edit your answer...';
+                    textarea.oninput = () => { item.solution.answer = textarea.value; };
+                    editorWrapper.appendChild(textarea);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'autoform-preview-input';
+                    input.value = val;
+                    input.placeholder = 'Enter or edit your answer...';
+                    input.oninput = () => { item.solution.answer = input.value; };
+                    editorWrapper.appendChild(input);
+                }
+            } else if (item.q.type === 'multiple_choice' || item.q.type === 'dropdown' || item.q.type === 'scale') {
+                const choices = item.q.choices || [];
+                const currentAns = String(item.solution.answer || '').trim();
+
+                if (choices.length > 0 && choices.length <= 6) {
+                    const choicesContainer = document.createElement('div');
+                    choicesContainer.className = 'autoform-preview-choices';
+
+                    choices.forEach((c) => {
+                        const lbl = document.createElement('label');
+                        lbl.className = 'autoform-preview-choice-label';
+
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = `preview_q_${index}`;
+                        radio.value = c;
+
+                        const isMatch = currentAns && (c.toLowerCase().trim() === currentAns.toLowerCase() ||
+                            currentAns.toLowerCase().includes(c.toLowerCase().trim()) ||
+                            c.toLowerCase().trim().includes(currentAns.toLowerCase()));
+
+                        if (isMatch) {
+                            radio.checked = true;
+                            lbl.classList.add('checked');
+                        }
+
+                        radio.onchange = () => {
+                            choicesContainer.querySelectorAll('.autoform-preview-choice-label').forEach(l => l.classList.remove('checked'));
+                            if (radio.checked) {
+                                lbl.classList.add('checked');
+                                item.solution.answer = c;
+                            }
+                        };
+
+                        const span = document.createElement('span');
+                        span.textContent = c;
+
+                        lbl.appendChild(radio);
+                        lbl.appendChild(span);
+                        choicesContainer.appendChild(lbl);
+                    });
+                    editorWrapper.appendChild(choicesContainer);
+                } else if (choices.length > 6) {
+                    const select = document.createElement('select');
+                    select.className = 'autoform-preview-input';
+
+                    choices.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c;
+                        opt.textContent = c;
+                        if (currentAns && (c.toLowerCase().trim() === currentAns.toLowerCase() || c.toLowerCase().includes(currentAns.toLowerCase()))) {
+                            opt.selected = true;
+                        }
+                        select.appendChild(opt);
+                    });
+
+                    select.onchange = () => {
+                        item.solution.answer = select.value;
+                    };
+                    editorWrapper.appendChild(select);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'autoform-preview-input';
+                    input.value = currentAns;
+                    input.oninput = () => { item.solution.answer = input.value; };
+                    editorWrapper.appendChild(input);
+                }
+            } else if (item.q.type === 'checkbox') {
+                const choices = item.q.choices || [];
+                let selectedList = Array.isArray(item.solution.answers)
+                    ? [...item.solution.answers]
+                    : (item.solution.answer ? [item.solution.answer] : []);
+
+                if (choices.length > 0) {
+                    const choicesContainer = document.createElement('div');
+                    choicesContainer.className = 'autoform-preview-choices';
+
+                    choices.forEach((c) => {
+                        const lbl = document.createElement('label');
+                        lbl.className = 'autoform-preview-choice-label';
+
+                        const cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        cb.value = c;
+
+                        const isChecked = selectedList.some(sel => {
+                            const sLower = String(sel).toLowerCase().trim();
+                            const cLower = c.toLowerCase().trim();
+                            return sLower === cLower || sLower.includes(cLower) || cLower.includes(sLower);
+                        });
+
+                        if (isChecked) {
+                            cb.checked = true;
+                            lbl.classList.add('checked');
+                        }
+
+                        cb.onchange = () => {
+                            if (cb.checked) {
+                                lbl.classList.add('checked');
+                                if (!selectedList.includes(c)) selectedList.push(c);
+                            } else {
+                                lbl.classList.remove('checked');
+                                selectedList = selectedList.filter(itemVal => itemVal !== c);
+                            }
+                            item.solution.answers = selectedList;
+                            item.solution.answer = selectedList.join(', ');
+                        };
+
+                        const span = document.createElement('span');
+                        span.textContent = c;
+
+                        lbl.appendChild(cb);
+                        lbl.appendChild(span);
+                        choicesContainer.appendChild(lbl);
+                    });
+                    editorWrapper.appendChild(choicesContainer);
+                } else {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'autoform-preview-input';
+                    input.value = selectedList.join(', ');
+                    input.oninput = () => {
+                        item.solution.answers = input.value.split(',').map(s => s.trim()).filter(Boolean);
+                    };
+                    editorWrapper.appendChild(input);
+                }
+            }
+
+            card.appendChild(editorWrapper);
+
+            // Card Footer Meta
+            const cardMeta = document.createElement('div');
+            cardMeta.className = 'autoform-preview-card-meta';
+
+            const sourceText = item.solution.provider === 'instant_profile'
+                ? `⚡ Memory Vault (${item.solution.key || 'Direct Match'})`
+                : (item.solution.provider === 'cached' || !item.solution.provider
+                    ? '⚡ Session Cache'
+                    : `🤖 ${item.solution.provider.toUpperCase()} (${item.solution.latencyMs || 0}ms)`);
+            cardMeta.textContent = `Source: ${sourceText}`;
+            card.appendChild(cardMeta);
+
+            body.appendChild(card);
+        });
+
+        modal.appendChild(body);
+
+        // ---------------- Sticky Footer ----------------
+        const footer = document.createElement('div');
+        footer.className = 'autoform-preview-footer';
+
+        const hint = document.createElement('span');
+        hint.className = 'autoform-preview-footer-hint';
+        hint.textContent = '💡 Click any field above to tweak • Esc to cancel • Ctrl+Enter to fill';
+        footer.appendChild(hint);
+
+        const actionsRow = document.createElement('div');
+        actionsRow.className = 'autoform-preview-footer-actions';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'autoform-preview-btn-cancel';
+        cancelBtn.textContent = 'Discard & Cancel';
+        actionsRow.appendChild(cancelBtn);
+
+        const applyBtn = document.createElement('button');
+        applyBtn.type = 'button';
+        applyBtn.className = 'autoform-preview-btn-apply';
+        applyBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Apply & Fill Form (${totalCount})`;
+        actionsRow.appendChild(applyBtn);
+
+        footer.appendChild(actionsRow);
+        modal.appendChild(footer);
+
+        backdrop.appendChild(modal);
+        document.body.appendChild(backdrop);
+
+        // Trigger entrance animation
+        requestAnimationFrame(() => {
+            backdrop.classList.add('autoform-visible');
+        });
+
+        function syncAllInputsFromDOM() {
+            const cards = body.querySelectorAll('.autoform-preview-card');
+            preparedList.forEach((item, idx) => {
+                const card = cards[idx];
+                if (!card) return;
+                if (item.q.type === 'text_input') {
+                    const textEl = card.querySelector('textarea, input[type="text"]');
+                    if (textEl) item.solution.answer = textEl.value;
+                } else if (item.q.type === 'multiple_choice' || item.q.type === 'dropdown' || item.q.type === 'scale') {
+                    const checkedRadio = card.querySelector('input[type="radio"]:checked');
+                    if (checkedRadio) item.solution.answer = checkedRadio.value;
+                    const selectEl = card.querySelector('select');
+                    if (selectEl) item.solution.answer = selectEl.value;
+                } else if (item.q.type === 'checkbox') {
+                    const checkedBoxes = [...card.querySelectorAll('input[type="checkbox"]:checked')];
+                    if (checkedBoxes.length > 0) {
+                        item.solution.answers = checkedBoxes.map(cb => cb.value);
+                        item.solution.answer = item.solution.answers.join(', ');
+                    }
+                }
+            });
+        }
+
+        function cleanupAndClose(confirmed) {
+            window.removeEventListener('keydown', handleKeyDown);
+            if (confirmed) {
+                syncAllInputsFromDOM();
+            }
+            backdrop.classList.remove('autoform-visible');
+            setTimeout(() => {
+                if (backdrop && backdrop.parentNode) backdrop.remove();
+            }, 260);
+            resolve({ confirmed, solutions: preparedList });
+        }
+
+        function handleKeyDown(e) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                cleanupAndClose(false);
+            } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                cleanupAndClose(true);
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown);
+        closeBtn.onclick = () => cleanupAndClose(false);
+        cancelBtn.onclick = () => cleanupAndClose(false);
+        applyBtn.onclick = () => cleanupAndClose(true);
+
+        // Backdrop click outside modal
+        backdrop.onclick = (e) => {
+            if (e.target === backdrop) cleanupAndClose(false);
+        };
+    });
+}
+
 async function processQuestionQueue(questions) {
     isSolving = true;
     cancelRequested = false;
@@ -1742,13 +2776,15 @@ async function processQuestionQueue(questions) {
     let skippedCount = 0;
     const priorAnswers = [];
     const usedSnippetIds = [];
+    const preparedSolutions = [];
 
-    // Retrieve verified memory profile and pacing preferences
+    // Retrieve verified memory profile, pacing preferences, and preview toggle
     const userSettings = await new Promise(resolve => {
-        chrome.storage.local.get(['memoryProfile', 'fillPacing'], (res) => resolve(res || {}));
+        chrome.storage.local.get(['memoryProfile', 'fillPacing', 'previewBeforeFill'], (res) => resolve(res || {}));
     });
     const memoryProfile = userSettings.memoryProfile || null;
     const fillPacing = userSettings.fillPacing || 'natural';
+    const previewBeforeFill = userSettings.previewBeforeFill !== false;
     let defaultDelay = 800;
     if (fillPacing === 'turbo') defaultDelay = 150;
     else if (fillPacing === 'stealth') defaultDelay = 1500;
@@ -1962,84 +2998,64 @@ async function processQuestionQueue(questions) {
                     providerBadge.innerText = `${solution.provider.toUpperCase()}${latency}`;
                 }
 
-                showGhostChip(currentBlock, '✍️ Autofilling...', 'typing');
+                // Evaluate answer confidence and determine if user review is needed
+                const evalResult = evaluateAnswerConfidence(q, solution, memoryProfile);
+                preparedSolutions.push({
+                    q,
+                    block: currentBlock,
+                    solution,
+                    confidence: evalResult.confidence,
+                    isUnsure: evalResult.isUnsure,
+                    reason: evalResult.reason
+                });
 
-                const block = q.element || getQuestionBlocks()[q.id];
-                let filled = false;
-
-                if (q.platform && q.platform !== 'google_forms' && globalThis.AutoFormEngine) {
-                    filled = await globalThis.AutoFormEngine.fillAnswer(q, solution.answers || solution.answer, document);
+                if (previewBeforeFill) {
+                    if (statusText) statusText.innerText = `Prepared Q${i + 1}/${questions.length}: ${(q.question || 'Question').slice(0, 30)}`;
+                    if (statusSubtext) statusSubtext.innerText = `${evalResult.isUnsure ? '⚠️ Needs Review • ' : '✓ High Confidence • '}${String(solution.answer || (solution.answers || []).join(', ')).slice(0, 26)}`;
+                    addThought(evalResult.isUnsure ? '⚠️' : '⚡', `[Q${i + 1}] Prepared (${evalResult.confidence.toUpperCase()}): "${String(solution.answer || (solution.answers || []).join(', ')).slice(0, 24)}"`, evalResult.isUnsure ? 'intent' : 'match');
+                    showGhostChip(currentBlock, evalResult.isUnsure ? '⚠️ Review Recommended' : '✓ Solution Ready', evalResult.isUnsure ? 'typing' : 'direct');
+                    const stepEndPercent = Math.round(((i + 1) / questions.length) * 100);
+                    updateProgressUI(i + 1, stepEndPercent);
+                    await responsiveSleep(100);
+                    removeGhostChip();
                 } else {
-                    if (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers)) {
-                        for (const ans of solution.answers) {
-                            const target = findMatchingOption(block, ans);
-                            if (target) {
-                                await clickOption(target);
-                            } else {
-                                const other = findOtherOption(block);
-                                if (other) {
-                                    await clickOption(other.widget || other.label);
-                                    if (other.input) {
-                                        const cleanVal = ans.replace(/^other\s*[:\-]?\s*/i, '').trim();
-                                        await fillSpecificInput(other.input, cleanVal);
-                                    }
-                                }
-                            }
+                    showGhostChip(currentBlock, '✍️ Autofilling...', 'typing');
+
+                    const block = q.element || getQuestionBlocks()[q.id];
+                    const filled = await injectAnswerIntoField(q, block, solution);
+
+                    if (filled) {
+                        successCount++;
+                        const ansToRecord = (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers))
+                            ? solution.answers.join(', ')
+                            : (solution.answer || '');
+                        if (ansToRecord && q.question) {
+                            priorAnswers.push({
+                                question: q.question,
+                                answer: ansToRecord,
+                                type: q.type
+                            });
                         }
-                        filled = true;
-                    } else if (q.type === 'dropdown') {
-                        filled = await fillDropdown(block, solution.answer);
-                    } else if (q.type === 'multiple_choice' || q.type === 'checkbox' || q.type === 'scale') {
-                        const target = findMatchingOption(block, solution.answer);
-                        if (target) {
-                            filled = await clickOption(target);
-                        } else {
-                            const other = findOtherOption(block);
-                            if (other) {
-                                const clicked = await clickOption(other.widget || other.label);
-                                if (other.input) {
-                                    const cleanVal = solution.answer.replace(/^other\s*[:\-]?\s*/i, '').trim();
-                                    await fillSpecificInput(other.input, cleanVal);
-                                }
-                                filled = clicked;
-                            }
-                        }
+                        addThought('✓', `[Q${i + 1}] Injected answer successfully`, 'success');
+                        showGhostChip(currentBlock, '✓ Injected', 'success');
                     } else {
-                        filled = await fillTextInput(block, solution.answer);
+                        failureCount++;
+                        addThought('✕', `[Q${i + 1}] Could not inject answer into field`, 'error');
+                        showGhostChip(currentBlock, 'Field not injected', 'error');
                     }
+
+                    // Advance progress after question is answered
+                    const stepEndPercent = Math.round(((i + 1) / questions.length) * 100);
+                    updateProgressUI(i + 1, stepEndPercent);
+
+                    // Dynamic pacing
+                    const currentDelay = (solution.provider === 'instant_profile')
+                        ? Math.min(200, defaultDelay)
+                        : (fillPacing === 'stealth' ? (defaultDelay + Math.floor(Math.random() * 300)) : defaultDelay);
+
+                    await responsiveSleep(currentDelay);
+                    removeGhostChip();
                 }
-
-                if (filled) {
-                    successCount++;
-                    const ansToRecord = (q.type === 'checkbox' && solution.answers && Array.isArray(solution.answers))
-                        ? solution.answers.join(', ')
-                        : (solution.answer || '');
-                    if (ansToRecord && q.question) {
-                        priorAnswers.push({
-                            question: q.question,
-                            answer: ansToRecord,
-                            type: q.type
-                        });
-                    }
-                    addThought('✓', `[Q${i + 1}] Injected answer successfully`, 'success');
-                    showGhostChip(currentBlock, '✓ Injected', 'success');
-                } else {
-                    failureCount++;
-                    addThought('✕', `[Q${i + 1}] Could not inject answer into field`, 'error');
-                    showGhostChip(currentBlock, 'Field not injected', 'error');
-                }
-
-                // Advance progress after question is answered
-                const stepEndPercent = Math.round(((i + 1) / questions.length) * 100);
-                updateProgressUI(i + 1, stepEndPercent);
-
-                // Dynamic pacing
-                const currentDelay = (solution.provider === 'instant_profile')
-                    ? Math.min(200, defaultDelay)
-                    : (fillPacing === 'stealth' ? (defaultDelay + Math.floor(Math.random() * 300)) : defaultDelay);
-
-                await responsiveSleep(currentDelay);
-                removeGhostChip();
 
             } catch (err) {
                 console.error(`Q${i + 1} Error:`, err.message);
@@ -2065,6 +3081,76 @@ async function processQuestionQueue(questions) {
                 updateProgressUI(i + 1, stepFailPercent);
                 await responsiveSleep(200);
                 removeGhostChip();
+            }
+        }
+
+        // Phase 4: Preview Modal (if Preview Before Fill is enabled)
+        if (previewBeforeFill && !cancelRequested) {
+            if (preparedSolutions.length > 0) {
+                // Minimize / fade HUD while preview is open
+                if (overlay) {
+                    overlay.style.transition = 'opacity 0.2s ease';
+                    overlay.style.opacity = '0';
+                    overlay.style.pointerEvents = 'none';
+                }
+
+                const modalResult = await showPreviewModal(preparedSolutions, formTitle);
+
+                if (!modalResult.confirmed) {
+                    cancelRequested = true;
+                    showNotification('Form filling cancelled — no changes made to fields', 'info');
+                    addThought('🛑', 'Filling cancelled by user in Preview dialog', 'error');
+                    return;
+                }
+
+                // Restore HUD for injection phase
+                if (overlay) {
+                    overlay.style.opacity = '1';
+                    overlay.style.pointerEvents = 'auto';
+                }
+                if (statusText) statusText.innerText = 'Applying Confirmed Answers...';
+                if (statusSubtext) statusSubtext.innerText = 'Injecting reviewed answers into form';
+                if (providerBadge) providerBadge.innerText = 'APPLYING VERIFIED';
+                addThought('✨', `Applying ${modalResult.solutions.length} verified answers to form...`, 'info');
+
+                for (let j = 0; j < modalResult.solutions.length; j++) {
+                    if (cancelRequested) break;
+                    const item = modalResult.solutions[j];
+                    const block = item.block || item.q.element || getQuestionBlocks()[item.q.id];
+
+                    scrollToBlock(item.q.element || item.q.id);
+                    showGhostChip(block, '✍️ Applying answer...', 'typing');
+
+                    const filled = await injectAnswerIntoField(item.q, block, item.solution);
+                    if (filled) {
+                        successCount++;
+                        const ansToRecord = (item.q.type === 'checkbox' && item.solution.answers && Array.isArray(item.solution.answers))
+                            ? item.solution.answers.join(', ')
+                            : (item.solution.answer || '');
+                        if (ansToRecord && item.q.question) {
+                            priorAnswers.push({
+                                question: item.q.question,
+                                answer: ansToRecord,
+                                type: item.q.type
+                            });
+                        }
+                        addThought('✓', `[Q${j + 1}] Injected answer`, 'success');
+                        showGhostChip(block, '✓ Injected', 'success');
+                    } else {
+                        failureCount++;
+                        addThought('✕', `[Q${j + 1}] Could not inject answer`, 'error');
+                        showGhostChip(block, 'Field not injected', 'error');
+                    }
+
+                    const applyPercent = Math.round(((j + 1) / modalResult.solutions.length) * 100);
+                    updateProgressUI(j + 1, applyPercent);
+
+                    const delay = (item.solution.provider === 'instant_profile')
+                        ? Math.min(120, defaultDelay)
+                        : (fillPacing === 'stealth' ? (defaultDelay + Math.floor(Math.random() * 200)) : defaultDelay);
+                    await responsiveSleep(delay);
+                    removeGhostChip();
+                }
             }
         }
 

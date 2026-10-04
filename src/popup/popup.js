@@ -18,6 +18,7 @@ const solveBtnText = document.getElementById('solveBtnText');
 const solveBtnIcon = document.getElementById('solveBtnIcon');
 const solveSpinner = document.getElementById('solveSpinner');
 const instantAutofillBtn = document.getElementById('instantAutofillBtn');
+const previewBeforeFill = document.getElementById('previewBeforeFill');
 const pacingSelect = document.getElementById('pacingSelect');
 const toneSelect = document.getElementById('toneSelect');
 const customContext = document.getElementById('customContext');
@@ -340,11 +341,16 @@ document.addEventListener('DOMContentLoaded', () => {
     chrome.storage.local.get([
         'tone',
         'customContext',
-        'fillPacing'
+        'fillPacing',
+        'previewBeforeFill'
     ], (stored) => {
         if (stored.tone) toneSelect.value = stored.tone;
         if (stored.customContext) customContext.value = stored.customContext;
         if (stored.fillPacing && pacingSelect) pacingSelect.value = stored.fillPacing;
+        if (previewBeforeFill) {
+            // Default to true if not set
+            previewBeforeFill.checked = stored.previewBeforeFill !== false;
+        }
     });
 
     checkServerHealth();
@@ -354,6 +360,12 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Save preferences on change
+if (previewBeforeFill) {
+    previewBeforeFill.addEventListener('change', () => {
+        chrome.storage.local.set({ previewBeforeFill: previewBeforeFill.checked });
+    });
+}
+
 toneSelect.addEventListener('change', () => {
     chrome.storage.local.set({ tone: toneSelect.value });
 });

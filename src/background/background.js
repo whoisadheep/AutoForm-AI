@@ -391,6 +391,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     answers: result.answers,
                     provider: result.provider,
                     latencyMs: result.latencyMs,
+                    confidence: result.confidence || 'high',
+                    reasoning: result.reasoning || '',
                     retrievedSnippetIds: retrievedSnippetIds
                 });
 
