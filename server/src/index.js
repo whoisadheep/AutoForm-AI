@@ -87,6 +87,10 @@ app.use(express.json({ limit: '1mb' }));
 
 // Static documentation, terms, privacy, and refund pages
 app.use('/site', express.static(path.resolve(__dirname, '../../site')));
+app.get('/privacy', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/privacy.html')));
+app.get('/terms', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/terms.html')));
+app.get('/refund', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/refund.html')));
+app.get('/contact', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/contact.html')));
 
 // Root info
 app.get('/', (req, res) => {
