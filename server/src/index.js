@@ -1177,13 +1177,14 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
     const sessionToken = req.headers['x-form-session-token'] || req.body?.formSessionToken;
 
     try {
+        let isPro = false;
         if (!req.isLegacyAnon) {
             // Enforce session validation, expiration, and 60-question cap
             formSessionManager.validateAndRecordSolve(sessionToken, req.user.userId);
 
             // Enforce per-user daily solve cap (200 free / 1500 pro, configurable via env)
             const entitlement = await db.getActiveEntitlement(req.user.userId);
-            const isPro = !!entitlement;
+            isPro = !!entitlement;
             const dailyLimit = isPro ? config.dailySolveCapPro : config.dailySolveCapFree;
             const currentDailySolves = await db.getDailySolveCount(req.user.userId);
 
@@ -1197,6 +1198,8 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
                     requestId: req.id
                 });
             }
+        } else if ((req.headers['x-user-plan'] || req.body?.userPlan || '').toLowerCase() === 'pro') {
+            isPro = true;
         }
 
         const { question, type, choices, customContext, tone } = req.body;
@@ -1206,7 +1209,9 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
             type,
             choices,
             customContext,
-            tone
+            tone,
+            isPro,
+            userPlan: isPro ? 'pro' : 'free'
         });
 
         if (req.isLegacyAnon) {
@@ -1229,6 +1234,8 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
             latencyMs: result.latencyMs,
             confidence: result.confidence || 'high',
             reasoning: result.reasoning || '',
+            tier: result.tier || (isPro ? 'pro' : 'free'),
+            modelTier: result.modelTier || (isPro ? '70b-flagship-reasoning' : 'standard'),
             requestId: req.id
         });
 

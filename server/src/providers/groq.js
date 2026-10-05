@@ -22,15 +22,21 @@ class GroqProvider {
         const { systemPrompt, userPrompt } = buildPrompt(questionData);
         let lastError = null;
 
-        // For PII requests: use Groq's 70B model (llama-3.3-70b-versatile) as default,
-        // with the 8B model (llama-3.1-8b-instant) as explicit fallback if 70B is rate limited
+        // Model selection:
+        // 1. Pro tier users always get 70B flagship reasoning model (llama-3.3-70b-versatile)
+        // 2. PII requests default to 70B with 8B fallback
+        // 3. General free requests use configured active model with dynamic fallback
         const isPii = Boolean(
             questionData.hasPii === true ||
             (typeof questionData.customContext === 'string' && questionData.customContext.trim().length > 0)
         );
 
         let modelsToTry;
-        if (isPii) {
+        if (questionData.isPro) {
+            const proPrimary = 'llama-3.3-70b-versatile';
+            const proFallback = 'llama-3.1-8b-instant';
+            modelsToTry = Array.from(new Set([proPrimary, proFallback]));
+        } else if (isPii) {
             const piiPrimary = this.config.piiModel || 'llama-3.3-70b-versatile';
             const piiFallback = 'llama-3.1-8b-instant';
             modelsToTry = Array.from(new Set([piiPrimary, piiFallback]));

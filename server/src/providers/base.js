@@ -69,7 +69,7 @@ function buildPrompt(params = {}) {
         return buildResumeParsePrompt(params.resumeText || params.question);
     }
 
-    const { question, type, choices = [], customContext = '', tone = 'accurate' } = params;
+    const { question, type, choices = [], customContext = '', tone = 'accurate', isPro = false } = params;
     const systemPrompt = `You are AutoForm AI, an intelligent and precise assistant specialized in accurately completing forms, quizzes, surveys, and assessments.
 Your task is to analyze form questions and return strictly a valid JSON object matching the required format.`;
 
@@ -96,8 +96,13 @@ Format: {"answer": "Exact option string"}`;
             ? 'Provide a comprehensive and well-explained answer (2-4 paragraphs).'
             : 'Provide a clear, accurate, and natural response.';
         instructions = `Provide an appropriate and accurate written answer. ${lengthGuidance}
-CRITICAL ACCURACY RULE: If the question asks for personal or contact facts (Email, Gmail, Phone, WhatsApp, Name, Department, Year of Study), use the exact verified details from USER CONTEXT & VERIFIED MEMORY. NEVER invent dummy or placeholder data like example@gmail.com, 1234567890, or placeholder names.
-Format: {"answer": "Your text response here"}`;
+CRITICAL ACCURACY RULE: If the question asks for personal or contact facts (Email, Gmail, Phone, WhatsApp, Name, Department, Year of Study), use the exact verified details from USER CONTEXT & VERIFIED MEMORY. NEVER invent dummy or placeholder data like example@gmail.com, 1234567890, or placeholder names.`;
+
+        if (isPro) {
+            instructions += `\nPRO EXECUTIVE REASONING: Apply top-tier executive reasoning for open-ended questions (behavioral, situational, motivation, or technical essays). Draw directly from USER CONTEXT & VERIFIED MEMORY using the STAR framework (Situation, Task, Action, Result) with quantifiable impact, specific technologies, and leadership maturity while maintaining a natural, authentic tone.`;
+        }
+
+        instructions += `\nFormat: {"answer": "Your text response here"}`;
     }
 
     const contextPart = customContext 

@@ -121,6 +121,8 @@ class ProviderRouter {
                 return {
                     ...result,
                     provider: providerName,
+                    tier: questionData.isPro ? 'pro' : 'free',
+                    modelTier: questionData.isPro ? '70b-flagship-reasoning' : 'standard',
                     latencyMs
                 };
 
