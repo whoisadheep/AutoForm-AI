@@ -35,8 +35,9 @@ try {
             service_worker: "src/background/background.js"
         }
     };
-    // Ensure no gecko settings in chromium bundle
+    // Ensure no gecko settings or local developer key in store chromium bundles
     delete chromiumManifest.browser_specific_settings;
+    delete chromiumManifest.key;
 
     const edgeZip = path.join(distDir, 'autoform-ai-edge.zip');
     const chromeZip = path.join(distDir, 'autoform-ai-chrome.zip');
@@ -57,7 +58,8 @@ try {
     fs.copyFileSync(edgeZip, chromeZip);
     fs.copyFileSync(edgeZip, universalZip);
 
-    console.log(`✅ Edge / Chrome Package:   dist/autoform-ai-edge.zip`);
+    console.log(`✅ Edge / Chrome Package:   dist/autoform-ai-edge.zip (store-ready, key stripped)`);
+    console.log(`✅ Chrome Store Package:    dist/autoform-ai-chrome.zip (store-ready, key stripped)`);
     console.log(`✅ Universal Default:        dist/autoform-ai.zip`);
 
     // ---------------------------------------------------------------------------
@@ -70,14 +72,23 @@ try {
         },
         browser_specific_settings: {
             gecko: {
-                id: "autoform-ai@whoisadheep.dev",
-                strict_min_version: "142.0",
-                data_collection_permissions: {
-                    required: ["none"]
+                id: baseManifest.browser_specific_settings?.gecko?.id || "autoform-ai@whoisadheep.dev",
+                strict_min_version: baseManifest.browser_specific_settings?.gecko?.strict_min_version || "140.0",
+                data_collection_permissions: baseManifest.browser_specific_settings?.gecko?.data_collection_permissions || {
+                    required: [
+                        "personallyIdentifyingInfo",
+                        "websiteContent"
+                    ],
+                    optional: [
+                        "authenticationInfo",
+                        "financialAndPaymentInfo",
+                        "technicalAndInteraction"
+                    ]
                 }
             }
         }
     };
+    delete firefoxManifest.key;
 
     fs.writeFileSync(path.join(tmpDir, 'manifest.json'), JSON.stringify(firefoxManifest, null, 2));
     const firefoxZip = path.join(distDir, 'autoform-ai-firefox.zip');

@@ -6,6 +6,8 @@
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const app = require('../src/index');
+const db = require('../src/db');
+const { signUserToken } = require('../src/services/auth');
 
 describe('HTTP API & Security Hardening', () => {
     let server;
@@ -69,10 +71,42 @@ describe('HTTP API & Security Hardening', () => {
         assert.ok(typeof data.limit === 'number');
     });
 
-    it('validates solve request and rejects missing question', async () => {
+    it('rejects unauthenticated solve requests with 401', async () => {
         const res = await fetch(`${baseUrl}/api/v1/solve`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ question: 'What is your name?' })
+        });
+
+        assert.equal(res.status, 401);
+        const data = await res.json();
+        assert.equal(data.success, false);
+        assert.equal(data.code, 'AUTH_REQUIRED');
+    });
+
+    it('validates solve request with session token and rejects missing question', async () => {
+        const user = await db.createUser({ googleSub: 'sub-sec-user-' + Date.now(), email: 'sec@example.com' });
+        const token = signUserToken(user);
+
+        // Start form session
+        const sessionRes = await fetch(`${baseUrl}/api/v1/form/start`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ formCategory: 'google_forms' })
+        });
+        const sessionData = await sessionRes.json();
+        assert.equal(sessionRes.status, 200);
+
+        const res = await fetch(`${baseUrl}/api/v1/solve`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'X-Form-Session-Token': sessionData.sessionToken
+            },
             body: JSON.stringify({})
         });
 
@@ -97,5 +131,21 @@ describe('HTTP API & Security Hardening', () => {
         assert.equal(data.features.resumeVault, true);
         assert.equal(data.features.resumeAutoAttach, true);
         assert.ok(data.timestamp);
+    });
+
+    it('handles account deletion on DELETE /api/v1/auth/me', async () => {
+        const res = await fetch(`${baseUrl}/api/v1/auth/me`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Client-ID': 'test-delete-client-uuid'
+            },
+            body: JSON.stringify({ email: 'test@example.com' })
+        });
+
+        assert.equal(res.status, 200);
+        const data = await res.json();
+        assert.equal(data.success, true);
+        assert.ok(data.message.includes('deleted'));
     });
 });

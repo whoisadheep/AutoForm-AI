@@ -22,7 +22,21 @@ class GroqProvider {
         const { systemPrompt, userPrompt } = buildPrompt(questionData);
         let lastError = null;
 
-        const modelsToTry = [this.activeModel, ...this.candidates.filter(m => m !== this.activeModel)];
+        // For PII requests: use Groq's 70B model (llama-3.3-70b-versatile) as default,
+        // with the 8B model (llama-3.1-8b-instant) as explicit fallback if 70B is rate limited
+        const isPii = Boolean(
+            questionData.hasPii === true ||
+            (typeof questionData.customContext === 'string' && questionData.customContext.trim().length > 0)
+        );
+
+        let modelsToTry;
+        if (isPii) {
+            const piiPrimary = this.config.piiModel || 'llama-3.3-70b-versatile';
+            const piiFallback = 'llama-3.1-8b-instant';
+            modelsToTry = Array.from(new Set([piiPrimary, piiFallback]));
+        } else {
+            modelsToTry = [this.activeModel, ...this.candidates.filter(m => m !== this.activeModel)];
+        }
 
         for (const model of modelsToTry) {
             const controller = new AbortController();
@@ -52,9 +66,16 @@ class GroqProvider {
                     const errBody = await res.text();
                     lastError = new Error(`Groq HTTP ${res.status}: ${errBody}`);
 
+                    const retryAfter = parseInt(res.headers.get('retry-after') || '60', 10);
+                    const isLastModel = model === modelsToTry[modelsToTry.length - 1];
+
                     if (res.status === 429) {
-                        const retryAfter = parseInt(res.headers.get('retry-after') || '60', 10);
-                        this.rotator.markKeyRateLimited(apiKey, retryAfter);
+                        console.warn(`[Groq] Model ${model} rate-limited (429).${isLastModel ? ' No more Groq candidate models.' : ' Trying fallback candidate...'}`);
+                        if (isLastModel) {
+                            this.rotator.markKeyRateLimited(apiKey, retryAfter);
+                            throw lastError;
+                        }
+                        continue;
                     }
 
                     if (res.status === 404 || res.status === 410 || errBody.includes('model_not_found') || errBody.includes('does not exist')) {
@@ -75,7 +96,7 @@ class GroqProvider {
                     throw new Error(`Groq timeout after ${this.config.timeoutMs || 8000}ms`);
                 }
                 lastError = err;
-                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('model_not_found')) {
+                if (!err.message.includes('404') && !err.message.includes('410') && !err.message.includes('model_not_found') && !err.message.includes('429')) {
                     throw err;
                 }
             } finally {

@@ -17,64 +17,71 @@
                 <div class="brand-info">
                     <div class="brand-title-row">
                         <h1 class="brand-title">AutoForm Memory Vault</h1>
-                        <span class="version-tag">v2.0.2</span>
+                        <span class="version-tag">v2.0.4</span>
                     </div>
                     <p class="brand-subtitle">Private local memory used to auto-fill form questions, bios, and essays with precision.</p>
                 </div>
             </div>
             <div class="header-pills">
+                <div class="social-proof-pill" title="Rated 5.0 on the Chrome Web Store">
+                    <span class="stars-gold">★★★★★</span>
+                    <span class="rating-label">5.0 Web Store</span>
+                </div>
                 <div class="privacy-pill" title="All memory stays in your browser's local storage. Never uploaded to servers.">
                     <svg class="pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
-                    <span>100% Private</span>
+                    <span>100% Local Storage</span>
                 </div>
                 <div id="saveStatus" class="save-status" aria-live="polite">Saved ✓</div>
             </div>
         </header>
 
         <!-- Segmented Tab Navigation -->
-        <nav class="tab-nav" aria-label="Memory Sections">
-            <button class="tab-btn active" data-tab="tab-import" type="button">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-                </svg>
-                <span>Instant Import</span>
-            </button>
-            <button class="tab-btn" data-tab="tab-profile" type="button">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                <span>Profile Details</span>
-            </button>
-            <button class="tab-btn" data-tab="tab-snippets" type="button">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                </svg>
-                <span>Memory Cards</span>
-                <span id="tabSnippetCount" class="tab-count-badge">0</span>
-            </button>
-            <button class="tab-btn" data-tab="tab-server" type="button">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
-                    <line x1="6" y1="6" x2="6.01" y2="6"/>
-                    <line x1="6" y1="18" x2="6.01" y2="18"/>
-                </svg>
-                <span>Server</span>
-            </button>
-            <button class="tab-btn" data-tab="tab-account" type="button">
-                <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-                <span>Account & Pro</span>
-            </button>
-        </nav>
+        <div class="tab-nav-wrapper">
+            <nav class="tab-nav" aria-label="Memory Sections">
+                <button class="tab-btn active" data-tab="tab-import" type="button">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                    </svg>
+                    <span>Instant Import</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-profile" type="button">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>Profile Details</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-snippets" type="button">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                    </svg>
+                    <span>Memory Cards</span>
+                    <span id="tabSnippetCount" class="tab-count-badge">0</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-server" type="button">
+                    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                    <span>Server</span>
+                </button>
+                <button class="tab-btn tab-btn-pro" data-tab="tab-account" type="button" title="View Account and Pro Upgrade Options">
+                    <svg class="tab-icon tab-icon-pro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    <span>Account &amp; Pro</span>
+                    <span class="pro-pill-badge">PRO</span>
+                </button>
+            </nav>
+        </div>
 
         <!-- ====================================================================
              TAB 1: INSTANT IMPORT
@@ -108,7 +115,7 @@
                         </div>
                         <div class="dropzone-text">
                             <span class="dropzone-title">Drop your resume here, or <button type="button" id="btnBrowseResume" class="btn-link">browse files</button></span>
-                            <span class="dropzone-sub">Supports PDF, Word (.docx), or Text • Stored 100% locally on device</span>
+                            <span class="dropzone-sub">Supports PDF, Word (.docx), or Text • Stored locally on your device</span>
                         </div>
                     </div>
                     <div id="resumeUploadProgress" class="resume-upload-progress hidden">
@@ -492,6 +499,26 @@
                 </div>
             </section>
 
+            <!-- Developer OAuth Redirect URI Card -->
+            <section class="card dev-oauth-card">
+                <div class="section-title-row">
+                    <h2>Browser OAuth Redirect URI (Developer / Cloud Console)</h2>
+                    <span class="card-subtitle">Exact redirect URI for this browser runtime. Copy into Google Cloud Console &rarr; Credentials &rarr; Authorized redirect URIs.</span>
+                </div>
+                <div class="input-group">
+                    <label for="oauthRedirectUrlDisplay">Active Identity Redirect URI</label>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="oauthRedirectUrlDisplay" readonly style="flex: 1; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 12px; background: var(--bg-surface, #f8faff); color: var(--text-primary); cursor: text;" value="Loading...">
+                        <button id="btnCopyRedirectUrl" class="btn btn-secondary btn-small" type="button" style="white-space: nowrap;">Copy URI</button>
+                    </div>
+                </div>
+                <p class="server-info-note" style="margin-top: 8px;">
+                    <strong>Browser domain patterns:</strong><br>
+                    &bull; <strong>Chrome & Edge:</strong> <code>https://&lt;extension-id&gt;.chromiumapp.org/</code> (Edge ID is in Partner Center; Chrome ID is assigned on draft upload).<br>
+                    &bull; <strong>Firefox:</strong> <code>https://&lt;id&gt;.extensions.allizom.org/</code> (Firefox resolves under Mozilla's <code>extensions.allizom.org</code> domain, NOT <code>chromiumapp.org</code>).
+                </p>
+            </section>
+
             <!-- Form Detection & Excluded Sites Card -->
             <section class="card">
                 <div class="section-title-row">
@@ -559,7 +586,7 @@
             <section class="card account-status-card">
                 <div class="section-title-row">
                     <h2>Account & Subscription</h2>
-                    <span class="card-subtitle">Manage your cloud identity, monthly solve quotas, and Pro tier perks</span>
+                    <span class="card-subtitle">Manage your cloud identity, monthly form fill quotas, and Pro tier perks</span>
                 </div>
                 
                 <div class="account-overview-box">
@@ -570,7 +597,7 @@
                                 <span id="optionsUserName" class="options-user-name">Guest User</span>
                                 <span id="optionsPlanBadge" class="plan-tag-badge plan-badge-free">FREE</span>
                             </div>
-                            <span id="optionsUserEmail" class="options-user-email">Anonymous Guest Mode</span>
+                            <span id="optionsUserEmail" class="options-user-email">Not Signed In (Local Storage Only)</span>
                         </div>
                         <div class="options-auth-actions">
                             <button id="optionsBtnGoogleSignIn" class="btn btn-secondary btn-small" type="button" style="display: inline-flex; align-items: center; gap: 6px;">
@@ -600,7 +627,7 @@
                     </div>
                     <div class="quota-meter-footer">
                         <span id="optionsQuotaResetDate" class="quota-meter-subtext">Resets at the start of next month</span>
-                        <span id="optionsTotalSolvedText" class="quota-meter-subtext">0 questions solved total</span>
+                        <span id="optionsTotalSolvedText" class="quota-meter-subtext">0 questions filled total</span>
                     </div>
                 </div>
             </section>
@@ -620,44 +647,67 @@
                     <div class="plan-card plan-card-free">
                         <div class="plan-card-header">
                             <span class="plan-name">Free Starter</span>
-                            <div class="plan-price">$0 <span>/ month</span></div>
+                            <div class="plan-price">$0 <span>/ forever</span></div>
                         </div>
                         <ul class="plan-features-list">
-                            <li><span class="check-icon">✓</span> 25 Questions / month</li>
-                            <li><span class="check-icon">✓</span> Client-Side Hybrid RAG Vault</li>
-                            <li><span class="check-icon">✓</span> Resume Binary Auto-Attach</li>
-                            <li><span class="check-icon">✓</span> Google Forms & Standard HTML</li>
-                            <li class="muted-feature"><span class="cross-icon">✕</span> Unlimited monthly questions</li>
-                            <li class="muted-feature"><span class="cross-icon">✕</span> Claude 3.5 Sonnet / GPT-4o reasoning</li>
-                            <li class="muted-feature"><span class="cross-icon">✕</span> ATS Super-Autofill priority speed</li>
+                            <li><span class="check-icon">✓</span> <strong>10 AI Forms</strong> / month (Google sign-in)</li>
+                            <li><span class="check-icon">✓</span> <strong>Unlimited 0ms</strong> Instant Profile Fills</li>
+                            <li><span class="check-icon">✓</span> <strong>Resume Vault</strong> &amp; Auto-Attach</li>
+                            <li><span class="check-icon">✓</span> Client-Side Hybrid RAG (100% Local)</li>
+                            <li><span class="check-icon">✓</span> Google Forms, Greenhouse, Lever, Workday</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> Unlimited monthly form fills</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> High-speed 70B AI inference</li>
+                            <li class="muted-feature"><span class="cross-icon">✕</span> Priority 0-wait server queue</li>
                         </ul>
                     </div>
 
                     <!-- Pro Plan Column -->
                     <div class="plan-card plan-card-pro">
-                        <div class="pro-card-badge">RECOMMENDED</div>
+                        <div class="pro-card-badge">MOST POPULAR • BEST FOR APPLICANTS</div>
                         <div class="plan-card-header">
-                            <span class="plan-name">AutoForm Pro</span>
-                            <div class="plan-price">$9.99 <span>/ month</span></div>
+                            <span class="plan-name">AutoForm Pro Pass</span>
+                            <div class="plan-price">₹99–₹349 <span>(one-time, 14/30/90 days)</span></div>
                         </div>
                         <ul class="plan-features-list">
-                            <li><span class="check-icon-pro">✓</span> <strong>Unlimited Questions</strong> every month</li>
-                            <li><span class="check-icon-pro">✓</span> <strong>Claude 3.5 Sonnet & GPT-4o</strong> advanced inference</li>
-                            <li><span class="check-icon-pro">✓</span> <strong>ATS Super-Autofill</strong> for Greenhouse, Lever & Workday</li>
-                            <li><span class="check-icon-pro">✓</span> <strong>Smart Delight</strong> multi-step answer consistency</li>
-                            <li><span class="check-icon-pro">✓</span> <strong>Priority 0-Wait Queue</strong> on busy servers</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Unlimited AI Form Fills</strong> (Fair-use 300/mo)</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>High-Speed 70B AI Reasoning</strong> (High-Performance Cloud AI)</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>ATS Super-Autofill</strong> on Greenhouse, Lever &amp; Workday</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Smart Delight Consistency</strong> across multi-page forms</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Priority 0-Wait Queue</strong> (Zero cold-start throttling)</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>Non-Recurring</strong> (14d, 30d, 90d — never auto-billed)</li>
+                            <li><span class="check-icon-pro">✓</span> <strong>100% Zero Data Retention</strong> guarantee on personal data</li>
                         </ul>
                         <div class="plan-cta-block">
-                            <a id="optionsBtnStripe" class="btn btn-primary" href="https://buy.stripe.com/autoform-pro" target="_blank" rel="noopener" style="text-align: center; text-decoration: none; width: 100%;">
-                                Upgrade to Pro — $9.99/mo
-                            </a>
-                            <div style="display: flex; gap: 8px; width: 100%; margin-top: 8px;">
-                                <button id="optionsBtnToggleDemoPro" class="btn btn-secondary btn-small" type="button" style="flex: 1;">
-                                    Activate Pro (Test Mode)
+                            <div class="options-pass-selection-grid">
+                                <button class="btn-pass-tier" data-plan="pass_14d" type="button" title="Get 14-Day Pro Pass for ₹99">
+                                    <span class="pass-tier-name">14 Days</span>
+                                    <span class="pass-tier-price">₹99</span>
                                 </button>
-                                <button id="optionsBtnResetFree" class="btn btn-secondary btn-small" type="button" style="flex: 1;">
-                                    Revert to Free
+                                <button class="btn-pass-tier btn-pass-tier-popular selected" data-plan="pass_30d" type="button" title="Get 30-Day Pro Pass for ₹149">
+                                    <span class="pass-tier-badge">MOST POPULAR</span>
+                                    <span class="pass-tier-name">30 Days</span>
+                                    <span class="pass-tier-price">₹149</span>
                                 </button>
+                                <button class="btn-pass-tier" data-plan="pass_90d" type="button" title="Get 90-Day Pro Pass for ₹349">
+                                    <span class="pass-tier-name">90 Days</span>
+                                    <span class="pass-tier-price">₹349</span>
+                                </button>
+                            </div>
+                            <button id="optionsBtnRazorpay" class="btn btn-pro-upgrade" type="button">
+                                <span>⭐ Get 30-Day Pass (₹149)</span>
+                            </button>
+                            <div class="trust-guarantee-row">
+                                <span class="trust-item"><svg class="trust-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Instant Activation</span>
+                                <span class="trust-item"><svg class="trust-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Never Auto-Billed</span>
+                                <span class="trust-item"><svg class="trust-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> 30-Day Guarantee</span>
+                            </div>
+                            <div class="activate-license-block">
+                                <span class="activate-sublabel">Already paid? Enter Razorpay Payment ID:</span>
+                                <div class="activate-input-row">
+                                    <input type="text" id="optionsPaymentIdInput" class="activate-input" placeholder="e.g. pay_P123456789abcde" autocomplete="off" spellcheck="false">
+                                    <button id="optionsBtnVerifyPayment" class="btn btn-primary btn-small" type="button">Activate Pro</button>
+                                </div>
+                                <div id="optionsPaymentVerifyStatus" class="payment-verify-status" style="display: none; margin-top: 6px;"></div>
                             </div>
                         </div>
                     </div>
@@ -679,14 +729,47 @@
                     </a>
                 </div>
             </section>
+
+            <!-- Privacy & Data Controls Card -->
+            <section class="card privacy-control-card">
+                <div class="section-title-row">
+                    <h2>Privacy & Data Controls</h2>
+                    <span class="card-subtitle">Manage data sharing and account lifecycle</span>
+                </div>
+                <div class="input-group" style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                    <div>
+                        <label for="chkShareDailySummary" style="margin: 0; font-weight: 600; cursor: pointer;">Share daily instant-fill counts</label>
+                        <p style="margin: 4px 0 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                            Your Google email, monthly form counts, form categories, and limit-hit events are stored on the server to enforce the 10 forms/month free limit. This switch controls whether your daily total count of on-device instant profile fills is shared with your account.
+                        </p>
+                    </div>
+                    <label class="switch" for="chkShareDailySummary" style="flex-shrink: 0;">
+                        <input type="checkbox" id="chkShareDailySummary" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                
+                <div class="danger-box" style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed var(--border-medium); display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+                    <div>
+                        <span style="font-size: 13px; font-weight: 600; color: #ef4444; display: block;">Delete Account & Cloud Records</span>
+                        <p style="margin: 2px 0 0 0; font-size: 12px; color: var(--text-secondary); line-height: 1.4;">
+                            Permanently deletes your user account, stored email, and all linked form usage records from our server.
+                        </p>
+                    </div>
+                    <button id="btnDeleteAccount" class="btn btn-danger btn-small" type="button" style="flex-shrink: 0;">
+                        Delete Account
+                    </button>
+                </div>
+            </section>
         </div>
 
         <!-- Footer -->
         <footer class="footer">
-            <p>100% Client-Side Privacy. Your data stays in your browser's local storage and is never uploaded.</p>
+            <p>Profile data and resumes are stored locally on your device. Form questions and required context are processed ephemerally. See our <a href="https://whoisadheep.github.io/AutoForm-AI/privacy.html" target="_blank" rel="noopener" style="color: inherit; text-decoration: underline;">Privacy Policy</a>.</p>
         </footer>
     </div>
 
+    <script src="../services/authService.js"></script>
     <script src="../services/resumeExtractor.js"></script>
     <script src="options.js"></script>
 </body>

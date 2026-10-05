@@ -48,6 +48,8 @@ class ProviderRouter {
 
     /**
      * Solves a question using the best available provider with automatic fallback and circuit breaking.
+     * Enforces data-sensitivity routing: requests containing personal profile context (PII)
+     * are strictly routed through zero-retention / no-training allow-listed providers.
      * @param {Object} questionData 
      * @returns {Promise<{ answer?: string, answers?: string[], provider: string, latencyMs: number }>}
      */
@@ -58,9 +60,37 @@ class ProviderRouter {
             throw new Error('No AI providers configured on the server. Please check environment variables.');
         }
 
+        // Data-Sensitivity Classification:
+        // Any request containing custom user profile context / memory snippets is classified as PII
+        const hasPersonalContext = Boolean(
+            questionData.hasPii === true ||
+            (typeof questionData.customContext === 'string' && questionData.customContext.trim().length > 0)
+        );
+
+        const piiAllowed = this.piiAllowedProviders || config.piiAllowedProviders || ['groq'];
+
+        let candidateProviders;
+        if (hasPersonalContext) {
+            // Strictly restrict to allow-listed zero-retention / no-training routes (e.g. Groq with ZDR)
+            candidateProviders = availableProviders.filter(p => piiAllowed.includes(p));
+
+            if (candidateProviders.length === 0) {
+                const err = new Error(
+                    `No zero-retention AI providers are configured or available to process personal profile data. Allowed routes: [${piiAllowed.join(', ')}]. Please try again shortly.`
+                );
+                err.code = 'PII_PROVIDER_UNAVAILABLE';
+                err.statusCode = 503;
+                err.retryable = true;
+                throw err;
+            }
+        } else {
+            // Non-PII request (general question): full multi-provider failover chain allowed
+            candidateProviders = availableProviders;
+        }
+
         const errors = [];
 
-        for (const providerName of availableProviders) {
+        for (const providerName of candidateProviders) {
             const provider = this.providers.get(providerName);
 
             // Check Circuit Breaker: fail fast (0ms) if provider is currently tripped
@@ -111,6 +141,17 @@ class ProviderRouter {
         }
 
         const summary = errors.map(e => `${e.provider}: ${e.error}`).join(' | ');
+
+        if (hasPersonalContext) {
+            const err = new Error(
+                `All zero-retention AI providers failed for personal profile data: ${summary}. Request was not routed to secondary non-zero-retention providers.`
+            );
+            err.code = 'PII_PROVIDER_UNAVAILABLE';
+            err.statusCode = 503;
+            err.retryable = true;
+            throw err;
+        }
+
         throw new Error(`All providers failed: ${summary}`);
     }
 

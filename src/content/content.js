@@ -25,7 +25,7 @@ function cancelFormSolver() {
     if (statusText) statusText.innerText = 'Stopping...';
 
     const statusSubtext = document.getElementById('ai-status-subtext');
-    if (statusSubtext) statusSubtext.innerText = 'Cancelling solver...';
+    if (statusSubtext) statusSubtext.innerText = 'Cancelling form fill...';
 
     const cancelBtn = document.getElementById('ai-cancel-btn');
     if (cancelBtn) {
@@ -38,7 +38,7 @@ function cancelFormSolver() {
     if (floatBtn) floatBtn.textContent = 'Stopping...';
 
     if (typeof addThought === 'function') {
-        addThought('⏹', 'Solver stopped by user', 'error');
+        addThought('⏹', 'Form fill stopped by user', 'error');
     }
     if (typeof removeGhostChip === 'function') {
         removeGhostChip();
@@ -2681,25 +2681,28 @@ function showUpgradeModal(customMsg = '') {
     const backdrop = document.createElement('div');
     backdrop.id = 'autoform-upgrade-backdrop';
     backdrop.className = 'autoform-preview-backdrop autoform-visible';
+    const isPaymentsDisabled = customMsg && customMsg.includes('coming soon');
     backdrop.innerHTML = `
         <div class="autoform-upgrade-card">
             <div class="autoform-upgrade-header">
-                <span class="pro-tag-gold">⭐ AUTOFORM PRO</span>
+                <span class="pro-tag-gold">${isPaymentsDisabled ? 'ℹ️ AUTOFORM NOTICE' : '⭐ AUTOFORM PRO'}</span>
                 <button class="autoform-preview-close-btn" id="btnCloseUpgradeModal" type="button" aria-label="Close">✕</button>
             </div>
-            <h2 class="autoform-upgrade-title">Monthly Free Quota Reached</h2>
-            <p class="autoform-upgrade-desc">${customMsg || "You have reached your 25 free questions for this month. Upgrade to AutoForm Pro for unlimited questions and advanced AI models."}</p>
+            <h2 class="autoform-upgrade-title">Monthly Free Limit Reached</h2>
+            <p class="autoform-upgrade-desc">${customMsg || "You have filled all 10 free forms for this month. Upgrade to AutoForm Pro for unlimited forms and advanced AI models."}</p>
+            ${isPaymentsDisabled ? '' : `
             <div class="autoform-upgrade-benefits">
-                <div class="benefit-row"><span>✓</span> <strong>Unlimited Questions</strong> every month (No 25/mo cap)</div>
-                <div class="benefit-row"><span>✓</span> <strong>Claude 3.5 Sonnet & GPT-4o</strong> advanced reasoning</div>
-                <div class="benefit-row"><span>✓</span> <strong>ATS Super-Autofill</strong> on Greenhouse, Lever & Workday</div>
+                <div class="benefit-row"><span>✓</span> <strong>Unlimited Form Fills</strong> every month (up to 300 fair-use cap)</div>
+                <div class="benefit-row"><span>✓</span> <strong>Claude 3.5 Sonnet & GPT-4o</strong> reasoning</div>
+                <div class="benefit-row"><span>✓</span> <strong>Smart Hybrid RAG</strong> & Resume Auto-Attach</div>
                 <div class="benefit-row"><span>✓</span> <strong>Priority 0ms Queue</strong> with dedicated bandwidth</div>
-            </div>
+            </div>`}
             <div class="autoform-upgrade-actions">
-                <a class="autoform-btn-pro-checkout" href="https://buy.stripe.com/autoform-pro" target="_blank" rel="noopener">
-                    ⭐ Upgrade to Pro — $9.99/mo
-                </a>
-                <button class="autoform-btn-cancel-modal" id="btnDismissUpgrade" type="button">Maybe Later</button>
+                ${isPaymentsDisabled ? '' : `
+                <button class="autoform-btn-pro-checkout" id="btnOpenCheckout" type="button">
+                    ⭐ Choose Pass &amp; Upgrade
+                </button>`}
+                <button class="autoform-btn-cancel-modal" id="btnDismissUpgrade" type="button">${isPaymentsDisabled ? 'Close' : 'Maybe Later'}</button>
             </div>
         </div>
     `;
@@ -2710,6 +2713,15 @@ function showUpgradeModal(customMsg = '') {
         backdrop.classList.remove('autoform-visible');
         setTimeout(() => backdrop.remove(), 250);
     };
+
+    const checkoutBtn = backdrop.querySelector('#btnOpenCheckout');
+    if (checkoutBtn) {
+        checkoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            chrome.runtime.sendMessage({ action: "OPEN_CHECKOUT_PAGE" });
+            close();
+        });
+    }
 
     const closeBtn = backdrop.querySelector('#btnCloseUpgradeModal');
     if (closeBtn) closeBtn.addEventListener('click', close);
@@ -3242,7 +3254,7 @@ async function processQuestionQueue(questions) {
     const previewBeforeFill = userSettings.previewBeforeFill !== false;
     let defaultDelay = 800;
     if (fillPacing === 'turbo') defaultDelay = 150;
-    else if (fillPacing === 'stealth') defaultDelay = 1500;
+    else if (fillPacing === 'slow' || fillPacing === 'stealth') defaultDelay = 1500;
 
     function updateProgressUI(stepNumber, percentValue) {
         solverProgress = {
@@ -3283,6 +3295,52 @@ async function processQuestionQueue(questions) {
     addThought('✦', `Form detected: "${(formTitle || 'Web Form').slice(0, 32)}"`, 'info');
     addThought('📋', `Macro intent: ${formDigest.macroIntent || 'General Form'} (${questions.length} Qs)`, 'intent');
     await responsiveSleep(400);
+
+    // Step 2: Establish Form Session & Reserve Quota on Backend Server
+    let formSessionToken = null;
+    let guestTrial = false;
+    const adapter = (typeof getActiveFormAdapter === 'function') ? getActiveFormAdapter() : null;
+    const formCategory = adapter ? adapter.name.toLowerCase().replace(/\s+/g, '_') : (window.location.href.includes('docs.google.com/forms') ? 'google_forms' : 'generic');
+
+    try {
+        const sessionRes = await sendRuntimeMessageWithRetry({
+            action: "START_FORM_SESSION",
+            formCategory
+        }, 2, 350);
+
+        if (!sessionRes || !sessionRes.success) {
+            if (sessionRes?.code === 'AUTH_REQUIRED') {
+                showNotification("Please sign in with Google in the extension popup to use AI form filling", "error");
+                removeGhostChip();
+                if (overlay) overlay.remove();
+                if (fabBtn) fabBtn.style.display = 'block';
+                isSolving = false;
+                return;
+            }
+            if (sessionRes?.code === 'QUOTA_EXCEEDED' || sessionRes?.isQuotaExceeded) {
+                showUpgradeModal(sessionRes.error);
+                removeGhostChip();
+                if (overlay) overlay.remove();
+                if (fabBtn) fabBtn.style.display = 'block';
+                isSolving = false;
+                return;
+            }
+            const directKeyMode = await new Promise(r => chrome.storage.local.get(['useDirectKey'], d => r(d.useDirectKey)));
+            if (!directKeyMode) {
+                showNotification(sessionRes?.error || "Could not start form session", "error");
+                removeGhostChip();
+                if (overlay) overlay.remove();
+                if (fabBtn) fabBtn.style.display = 'block';
+                isSolving = false;
+                return;
+            }
+        } else {
+            formSessionToken = sessionRes.sessionToken;
+            guestTrial = Boolean(sessionRes.guestTrial);
+        }
+    } catch (err) {
+        console.warn('[AutoForm] Form session reservation warning:', err.message);
+    }
 
     try {
         for (let i = 0; i < questions.length; i++) {
@@ -3452,6 +3510,8 @@ async function processQuestionQueue(questions) {
                     addThought('🧠', `[Q${i + 1}] Intent: ${primaryIntent} • Querying AI...`, 'intent');
                     const response = await sendRuntimeMessageWithRetry({
                         action: "SOLVE_SINGLE_QUESTION",
+                        formSessionToken: formSessionToken,
+                        guestTrial,
                         data: {
                             id: q.id,
                             question: q.question,
@@ -3464,7 +3524,12 @@ async function processQuestionQueue(questions) {
                     }, 3, 350);
 
                     if (!response || !response.success) {
-                        if (response?.isQuotaExceeded) {
+                        if (response?.code === 'AUTH_REQUIRED') {
+                            showNotification("Please sign in with Google in the extension popup to continue", "error");
+                            cancelRequested = true;
+                            break;
+                        }
+                        if (response?.code === 'QUOTA_EXCEEDED' || response?.isQuotaExceeded) {
                             showUpgradeModal(response.error);
                             cancelRequested = true;
                             break;
@@ -3544,7 +3609,7 @@ async function processQuestionQueue(questions) {
                     // Dynamic pacing
                     const currentDelay = (solution.provider === 'instant_profile')
                         ? Math.min(200, defaultDelay)
-                        : (fillPacing === 'stealth' ? (defaultDelay + Math.floor(Math.random() * 300)) : defaultDelay);
+                        : ((fillPacing === 'slow' || fillPacing === 'stealth') ? (defaultDelay + Math.floor(Math.random() * 300)) : defaultDelay);
 
                     await responsiveSleep(currentDelay);
                     removeGhostChip();
@@ -3640,7 +3705,7 @@ async function processQuestionQueue(questions) {
 
                     const delay = (item.solution.provider === 'instant_profile')
                         ? Math.min(120, defaultDelay)
-                        : (fillPacing === 'stealth' ? (defaultDelay + Math.floor(Math.random() * 200)) : defaultDelay);
+                        : ((fillPacing === 'slow' || fillPacing === 'stealth') ? (defaultDelay + Math.floor(Math.random() * 200)) : defaultDelay);
                     await responsiveSleep(delay);
                     removeGhostChip();
                 }
@@ -3663,6 +3728,12 @@ async function processQuestionQueue(questions) {
 
     } finally {
         stopKeepAlive();
+        if (successCount === 0 && formSessionToken) {
+            sendRuntimeMessageWithRetry({
+                action: "RELEASE_FORM_SESSION",
+                sessionToken: formSessionToken
+            }, 1, 100).catch(() => {});
+        }
         removeGhostChip();
         const fabBtn = document.getElementById('ai-floating-btn');
         if (fabBtn) fabBtn.style.display = '';
@@ -3824,6 +3895,11 @@ async function instantFillProfile() {
 
     if (filledCount > 0) {
         showNotification(`⚡ Filled ${filledCount} profile field${filledCount > 1 ? 's' : ''} instantly! (0ms • 0 quota)`, "success");
+        try {
+            chrome.runtime.sendMessage({ action: "RECORD_INSTANT_FILL", count: filledCount }, () => {
+                if (chrome.runtime.lastError) {}
+            });
+        } catch (_) {}
     } else {
         showNotification("No matching profile fields detected on this section", "info");
     }
@@ -4144,4 +4220,142 @@ if (typeof MutationObserver !== 'undefined' && document.body) {
     };
     wrapHistory('pushState');
     wrapHistory('replaceState');
+})();
+
+// ---------------------------------------------------------------------------
+// Auto-Payment Detection on Razorpay & Success Pages
+// Automatically detects payment success, verifies ID, and activates Pro
+// ---------------------------------------------------------------------------
+
+(function initRazorpayAutoActivator() {
+    const isRazorpayHost = window.location.hostname.includes('rzp.io') ||
+                           window.location.hostname.includes('razorpay.com') ||
+                           window.location.pathname.includes('/payment/success') ||
+                           window.location.pathname.includes('/payment-success');
+
+    let hasActivated = false;
+
+    function triggerAutoActivation(paymentId) {
+        if (hasActivated || !paymentId) return;
+        hasActivated = true;
+
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+            chrome.runtime.sendMessage({
+                action: "VERIFY_PAYMENT",
+                paymentId: paymentId
+            }, (res) => {
+                if (res && res.success) {
+                    renderCelebrationOverlay(paymentId);
+                }
+            });
+        }
+    }
+
+    function checkForPaymentSuccess() {
+        if (hasActivated) return;
+
+        // 1. Check URL parameters
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const pid = urlParams.get('razorpay_payment_id') ||
+                        urlParams.get('payment_id') ||
+                        urlParams.get('paymentId');
+            if (pid && pid.startsWith('pay_')) {
+                triggerAutoActivation(pid);
+                return;
+            }
+        } catch (_) {}
+
+        // 2. Check DOM text content for Razorpay success signals and pay_ ID
+        const pageText = document.body ? document.body.innerText : '';
+        const lowerText = pageText.toLowerCase();
+
+        // Reject if page indicates transaction failure, cancellation, or decline
+        const isFailure = lowerText.includes('payment failed') ||
+                          lowerText.includes('payment unsuccessful') ||
+                          lowerText.includes('transaction failed') ||
+                          lowerText.includes('payment cancelled') ||
+                          lowerText.includes('payment declined');
+        if (isFailure) return;
+
+        const hasPositiveSignal = lowerText.includes('payment successful') || 
+                                  lowerText.includes('payment success') ||
+                                  lowerText.includes('paid successfully') ||
+                                  lowerText.includes('payment complete') ||
+                                  lowerText.includes('autoform pro activated') ||
+                                  document.querySelector('.payment-success, [data-testid="payment-success"], .success-icon, .rzp-success');
+
+        if (hasPositiveSignal) {
+            const match = pageText.match(/pay_[a-zA-Z0-9_-]{10,}/);
+            if (match && match[0]) {
+                triggerAutoActivation(match[0]);
+            }
+        }
+    }
+
+    function renderCelebrationOverlay(paymentId) {
+        if (document.getElementById('autoform-payment-celebration')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'autoform-payment-celebration';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 2147483647;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: #ffffff;
+            padding: 18px 24px;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5), 0 0 0 2px #6366f1;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            max-width: 500px;
+            width: 90%;
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        `;
+        overlay.innerHTML = `
+            <div style="width: 44px; height: 44px; border-radius: 50%; background: #10b981; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; box-shadow: 0 0 14px rgba(16, 185, 129, 0.6); color: #ffffff;">
+                ✓
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-size: 15px; font-weight: 800; color: #ffffff; display: flex; align-items: center; gap: 6px;">
+                    AutoForm Pro Activated! ⭐
+                </div>
+                <div style="font-size: 12px; color: #cbd5e1; margin-top: 3px; line-height: 1.4;">
+                    Payment confirmed (${paymentId}). Your extension now has Unlimited AI Form Fills active.
+                </div>
+            </div>
+            <button id="autoform-close-celebration" style="background: rgba(255,255,255,0.18); border: none; color: #ffffff; padding: 7px 14px; border-radius: 8px; font-weight: 700; font-size: 12px; cursor: pointer;">
+                Got it
+            </button>
+        `;
+        document.body.appendChild(overlay);
+
+        const closeBtn = document.getElementById('autoform-close-celebration');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                overlay.remove();
+            });
+        }
+    }
+
+    // Run check immediately
+    checkForPaymentSuccess();
+
+    if (isRazorpayHost) {
+        // Poll every 800ms for 10 minutes while on Razorpay
+        const interval = setInterval(() => {
+            if (hasActivated) {
+                clearInterval(interval);
+                return;
+            }
+            checkForPaymentSuccess();
+        }, 800);
+
+        setTimeout(() => clearInterval(interval), 10 * 60 * 1000);
+    }
 })();

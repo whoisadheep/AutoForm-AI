@@ -7,6 +7,11 @@ package-lock.json
 .env.*
 !.env.example
 *.local
+*.pem
+*.key
+*.id_rsa
+key.pem
+private-key.pem
 
 # OS Generated
 .DS_Store

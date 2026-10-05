@@ -1,6 +1,6 @@
 # AutoForm AI ⚡ (v2.0.4 Production)
 
-> Zero-config, multi-provider AI assistant with Local Hybrid RAG Memory to automatically solve and fill Google Forms, job application boards (Greenhouse, Lever, Ashby, Workday), and universal web forms across Chrome, Firefox, Edge, and mobile extension browsers.
+> Fill job applications and forms faster with multi-provider AI, local memory, and smart resume auto-attach across Chrome, Firefox, Edge, and mobile extension browsers.
 
 AutoForm AI is a cross-browser extension backed by a high-throughput proxy server that intelligently coordinates **Groq (Llama 3.3)**, **Google Gemini**, **OpenRouter**, and **NVIDIA NIM** with automatic failover, sub-second latency, and a privacy-first **Local Memory Vault** that remembers your personal profile and experiences without sending personal databases to the cloud.
 
@@ -35,33 +35,33 @@ AutoForm AI is a cross-browser extension backed by a high-throughput proxy serve
   - **Strict Option Matching:** Enforces strict exact-boundary matching for short and numeric options to prevent substring collisions (e.g., choice `"2"` never false-matches `"21"`).
 - **⚡ One-Click Instant Slot Filling (0ms • 0 Quota):**
   - Directly matches standard identity, contact, and academic fields (Full Name, First/Last Name, Email, Phone, WhatsApp, LinkedIn, GitHub, Portfolio, City, Country, University, College, Degree, Major/Department, GPA, Roll Number/USN, Graduation Year).
-  - Fills recognized fields in 0ms client-side without consuming hourly AI solve quota or incurring network latency.
+  - Fills recognized fields in 0ms client-side without consuming monthly AI form fill quota or incurring network latency.
   - Dedicated **"Instant Profile Fill"** button in popup for immediate one-click autofill of personal details.
 - **⏩ Configurable Fill Pacing & Speed:**
   - **Turbo** (~150ms delay): Ultra-fast automation for high-volume tasks.
   - **Natural** (~800ms delay): Balanced default with authentic pacing.
-  - **Stealth Human** (~1.5s delay): Human-like speed with organic random jitter to mimic manual typing.
+  - **Slow** (~1.5s delay): Relaxed pacing for easy visual verification.
 - **⌨️ Global Keyboard Shortcut:**
-  - Press **`Alt+Shift+F`** (or **`Option+Shift+F`** on macOS) on any supported form to toggle AutoForm AI solving instantly without opening the extension popup.
+  - Press **`Alt+Shift+F`** (or **`Option+Shift+F`** on macOS) on any supported form to toggle AutoForm AI filling instantly without opening the extension popup.
 - **🌐 Whole-Form Understanding & Multi-Question Reasoning:**
-  - **Macro Form Synthesis:** Scrapes the form title, description, and full question outline before solving, classifying form intent (`Job Application`, `Academic`, `Survey`, `Event RSVP`, `Quiz`) to align answers with the form's overarching goal.
+  - **Macro Form Synthesis:** Scrapes the form title, description, and full question outline before filling, classifying form intent (`Job Application`, `Academic`, `Survey`, `Event RSVP`, `General Form`) to align answers with the form's overarching goal.
   - **Rolling Answer History & Cross-Question Consistency:** Tracks previously answered questions on the active form so downstream answers never contradict earlier choices, roles, dates, or tools.
   - **Experience & Story Deduplication:** Tracks used memory snippets across open-ended essay questions so the AI showcases distinct experiences rather than repeating the same anecdote.
 - **🧠 Local Memory Vault & Hybrid RAG Engine:**
-  - **100% Client-Side Privacy:** Stored exclusively in browser `chrome.storage.local`.
+  - **Local-First Privacy:** Stored exclusively in browser `chrome.storage.local`.
   - **1-Click AI Memory Export:** Instant prompt helper to export memories from **ChatGPT**, **Gemini**, or **Claude** directly into AutoForm AI.
   - **Smart Parser:** Automatically extracts contact details, URLs, academic history, and categorizes memory snippets (`experience`, `project`, `skill`, `perspective`).
   - **Intent Classification & BM25 Scoring:** Ranks and injects the most relevant profile facts and stories per question.
   - **Choice Cross-Referencing:** Calculates academic levels (Freshman–Senior) and matches degree / skill options directly against choices.
-- **🤖 Resilient Multi-Provider AI Routing:**
-  - **OpenRouter Free Tier:** Prioritizes ultra-fast, high-accuracy free models (`liquid/lfm-2.5-2.6b:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`, `nvidia/nemotron-3-super-120b-a12b:free`) with safety classifier bypass guardrails.
-  - **Groq** (`llama-3.3-70b-versatile`): Sub-300ms ultra-fast primary inference.
+- **🤖 Resilient Multi-Provider AI Routing (Failover Priority Chain):**
+  - **Laya Offline Engine:** Embedded lightweight neural classifier for instant offline question handling.
+  - **Groq** (`llama-3.3-70b-versatile`): Sub-300ms ultra-fast primary inference. Zero data retention by default, no training on API data.
   - **Google Gemini** (`gemini-2.5-flash`): High-accuracy multimodal reasoning via `x-goog-api-key`.
-  - **NVIDIA NIM** (`meta/llama-3.1-70b-instruct`): Enterprise backup fallback.
-  - **Laya Offline Solver:** Embedded lightweight neural classifier for instant offline question handling.
+  - **OpenRouter Free Tier:** Secondary fallback for general non-personal questions (`liquid/lfm-2.5-2.6b:free`, `nvidia/nemotron-3-ultra-550b-a55b:free`).
+  - **NVIDIA NIM** (`meta/llama-3.3-70b-instruct`): Enterprise backup fallback for general questions.
 - **🛡️ Circuit Breaker & Key Cooldowns:** 3-state circuit breaker (`CLOSED`/`OPEN`/`HALF_OPEN`) with canary auto-recovery prevents cascading timeouts, while intelligent 429 key cooldowns guarantee 100% uptime across rate spikes.
 - **🧪 Universal Edge-Case Testbench:**
-  - Built-in local quiz testbench (`npm run testbench` on `http://localhost:5000`) designed to stress-test non-Google forms, trick negative questions, native `<select>` dropdowns, multi-select checkboxes, obfuscated DOM wrappers, and open-ended technical essays with automated grading.
+  - Built-in local form testbench (`npm run testbench` on `http://localhost:5000`) designed to stress-test non-Google forms, trick negative questions, native `<select>` dropdowns, multi-select checkboxes, obfuscated DOM wrappers, and open-ended technical essays with automated verification.
 - **🌐 Universal Cross-Browser & Mobile Support:**
   - Manifest V3 compliant for **Google Chrome**, **Mozilla Firefox**, and **Microsoft Edge**.
   - Fully responsive on mobile extension browsers (Kiwi, Firefox Android, Orion on iOS) with 44px touch targets and iOS auto-zoom prevention.
@@ -118,7 +118,7 @@ AutoForm-AI/
 │
 ├── src/                           # Browser Extension Source
 │   ├── background/
-│   │   └── background.js          # Service worker, remote config discovery & solver
+│   │   └── background.js          # Service worker, remote config discovery & API client
 │   ├── content/
 │   │   └── content.js             # Form scraping, DOM automation & UI overlay
 │   ├── services/
@@ -199,7 +199,7 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
    http://localhost:5000
    ```
 3. Open the extension popup, verify that **`Web Form Detected`** is shown, and click **"Fill Current Form"**.
-4. Click **"Grade My Quiz"** at the bottom to verify automated 100% scoring!
+4. Click **"Submit & Verify"** on the testbench to verify automated form completion!
 
 ---
 
@@ -214,7 +214,7 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 ### 2. Fill Any Form
 1. Open any [Google Form](https://docs.google.com/forms) or job application (Greenhouse, Lever, Workday, etc.).
 2. Click the floating **"⚡ AI Fill"** button on the bottom right (or click **"Fill Current Form"** from the popup, or press `Alt+Shift+F`).
-3. AutoForm AI automatically solves questions, detects resume upload fields, attaches your stored resume via native HTML5 file binding, and presents the human-in-the-loop preview modal for quick review!
+3. AutoForm AI automatically analyzes form fields, generates answers tailored to your profile, detects resume upload fields, attaches your stored resume via native HTML5 file binding, and presents the human-in-the-loop preview modal for quick review!
 4. Review answers, adjust any flagged items, and apply with 1 click (`Ctrl + Enter`).
 5. Need to halt? Press the **Escape** key or click **"Stop & Cancel"** at any moment.
 
@@ -230,7 +230,7 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 - **Run Server Resilience & Memory RAG Test Suite:**
   ```bash
   npm test
-  # 134 tests across 31 suites passing 100%
+  # 213 tests across 59 suites passing 100% (PostgreSQL & in-memory)
   ```
 - **Validate extension manifest & assets:**
   ```bash
@@ -244,8 +244,11 @@ AutoForm AI includes a standalone universal testbench with tricky edge-cases (ne
 
 ---
 
-## 🔒 Privacy & Security Guarantee
+## 🔒 Privacy & Data Practices
 
-* **100% Local Storage:** Your Memory Vault data is stored exclusively in your browser's local `chrome.storage.local`.
-* **Zero Telemetry / Tracking:** No user tracking, analytics, or behavioral cookies are collected.
-* **Transient AI Payloads:** Only the specific memory context relevant to the active question is attached during inference. No personal databases are ever stored on cloud servers.
+* **Inference Payloads & Data Sensitivity:** When you use AI-assisted filling, each request transmits two categories of data: (1) **Website content** (question text and choices), and (2) **Personally Identifiable Information (PII)** (only the relevant profile context required to answer it, such as name, contact, education, and specific experience anecdotes). AutoForm AI never sends your whole profile at once. Any request containing personal context is strictly restricted to zero-retention routes (Groq with Zero Data Retention enabled; or paid Gemini). Groq does not retain inference data by default, may keep reliability/abuse logs for up to 30 days unless Zero Data Retention is enabled in Data Controls, and does not train on API data. General non-personal questions can fail over to Gemini, OpenRouter, and NVIDIA NIM. We never log or store question text, form answers, form URLs, or profile documents on the server.
+* **User Accounts & Form Counting:** When you sign in with Google, your account email is stored to manage your account and authentication session. To enforce the monthly free quota (10 forms/month) and Pro usage limits, form fill counts, form categories (e.g. Google Forms, Greenhouse, Lever, Generic), and limit-hit events (when a limit is reached) are recorded and linked to your account. Form counting is required for quota enforcement.
+* **Optional Daily Instant-Fill Summary:** The existing "Instant Profile Fill" feature runs entirely on-device and is free and unlimited. The Options page provides a switch to share a daily aggregate count of instant fills linked to your account to help us monitor adapter reliability across different websites.
+* **Temporary Legacy IP Abuse Counters (Deleted within 7 Days):** For backward-compatibility requests from older extension versions without Google authentication, temporary IP-based abuse counters are tracked by storing a one-way HMAC-SHA256 cryptographic hash of the client IP (salted with a private server secret). Raw IP addresses are never stored in the database, and all IP counter records are automatically deleted within 7 days.
+* **Payment Processing:** Pro passes are processed securely by Razorpay. We store only standard payment metadata (Order ID, Payment ID, payment status, amount, currency, and entitlement dates). We never receive or store payment card numbers, bank credentials, or UPI PINs.
+* **Full Data Control:** You can delete your account and all associated server usage records anytime via the Options page or by calling `DELETE /api/v1/auth/me`. You can also clear all local browser data in one click.

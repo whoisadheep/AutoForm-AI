@@ -197,16 +197,32 @@ function setupEventListeners() {
   // Segmented Tab Navigation
   const tabBtns = document.querySelectorAll('.tab-btn');
   const tabPanels = document.querySelectorAll('.tab-panel');
+
+  function switchTab(targetId) {
+    const btn = document.querySelector(`.tab-btn[data-tab="${targetId}"]`);
+    if (!btn) return;
+    tabBtns.forEach(b => b.classList.remove('active'));
+    tabPanels.forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const targetPanel = document.getElementById(targetId);
+    if (targetPanel) targetPanel.classList.add('active');
+    btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', '#' + targetId);
+    }
+  }
+
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
-      const targetId = btn.dataset.tab;
-      tabBtns.forEach(b => b.classList.remove('active'));
-      tabPanels.forEach(p => p.classList.remove('active'));
-      btn.classList.add('active');
-      const targetPanel = document.getElementById(targetId);
-      if (targetPanel) targetPanel.classList.add('active');
+      switchTab(btn.dataset.tab);
     });
   });
+
+  // Handle direct tab deep-linking via URL hash (e.g. options.html#tab-account)
+  const initialHash = window.location.hash ? window.location.hash.replace('#', '') : null;
+  if (initialHash && document.getElementById(initialHash)) {
+    switchTab(initialHash);
+  }
 
   // Snippet Category Filter Pills
   const filterPills = document.querySelectorAll('.filter-pill');
@@ -1026,12 +1042,40 @@ function loadServerStatus() {
             input.value = stored.customServerUrl;
         }
     });
+
+    // Populate Browser Identity OAuth Redirect URI
+    const redirectInput = document.getElementById('oauthRedirectUrlDisplay');
+    if (redirectInput) {
+        try {
+            if (typeof chrome !== 'undefined' && chrome.identity && typeof chrome.identity.getRedirectURL === 'function') {
+                redirectInput.value = chrome.identity.getRedirectURL();
+            } else if (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.getRedirectURL === 'function') {
+                redirectInput.value = browser.identity.getRedirectURL();
+            } else {
+                redirectInput.value = 'Identity API not available in this browser context';
+            }
+        } catch (e) {
+            redirectInput.value = 'Could not determine redirect URI: ' + e.message;
+        }
+    }
 }
 
 // Server Settings Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
     // Load server status when Server tab exists
     loadServerStatus();
+
+    // Copy OAuth Redirect URI button
+    const btnCopyRedirect = document.getElementById('btnCopyRedirectUrl');
+    if (btnCopyRedirect) {
+        btnCopyRedirect.addEventListener('click', () => {
+            const redirectInput = document.getElementById('oauthRedirectUrlDisplay');
+            if (redirectInput && redirectInput.value && !redirectInput.value.startsWith('Could not') && !redirectInput.value.startsWith('Identity API')) {
+                navigator.clipboard.writeText(redirectInput.value);
+                showSaveStatus('Redirect URI copied to clipboard ✓');
+            }
+        });
+    }
 
     // Test Connection button
     const btnTest = document.getElementById('btnTestConnection');
@@ -1237,7 +1281,7 @@ function loadAccountStatus() {
         // User profile
         if (isGuest) {
             nameEl.textContent = 'Guest User';
-            emailEl.textContent = 'Anonymous Guest Mode (Local Storage Only)';
+            emailEl.textContent = 'Not Signed In (Local Storage Only)';
             avatarEl.style.backgroundImage = 'none';
             avatarEl.textContent = 'G';
             if (btnGoogle) btnGoogle.style.display = 'inline-flex';
@@ -1268,8 +1312,8 @@ function loadAccountStatus() {
                 usageTextEl.textContent = 'Unlimited (Pro Plan Active)';
             } else {
                 const used = quota.used || 0;
-                const limit = quota.limit || 25;
-                usageTextEl.textContent = `${used} / ${limit} questions used this month`;
+                const limit = quota.limit !== undefined ? quota.limit : 10;
+                usageTextEl.textContent = `${used} / ${limit} forms used this month`;
             }
         }
 
@@ -1279,8 +1323,8 @@ function loadAccountStatus() {
                 progressBarEl.className = 'quota-meter-fill';
             } else {
                 const used = quota.used || 0;
-                const limit = quota.limit || 25;
-                const pct = Math.min(100, Math.round((used / limit) * 100));
+                const limit = quota.limit !== undefined ? quota.limit : 10;
+                const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
                 progressBarEl.style.width = `${pct}%`;
                 progressBarEl.className = pct >= 100 ? 'quota-meter-fill quota-full' : 'quota-meter-fill';
             }
@@ -1288,38 +1332,109 @@ function loadAccountStatus() {
 
         if (resetDateEl) {
             if (isPro) {
-                resetDateEl.textContent = 'Pro plan active • Unlimited questions';
+                resetDateEl.textContent = 'Pro plan active • Fair-use 300 forms/mo';
             } else {
                 resetDateEl.textContent = quota.resetDate 
                     ? `Monthly rollover cycle: ${quota.resetDate}` 
-                    : 'Resets at the start of next month';
+                    : 'Resets on the 1st of next month';
+            }
+        }
+
+        const razorpayBtn = document.getElementById('optionsBtnRazorpay');
+        if (razorpayBtn) {
+            if (quota.paymentsEnabled === false) {
+                razorpayBtn.innerHTML = '<span>🔒 Payments Temporarily Paused</span>';
+                razorpayBtn.style.opacity = '0.6';
+                razorpayBtn.style.pointerEvents = 'none';
+            } else if (isPro) {
+                razorpayBtn.innerHTML = '<span>✓ AutoForm Pro Active</span>';
+                razorpayBtn.style.opacity = '0.9';
+            } else {
+                razorpayBtn.innerHTML = '<span>⭐ Choose Pass &amp; Upgrade</span>';
+                razorpayBtn.style.opacity = '1';
+                razorpayBtn.style.pointerEvents = 'auto';
             }
         }
 
         if (totalSolvedEl) {
             const total = stats.questionsSolvedTotal || 0;
             const forms = stats.formsCompletedCount || 0;
-            totalSolvedEl.textContent = `${total} question${total === 1 ? '' : 's'} solved (${forms} form${forms === 1 ? '' : 's'} completed)`;
+            totalSolvedEl.textContent = `${total} question${total === 1 ? '' : 's'} filled (${forms} form${forms === 1 ? '' : 's'} completed)`;
+        }
+
+        // Privacy & daily summary toggle state
+        const chkDaily = document.getElementById('chkShareDailySummary');
+        if (chkDaily) {
+            chrome.storage.local.get(['shareDailyInstantFillSummary'], (stored) => {
+                chkDaily.checked = stored.shareDailyInstantFillSummary !== false;
+            });
         }
     });
 }
 
 // Tab 5 Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
+    let selectedOptionsPlan = 'pass_30d';
+    const passTierButtons = document.querySelectorAll('.btn-pass-tier');
+    passTierButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            passTierButtons.forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            selectedOptionsPlan = btn.dataset.plan || 'pass_30d';
+            const optionsUpgradeButton = document.getElementById('optionsBtnRazorpay');
+            if (optionsUpgradeButton) {
+                const planNames = {
+                    'pass_14d': '14-Day Pass (₹99)',
+                    'pass_30d': '30-Day Pass (₹149)',
+                    'pass_90d': '90-Day Pass (₹349)'
+                };
+                optionsUpgradeButton.innerHTML = `<span>⭐ Get ${planNames[selectedOptionsPlan] || 'Pass'}</span>`;
+            }
+        });
+    });
+
+    const optionsUpgradeButton = document.getElementById('optionsBtnRazorpay');
+    if (optionsUpgradeButton) {
+        optionsUpgradeButton.addEventListener('click', () => {
+            optionsUpgradeButton.disabled = true;
+            chrome.runtime.sendMessage({ action: 'OPEN_CHECKOUT_PAGE', plan: selectedOptionsPlan }, (res) => {
+                optionsUpgradeButton.disabled = false;
+                if (chrome.runtime.lastError || !res?.success) {
+                    showSaveStatus(res?.error || 'Could not open checkout. Please sign in and try again.');
+                }
+            });
+        });
+    }
+
     const btnGoogle = document.getElementById('optionsBtnGoogleSignIn');
     if (btnGoogle) {
         btnGoogle.addEventListener('click', () => {
+            // Run permission request synchronously inside user click handler before any await or message
+            const consentPromise = (typeof AutoFormAuth !== 'undefined' && typeof AutoFormAuth.requestOptionalDataConsent === 'function')
+                ? AutoFormAuth.requestOptionalDataConsent('authenticationInfo')
+                : Promise.resolve({ granted: true });
+
             btnGoogle.disabled = true;
             btnGoogle.style.opacity = '0.7';
-            chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
-                btnGoogle.disabled = false;
-                btnGoogle.style.opacity = '1';
-                if (chrome.runtime.lastError || !res || !res.success) {
-                    showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled'}`);
+
+            consentPromise.then((consent) => {
+                if (!consent.granted) {
+                    btnGoogle.disabled = false;
+                    btnGoogle.style.opacity = '1';
+                    showSaveStatus(`Sign-in cancelled: ${consent.error || 'Permission declined'}`);
                     return;
                 }
-                showSaveStatus(`Signed in as ${res.user?.name || res.user?.email} ✓`);
-                loadAccountStatus();
+
+                chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
+                    btnGoogle.disabled = false;
+                    btnGoogle.style.opacity = '1';
+                    if (chrome.runtime.lastError || !res || !res.success) {
+                        showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled'}`);
+                        return;
+                    }
+                    showSaveStatus(`Signed in as ${res.user?.name || res.user?.email} ✓`);
+                    loadAccountStatus();
+                });
             });
         });
     }
@@ -1335,18 +1450,77 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnTogglePro = document.getElementById('optionsBtnToggleDemoPro');
-    if (btnTogglePro) {
-        btnTogglePro.addEventListener('click', () => {
-            btnTogglePro.disabled = true;
+    const optionsBtnVerify = document.getElementById('optionsBtnVerifyPayment');
+    const optionsInput = document.getElementById('optionsPaymentIdInput');
+    const optionsStatus = document.getElementById('optionsPaymentVerifyStatus');
+
+    function handleOptionsPaymentVerification() {
+        const paymentId = optionsInput?.value?.trim();
+        if (!paymentId) {
+            if (optionsStatus) {
+                optionsStatus.textContent = 'Please enter your Razorpay Payment ID.';
+                optionsStatus.className = 'payment-verify-status error';
+                optionsStatus.style.display = 'block';
+            }
+            return;
+        }
+
+        if (!paymentId.startsWith('pay_')) {
+            if (optionsStatus) {
+                optionsStatus.textContent = 'Invalid ID. Razorpay Payment IDs start with "pay_".';
+                optionsStatus.className = 'payment-verify-status error';
+                optionsStatus.style.display = 'block';
+            }
+            return;
+        }
+
+        // Run permission request synchronously inside user click handler before any await or message
+        const consentPromise = (typeof AutoFormAuth !== 'undefined' && typeof AutoFormAuth.requestOptionalDataConsent === 'function')
+            ? AutoFormAuth.requestOptionalDataConsent('financialAndPaymentInfo')
+            : Promise.resolve({ granted: true });
+
+        if (optionsBtnVerify) {
+            optionsBtnVerify.disabled = true;
+            optionsBtnVerify.textContent = 'Verifying...';
+        }
+        if (optionsStatus) optionsStatus.style.display = 'none';
+
+        consentPromise.then((consent) => {
+            if (!consent.granted) {
+                if (optionsBtnVerify) {
+                    optionsBtnVerify.disabled = false;
+                    optionsBtnVerify.textContent = 'Activate Pro';
+                }
+                if (optionsStatus) {
+                    optionsStatus.textContent = consent.error || 'Permission to process payment info was declined.';
+                    optionsStatus.className = 'payment-verify-status error';
+                    optionsStatus.style.display = 'block';
+                }
+                return;
+            }
+
             chrome.runtime.sendMessage({
-                action: "UPGRADE_TO_PRO",
-                details: { plan: 'pro', stripeCustomerId: 'cus_demo_' + Date.now() }
+                action: "VERIFY_PAYMENT",
+                paymentId
             }, (res) => {
-                btnTogglePro.disabled = false;
+                if (optionsBtnVerify) {
+                    optionsBtnVerify.disabled = false;
+                    optionsBtnVerify.textContent = 'Activate Pro';
+                }
+
                 if (chrome.runtime.lastError || !res || !res.success) {
-                    showSaveStatus('Failed to activate Pro');
+                    if (optionsStatus) {
+                        optionsStatus.textContent = res?.error || 'Verification failed. Please check the ID.';
+                        optionsStatus.className = 'payment-verify-status error';
+                        optionsStatus.style.display = 'block';
+                    }
                     return;
+                }
+
+                if (optionsStatus) {
+                    optionsStatus.textContent = '✓ Payment verified! AutoForm Pro Activated!';
+                    optionsStatus.className = 'payment-verify-status success';
+                    optionsStatus.style.display = 'block';
                 }
                 showSaveStatus('AutoForm Pro activated! ⭐');
                 loadAccountStatus();
@@ -1354,18 +1528,64 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const btnResetFree = document.getElementById('optionsBtnResetFree');
-    if (btnResetFree) {
-        btnResetFree.addEventListener('click', () => {
-            chrome.storage.local.get(['authUser'], (data) => {
-                const user = data.authUser || {};
-                user.plan = 'free';
-                chrome.storage.local.set({ authUser: user }, () => {
-                    showSaveStatus('Reverted to Free tier ✓');
-                    loadAccountStatus();
-                });
+    if (optionsBtnVerify) {
+        optionsBtnVerify.addEventListener('click', handleOptionsPaymentVerification);
+    }
+
+    if (optionsInput) {
+        optionsInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleOptionsPaymentVerification();
+            }
+        });
+    }
+
+    // Privacy & Daily Summary toggle
+    const chkDaily = document.getElementById('chkShareDailySummary');
+    if (chkDaily) {
+        chkDaily.addEventListener('change', () => {
+            chrome.storage.local.set({ shareDailyInstantFillSummary: chkDaily.checked }, () => {
+                showSaveStatus(chkDaily.checked ? 'Daily summary sharing enabled ✓' : 'Daily summary sharing disabled ✓');
             });
         });
     }
-});
 
+    // Delete Account & Cloud Records
+    const btnDelete = document.getElementById('btnDeleteAccount');
+    if (btnDelete) {
+        btnDelete.addEventListener('click', () => {
+            const confirmed = confirm('Are you sure you want to permanently delete your account and all associated server usage records? This cannot be undone.');
+            if (!confirmed) return;
+
+            btnDelete.disabled = true;
+            btnDelete.textContent = 'Deleting...';
+
+            chrome.runtime.sendMessage({ action: "DELETE_ACCOUNT" }, (res) => {
+                btnDelete.disabled = false;
+                btnDelete.textContent = 'Delete Account';
+
+                if (chrome.runtime.lastError || !res || !res.success) {
+                    showSaveStatus(`Deletion failed: ${res?.error || 'Unknown error'}`);
+                    return;
+                }
+
+                showSaveStatus('Account and cloud data deleted successfully ✓');
+                loadAccountStatus();
+            });
+        });
+    }
+
+    // Auto-refresh account status when options page gains focus or storage changes
+    window.addEventListener('focus', () => {
+        loadAccountStatus();
+    });
+
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+        chrome.storage.onChanged.addListener((changes, area) => {
+            if (area === 'local' && (changes.authUser || changes.quota)) {
+                loadAccountStatus();
+            }
+        });
+    }
+});

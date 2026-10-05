@@ -1,23 +1,37 @@
 {
   "name": "AutoForm AI",
-  "description": "Automatically fill and solve Google Forms, Job Boards & Web Forms with AI (Groq, Gemini, NVIDIA NIM).",
+  "description": "Fill job applications and forms faster with intelligent AI auto-fill.",
   "version": "2.0.4",
   "manifest_version": 3,
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4aNA+R4yRECb8ddy9ntx9FhAKvJbyT0FyqDR2/ggIfqMMQr/qomC75urywNZz7clCllBRemIx+qWsw2zb2F2R+v+kMgL3IrZhO5FH+6pscA2TpWdKoKNwsR7R45JJUKyvv6fH5vBDmR8w1CcMZmHK6LuVrrEGG0Vi5wcwVNd4VV41xT82Nz39Rtd7rvwaLCxaIeMJdOPVHT7rmI2W5JgaId+9PgY+Ie9sA2ONY3EVrLr4g7z0lsQ9zXpL0n5Ld7gHYYTvMaLhOErU8LjffTephe2iAaYelIbHlV2/X0jCQJZmg8W1wUx+Tu4m52HOl0IIVLoyIqAGPdDqhvux/SNNwIDAQAB",
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "autoform-ai@whoisadheep.dev",
+      "strict_min_version": "140.0",
+      "data_collection_permissions": {
+        "required": [
+          "personallyIdentifyingInfo",
+          "websiteContent"
+        ],
+        "optional": [
+          "authenticationInfo",
+          "financialAndPaymentInfo",
+          "technicalAndInteraction"
+        ]
+      }
+    }
+  },
   "permissions": [
     "scripting", 
     "activeTab",
-    "tabs",
     "storage",
     "unlimitedStorage",
     "identity"
   ],
   "host_permissions": [
     "https://docs.google.com/*",
-    "http://*/*",
     "https://*/*",
-    "https://autoform-ai.onrender.com/*",
-    "http://localhost:3000/*",
-    "http://127.0.0.1:3000/*"
+    "https://autoform-ai.onrender.com/*"
   ],
   "options_page": "src/options/options.html",
   "background": {
@@ -26,7 +40,6 @@
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
         "https://*/*"
       ],
       "js": [
@@ -45,7 +58,7 @@
         "default": "Alt+Shift+F",
         "mac": "Alt+Shift+F"
       },
-      "description": "Start AutoForm AI solving on active form or job application"
+      "description": "Fill active job application or form with AutoForm AI"
     }
   },
   "action": {

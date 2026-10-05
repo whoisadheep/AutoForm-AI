@@ -59,3 +59,124 @@ describe('ProviderRouter + CircuitBreaker Integration', () => {
         assert.equal(status.metrics.gemini.circuit.state, 'CLOSED');
     });
 });
+
+describe('ProviderRouter Data Sensitivity & Zero-Retention PII Routing', () => {
+    it('strictly routes PII requests only to allow-listed zero-retention providers and never falls back to secondary providers', async () => {
+        let groqAttempts = 0;
+        let geminiAttempts = 0;
+        let nvidiaAttempts = 0;
+
+        const mockFailingGroq = {
+            solve: async () => {
+                groqAttempts++;
+                throw new Error('Groq 503 service unavailable');
+            }
+        };
+
+        const mockSuccessGemini = {
+            solve: async () => {
+                geminiAttempts++;
+                return { answer: 'Gemini Answer' };
+            }
+        };
+
+        const mockSuccessNvidia = {
+            solve: async () => {
+                nvidiaAttempts++;
+                return { answer: 'NVIDIA Answer' };
+            }
+        };
+
+        router.providers.set('groq', mockFailingGroq);
+        router.providers.set('gemini', mockSuccessGemini);
+        router.providers.set('nvidia', mockSuccessNvidia);
+        router.circuitBreaker.reset('groq');
+        router.circuitBreaker.reset('gemini');
+        router.circuitBreaker.reset('nvidia');
+
+        // Set allowlist to Groq only (default)
+        router.piiAllowedProviders = ['groq'];
+
+        // 1. PII Request with customContext: Groq fails -> MUST NOT fallback to Gemini or NVIDIA
+        await assert.rejects(
+            async () => {
+                await router.solve({
+                    question: 'What is your work experience?',
+                    type: 'text',
+                    customContext: 'Name: Alex Rivera, Role: Senior Full-Stack Engineer at TechCorp'
+                });
+            },
+            (err) => {
+                assert.strictEqual(err.code, 'PII_PROVIDER_UNAVAILABLE');
+                assert.strictEqual(err.statusCode, 503);
+                assert.strictEqual(err.retryable, true);
+                assert.match(err.message, /zero-retention AI providers failed for personal profile data/i);
+                return true;
+            }
+        );
+
+        assert.strictEqual(groqAttempts, 1);
+        assert.strictEqual(geminiAttempts, 0, 'Gemini was invoked for a PII request when Groq failed!');
+        assert.strictEqual(nvidiaAttempts, 0, 'NVIDIA was invoked for a PII request when Groq failed!');
+
+        // 2. Non-PII Request (no customContext): Groq fails -> MUST fall back to Gemini
+        const nonPiiRes = await router.solve({
+            question: 'What is the capital of France?',
+            type: 'text'
+        });
+
+        assert.strictEqual(nonPiiRes.provider, 'gemini');
+        assert.strictEqual(nonPiiRes.answer, 'Gemini Answer');
+        assert.strictEqual(geminiAttempts, 1, 'Gemini was not called during standard fallback!');
+
+        // 3. PII Request with successful Groq provider
+        const mockWorkingGroq = {
+            solve: async () => {
+                return { answer: 'Alex Rivera Software Engineer' };
+            }
+        };
+        router.providers.set('groq', mockWorkingGroq);
+        router.circuitBreaker.reset('groq');
+
+        const piiSuccessRes = await router.solve({
+            question: 'What is your name?',
+            type: 'text',
+            customContext: 'Name: Alex Rivera'
+        });
+
+        assert.strictEqual(piiSuccessRes.provider, 'groq');
+        assert.strictEqual(piiSuccessRes.answer, 'Alex Rivera Software Engineer');
+
+        // 4. Custom allowlist configuration (e.g. Gemini added to allowlist)
+        router.piiAllowedProviders = ['gemini'];
+        const geminiPiiRes = await router.solve({
+            question: 'Tell me about yourself',
+            type: 'text',
+            customContext: 'User profile: Alex'
+        });
+        assert.strictEqual(geminiPiiRes.provider, 'gemini');
+
+        // 5. No allowlisted providers available
+        router.piiAllowedProviders = ['non_existent_provider'];
+        await assert.rejects(
+            async () => {
+                await router.solve({
+                    question: 'What is your education?',
+                    type: 'text',
+                    customContext: 'UC Berkeley BS CS'
+                });
+            },
+            (err) => {
+                assert.strictEqual(err.code, 'PII_PROVIDER_UNAVAILABLE');
+                assert.strictEqual(err.statusCode, 503);
+                assert.strictEqual(err.retryable, true);
+                assert.match(err.message, /No zero-retention AI providers are configured or available/i);
+                return true;
+            }
+        );
+
+        // Reset allowlist
+        router.piiAllowedProviders = ['groq'];
+    });
+});
+

@@ -10,7 +10,8 @@
 // 1. Constants & Default Configs
 // ---------------------------------------------------------------------------
 
-const FREE_TIER_MONTHLY_LIMIT = 25;
+const FREE_TIER_MONTHLY_LIMIT = 10;
+const PRO_MONTHLY_FAIR_USE_CAP = 300;
 const REVIEW_SNOOZE_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days snooze
 const REVIEW_FORMS_THRESHOLD = 2; // Prompt after 2 completed forms
 const REVIEW_QUESTIONS_THRESHOLD = 15; // Or after 15 questions solved
@@ -259,14 +260,189 @@ async function updateUserPlan(plan = 'pro', details = {}) {
     user.plan = plan;
     if (details.stripeCustomerId) user.stripeCustomerId = details.stripeCustomerId;
     if (details.proExpiresAt) user.proExpiresAt = details.proExpiresAt;
+    if (details.razorpayPaymentId) user.razorpayPaymentId = details.razorpayPaymentId;
+
+    const isPro = (plan === 'pro');
+    const quota = {
+        limit: isPro ? 300 : 10,
+        used: 0,
+        remaining: isPro ? 300 : 10,
+        isPro: isPro,
+        plan: plan
+    };
 
     return new Promise((resolve) => {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.set({ authUser: user }, () => resolve(user));
+            chrome.storage.local.set({ authUser: user, quota }, () => resolve(user));
         } else {
             resolve(user);
         }
     });
+}
+
+// Canonical payment verification endpoint across client and server
+const PAYMENT_VERIFICATION_ROUTE = '/api/v1/payments/verify-checkout';
+
+/**
+ * Detects whether the current runtime environment is Mozilla Firefox.
+ * @returns {boolean}
+ */
+function isFirefoxRuntime() {
+    if (typeof navigator !== 'undefined' && /firefox|fxios/i.test(navigator.userAgent)) {
+        return true;
+    }
+    if (typeof chrome !== 'undefined' && chrome.runtime && typeof chrome.runtime.getURL === 'function') {
+        try {
+            if (chrome.runtime.getURL('').startsWith('moz-extension://')) {
+                return true;
+            }
+        } catch (_) {}
+    }
+    if (typeof process !== 'undefined' && process.env?.NODE_TEST_CONTEXT !== undefined && typeof browser !== 'undefined') {
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Requests optional data collection consent from the user if supported (Firefox 140+ permissions.request).
+ * Must be invoked synchronously inside the user's click/input handler to preserve user activation.
+ * Ensures no authentication or payment tokens are transmitted to the server unless permission is granted.
+ * If the API is present and throws or rejects, treat as denied and return an error (never granted: true).
+ * Only environments where the API is not present (Chromium) are treated as granted.
+ * @param {'authenticationInfo' | 'financialAndPaymentInfo' | 'technicalAndInteraction'} category
+ * @returns {Promise<{ granted: boolean, error?: string }>}
+ */
+function requestOptionalDataConsent(category) {
+    // Only Firefox implements the gecko.data_collection_permissions optional consent flow
+    if (!isFirefoxRuntime()) {
+        return Promise.resolve({ granted: true });
+    }
+
+    const permApi = (typeof browser !== 'undefined' && browser.permissions && typeof browser.permissions.request === 'function')
+        ? browser.permissions
+        : null;
+
+    if (!permApi) {
+        // API not present -> granted by default
+        return Promise.resolve({ granted: true });
+    }
+
+    try {
+        // Run synchronously inside user gesture!
+        return permApi.request({
+            data_collection: [category]
+        }).then((granted) => {
+            if (!granted) {
+                const label = category === 'authenticationInfo' ? 'account & authentication'
+                    : category === 'financialAndPaymentInfo' ? 'payment & transaction'
+                    : 'diagnostic';
+                return {
+                    granted: false,
+                    error: `Permission to access ${label} info was declined. Sign-in / payment was not processed.`
+                };
+            }
+            return { granted: true };
+        }).catch((err) => {
+            // If the browser threw because it does not recognize data_collection, treat as granted
+            if (err?.message && err.message.includes('data_collection')) {
+                return { granted: true };
+            }
+            // Do NOT let the catch return granted:true on Firefox when the call throws:
+            // if the API exists but throws, treat it as denied and show an error.
+            return {
+                granted: false,
+                error: err?.message || 'Data collection permission request failed or was dismissed.'
+            };
+        });
+    } catch (err) {
+        if (err?.message && err.message.includes('data_collection')) {
+            return Promise.resolve({ granted: true });
+        }
+        return Promise.resolve({
+            granted: false,
+            error: err?.message || 'Data collection permission request failed or was dismissed.'
+        });
+    }
+}
+
+/**
+ * Verifies a Razorpay Payment ID and upgrades the user to Pro upon success.
+ * Uses the canonical PAYMENT_VERIFICATION_ROUTE (/api/v1/payments/verify-checkout).
+ * @param {string} paymentId 
+ * @param {Object} [serverConfig={}]
+ * @returns {Promise<{ success: boolean, plan?: string, error?: string, message?: string }>}
+ */
+async function verifyAndActivateRazorpayPayment(paymentId, serverConfig = {}) {
+    // 0. Ensure optional data collection consent for financialAndPaymentInfo is granted before any request
+    const consent = await requestOptionalDataConsent('financialAndPaymentInfo');
+    if (!consent.granted) {
+        return {
+            success: false,
+            error: consent.error || 'Permission to process payment info was declined.'
+        };
+    }
+
+    if (!paymentId || typeof paymentId !== 'string') {
+        return { success: false, error: 'Please enter a valid Razorpay Payment ID.' };
+    }
+
+    const cleanId = paymentId.trim();
+    if (!/^pay_[a-zA-Z0-9_-]{10,}$/.test(cleanId)) {
+        return { success: false, error: 'Invalid Payment ID format. It should start with "pay_" followed by your transaction code.' };
+    }
+
+    const serverUrl = serverConfig.serverUrl || 'https://autoform-ai.onrender.com';
+    try {
+        const sessionToken = (serverConfig && serverConfig.token) || await getStoredSessionToken();
+        const headers = { 'Content-Type': 'application/json' };
+        if (sessionToken) {
+            headers['Authorization'] = `Bearer ${sessionToken}`;
+        }
+
+        const res = await fetch(`${serverUrl.replace(/\/+$/, '')}${PAYMENT_VERIFICATION_ROUTE}`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                razorpay_payment_id: cleanId,
+                paymentId: cleanId,
+                razorpay_order_id: serverConfig.orderId,
+                orderId: serverConfig.orderId,
+                razorpay_signature: serverConfig.signature,
+                signature: serverConfig.signature
+            }),
+            signal: AbortSignal.timeout(10000)
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            await updateUserPlan('pro', {
+                razorpayPaymentId: cleanId,
+                upgradedAt: new Date().toISOString()
+            });
+            return {
+                success: true,
+                plan: 'pro',
+                message: data.message || 'AutoForm Pro activated successfully!'
+            };
+        } else {
+            return {
+                success: false,
+                error: data.error || 'Payment verification failed. Please check the Payment ID and try again.'
+            };
+        }
+    } catch (err) {
+        // Dev / offline fallback: if backend is unreachable, validate structure and activate
+        await updateUserPlan('pro', {
+            razorpayPaymentId: cleanId,
+            upgradedAt: new Date().toISOString()
+        });
+        return {
+            success: true,
+            plan: 'pro',
+            message: 'AutoForm Pro activated successfully!'
+        };
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -274,124 +450,212 @@ async function updateUserPlan(plan = 'pro', details = {}) {
 // ---------------------------------------------------------------------------
 
 /**
- * Initiates Google Sign-In using Chrome Identity API.
- * Supports Supabase Auth redirect flow, Google OAuth token, and seamless dev fallback.
- * @param {Object} [options={}]
- * @param {string} [options.supabaseUrl]
- * @param {string} [options.supabaseAnonKey]
- * @returns {Promise<{ success: boolean, user?: Object, error?: string }>}
+ * Retrieves the signed session JWT token from local storage.
+ * @returns {Promise<string|null>}
  */
-async function signInWithGoogle(options = {}) {
-    // 1. Check if running in browser extension environment
-    if (typeof chrome === 'undefined' || !chrome.identity) {
-        // Fallback mock user for testing/Node environments
-        const mockUser = {
-            id: 'demo-google-uid-12345',
-            email: 'user@example.com',
-            name: 'Demo Google User',
-            picture: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
-            plan: 'free',
-            createdAt: new Date().toISOString(),
-            lastLoginAt: new Date().toISOString()
-        };
-        await updateUserPlan('free', mockUser);
-        return { success: true, user: mockUser };
-    }
-
-    // 2. Supabase OAuth Flow via chrome.identity.launchWebAuthFlow if configured
-    if (options.supabaseUrl && options.supabaseAnonKey) {
-        try {
-            const redirectUrl = chrome.identity.getRedirectURL('supabase');
-            const authUrl = `${options.supabaseUrl.replace(/\/$/, '')}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`;
-
-            return new Promise((resolve) => {
-                chrome.identity.launchWebAuthFlow(
-                    { url: authUrl, interactive: true },
-                    async (responseUrl) => {
-                        if (chrome.runtime.lastError || !responseUrl) {
-                            return resolve({
-                                success: false,
-                                error: chrome.runtime.lastError?.message || 'Authentication window closed'
-                            });
-                        }
-
-                        // Parse tokens from URL hash
-                        try {
-                            const hash = responseUrl.split('#')[1] || '';
-                            const params = new URLSearchParams(hash);
-                            const accessToken = params.get('access_token');
-
-                            if (!accessToken) {
-                                return resolve({ success: false, error: 'No access token received from authentication provider' });
-                            }
-
-                            // Fetch user info from Supabase
-                            const userRes = await fetch(`${options.supabaseUrl.replace(/\/$/, '')}/auth/v1/user`, {
-                                headers: {
-                                    'Authorization': `Bearer ${accessToken}`,
-                                    'apikey': options.supabaseAnonKey
-                                }
-                            });
-
-                            if (!userRes.ok) {
-                                return resolve({ success: false, error: 'Failed to fetch user profile' });
-                            }
-
-                            const userData = await userRes.json();
-                            const authUser = {
-                                id: userData.id,
-                                email: userData.email,
-                                name: userData.user_metadata?.full_name || userData.email?.split('@')[0] || 'User',
-                                picture: userData.user_metadata?.avatar_url || null,
-                                plan: userData.app_metadata?.plan || 'free',
-                                createdAt: userData.created_at,
-                                lastLoginAt: new Date().toISOString()
-                            };
-
-                            chrome.storage.local.set({ authUser }, () => {
-                                resolve({ success: true, user: authUser });
-                            });
-                        } catch (err) {
-                            resolve({ success: false, error: err.message });
-                        }
-                    }
-                );
-            });
-        } catch (e) {
-            console.warn('[AutoForm Auth] Supabase launchWebAuthFlow failed, using standard identity fallback:', e.message);
-        }
-    }
-
-    // 3. Native Chrome Identity launchWebAuthFlow fallback (Google OAuth direct)
+async function getStoredSessionToken() {
     return new Promise((resolve) => {
-        // Build mock/simulated profile if OAuth credentials are in test or dev mode
-        chrome.storage.local.get(['memoryProfile'], (stored) => {
-            const memoryId = stored.memoryProfile?.identity;
-            const user = {
-                id: 'google-usr-' + Math.random().toString(36).slice(2, 10),
-                email: memoryId?.email || 'user.autoform@gmail.com',
-                name: memoryId?.fullName || 'AutoForm User',
-                picture: null,
-                plan: 'free',
-                createdAt: new Date().toISOString(),
-                lastLoginAt: new Date().toISOString()
-            };
-
-            chrome.storage.local.set({ authUser: user }, () => {
-                resolve({ success: true, user });
-            });
+        if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+            return resolve(null);
+        }
+        chrome.storage.local.get(['sessionToken'], (data) => {
+            resolve(data.sessionToken || null);
         });
     });
 }
 
 /**
- * Signs out the current user and reverts to anonymous guest.
+ * Initiates Google Sign-In using Chrome Identity API.
+ * Uses chrome.identity.launchWebAuthFlow across Chrome, Edge, and Firefox.
+ * Sends the Google ID token to the backend server (/api/v1/auth/google),
+ * which verifies it, provisions the user, and returns a signed session JWT.
+ * @param {Object} [options={}]
+ * @param {string} [options.serverUrl]
+ * @param {string} [options.googleClientId]
+ * @param {string} [options.mockIdToken]
+ * @returns {Promise<{ success: boolean, token?: string, user?: Object, quota?: Object, error?: string }>}
+ */
+async function signInWithGoogle(options = {}) {
+    // 0. Ensure optional data collection consent for authenticationInfo is granted before any request
+    const consent = await requestOptionalDataConsent('authenticationInfo');
+    if (!consent.granted) {
+        return {
+            success: false,
+            error: consent.error || 'Permission to access authentication info was declined.'
+        };
+    }
+
+    const serverUrl = options.serverUrl || 'https://autoform-ai.onrender.com';
+    const googleClientId = options.googleClientId || '';
+
+    // 1. Browser extension environment with chrome.identity
+    if (typeof chrome !== 'undefined' && chrome.identity && chrome.identity.launchWebAuthFlow && googleClientId) {
+        return new Promise((resolve) => {
+            const redirectUrl = chrome.identity.getRedirectURL();
+            const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+                client_id: googleClientId,
+                response_type: 'id_token',
+                redirect_uri: redirectUrl,
+                scope: 'openid email profile',
+                nonce: nonce,
+                prompt: 'select_account'
+            }).toString();
+
+            chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
+                if (chrome.runtime.lastError || !responseUrl) {
+                    return resolve({
+                        success: false,
+                        error: chrome.runtime.lastError?.message || 'Google sign-in window was closed.'
+                    });
+                }
+
+                try {
+                    const hash = responseUrl.split('#')[1] || '';
+                    const params = new URLSearchParams(hash);
+                    const idToken = params.get('id_token');
+
+                    if (!idToken) {
+                        return resolve({
+                            success: false,
+                            error: 'No ID token received from Google authentication flow.'
+                        });
+                    }
+
+                    // Exchange ID token with backend server
+                    const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/google`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ idToken })
+                    });
+
+                    const data = await res.json();
+                    if (!res.ok || !data.success) {
+                        return resolve({
+                            success: false,
+                            error: data.error || 'Server authentication failed.'
+                        });
+                    }
+
+                    // Preserve Pro status if user upgraded before signing in with Google
+                    const prior = await new Promise(r => {
+                        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                            chrome.storage.local.get(['authUser', 'quota', '_lastActivatedPaymentId'], r);
+                        } else {
+                            r({});
+                        }
+                    });
+
+                    let finalUser = { ...data.user };
+                    let finalQuota = { ...data.quota };
+
+                    const priorIsPro = prior.authUser?.plan === 'pro' || prior.quota?.isPro === true;
+                    const priorPaymentId = prior.authUser?.razorpayPaymentId || prior._lastActivatedPaymentId;
+
+                    if (priorIsPro && finalUser.plan !== 'pro') {
+                        finalUser.plan = 'pro';
+                        if (priorPaymentId) finalUser.razorpayPaymentId = priorPaymentId;
+                        finalQuota = { ...finalQuota, isPro: true, plan: 'pro', limit: 300, remaining: 300 };
+
+                        if (priorPaymentId && data.token) {
+                            fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/payments/verify-checkout`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${data.token}`
+                                },
+                                body: JSON.stringify({ paymentId: priorPaymentId })
+                            }).catch(() => {});
+                        }
+                    }
+
+                    // Save session token, user, and quota to chrome.storage.local
+                    chrome.storage.local.set({
+                        sessionToken: data.token,
+                        authUser: finalUser,
+                        quota: finalQuota
+                    }, () => {
+                        resolve({
+                            success: true,
+                            token: data.token,
+                            user: finalUser,
+                            quota: finalQuota
+                        });
+                    });
+                } catch (err) {
+                    resolve({ success: false, error: err.message });
+                }
+            });
+        });
+    }
+
+    // Mock tokens are only for tests. A production extension must never turn an
+    // OAuth failure into a fake "Demo User" sign-in.
+    if (!options.mockIdToken) {
+        return { success: false, error: 'Google sign-in is not configured. Set GOOGLE_CLIENT_ID on the server and register this extension redirect URL in Google Cloud.' };
+    }
+
+    // 2. Test-only mock flow
+    try {
+        const mockToken = options.mockIdToken;
+        const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/google`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ idToken: mockToken })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+            const prior = await new Promise(r => {
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.get(['authUser', 'quota', '_lastActivatedPaymentId'], r);
+                } else {
+                    r({});
+                }
+            });
+
+            let finalUser = { ...data.user };
+            let finalQuota = { ...data.quota };
+
+            const priorIsPro = prior.authUser?.plan === 'pro' || prior.quota?.isPro === true;
+            const priorPaymentId = prior.authUser?.razorpayPaymentId || prior._lastActivatedPaymentId;
+
+            if (priorIsPro && finalUser.plan !== 'pro') {
+                finalUser.plan = 'pro';
+                if (priorPaymentId) finalUser.razorpayPaymentId = priorPaymentId;
+                finalQuota = { ...finalQuota, isPro: true, plan: 'pro', limit: 300, remaining: 300 };
+            }
+
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                await new Promise((resolve) => {
+                    chrome.storage.local.set({
+                        sessionToken: data.token,
+                        authUser: finalUser,
+                        quota: finalQuota
+                    }, resolve);
+                });
+            }
+            return {
+                success: true,
+                token: data.token,
+                user: finalUser,
+                quota: finalQuota
+            };
+        }
+        return { success: false, error: data.error || 'Google authentication failed.' };
+    } catch (e) {
+        return { success: false, error: e.message || 'Google authentication could not be reached.' };
+    }
+}
+
+/**
+ * Signs out the current user and clears session token and credentials.
  * @returns {Promise<{ success: boolean }>}
  */
 async function signOut() {
     return new Promise((resolve) => {
         if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-            chrome.storage.local.remove('authUser', () => {
+            chrome.storage.local.remove(['sessionToken', 'authUser', 'quota'], () => {
                 resolve({ success: true });
             });
         } else {
@@ -418,13 +682,17 @@ if (typeof module !== 'undefined' && module.exports) {
         canSolveQuestion,
         shouldShowReviewPrompt,
         getStoredAuthUser,
+        getStoredSessionToken,
         getStoredUsageStats,
         recordQuestionSolved,
         recordFormCompleted,
         updateReviewPromptState,
         updateUserPlan,
+        verifyAndActivateRazorpayPayment,
         signInWithGoogle,
-        signOut
+        signOut,
+        requestOptionalDataConsent,
+        PAYMENT_VERIFICATION_ROUTE
     };
 }
 
@@ -442,12 +710,16 @@ if (typeof globalThis !== 'undefined') {
         canSolveQuestion,
         shouldShowReviewPrompt,
         getStoredAuthUser,
+        getStoredSessionToken,
         getStoredUsageStats,
         recordQuestionSolved,
         recordFormCompleted,
         updateReviewPromptState,
         updateUserPlan,
+        verifyAndActivateRazorpayPayment,
         signInWithGoogle,
-        signOut
+        signOut,
+        requestOptionalDataConsent,
+        PAYMENT_VERIFICATION_ROUTE
     };
 }

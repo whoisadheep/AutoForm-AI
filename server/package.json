@@ -1,19 +1,21 @@
 {
   "name": "autoform-ai-server",
   "version": "2.0.4",
-  "description": "Production multi-provider AI proxy server for AutoForm AI (Groq, Gemini, NVIDIA)",
+  "description": "Production multi-provider AI proxy server for AutoForm AI",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
-    "test": "node --test tests/*.test.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
     "laya:warmup": "node scripts/warmupLaya.js"
   },
   "dependencies": {
     "@receptron/laya": "^0.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.23.1"
   },
   "engines": {
     "node": ">=18.0.0"

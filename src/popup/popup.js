@@ -53,9 +53,9 @@ function updatePopupProgress(percent = 0, currentQ = 0, totalQ = 0) {
     if (popupProgressPercent) popupProgressPercent.innerText = `${percent}%`;
     if (popupProgressStatus) {
         if (totalQ > 0) {
-            popupProgressStatus.innerText = `Solving Question ${currentQ} of ${totalQ}`;
+            popupProgressStatus.innerText = `Filling Question ${currentQ} of ${totalQ}`;
         } else {
-            popupProgressStatus.innerText = 'Solving questions...';
+            popupProgressStatus.innerText = 'Filling questions...';
         }
     }
 }
@@ -118,7 +118,7 @@ async function checkServerHealth() {
         const banner = document.getElementById('announcementBanner');
         if (banner) {
             if (res?.maintenance) {
-                banner.textContent = res.maintenanceMessage || 'AutoForm AI is under maintenance. Solving may be temporarily unavailable.';
+                banner.textContent = res.maintenanceMessage || 'AutoForm AI is under maintenance. AI form filling may be temporarily unavailable.';
                 banner.className = 'announcement-banner maintenance';
                 banner.style.display = 'block';
             } else if (res?.announcement) {
@@ -409,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ], (stored) => {
         if (stored.tone) toneSelect.value = stored.tone;
         if (stored.customContext) customContext.value = stored.customContext;
-        if (stored.fillPacing && pacingSelect) pacingSelect.value = stored.fillPacing;
+        if (stored.fillPacing && pacingSelect) pacingSelect.value = (stored.fillPacing === 'stealth' ? 'slow' : stored.fillPacing);
         if (stored.fabVisibility && fabVisibilitySelect) fabVisibilitySelect.value = stored.fabVisibility;
         if (previewBeforeFill) {
             // Default to true if not set
@@ -423,6 +423,20 @@ document.addEventListener('DOMContentLoaded', () => {
     loadMemoryCount();
     refreshAuthAndSubscriptionStatus();
 });
+
+// Auto-refresh when popup is focused or becomes visible
+window.addEventListener('focus', () => {
+    refreshAuthAndSubscriptionStatus();
+    fetchClientQuota();
+});
+
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local' && (changes.authUser || changes.quota)) {
+            refreshAuthAndSubscriptionStatus();
+        }
+    });
+}
 
 // Save preferences on change
 if (previewBeforeFill) {
@@ -486,6 +500,14 @@ if (formStatusCard) {
         formStatusTitle.innerText = 'Scanning tab...';
         formStatusDesc.innerText = 'Checking for inputs and form fields...';
         analyzeActiveTab();
+    });
+    formStatusCard.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            formStatusTitle.innerText = 'Scanning tab...';
+            formStatusDesc.innerText = 'Checking for inputs and form fields...';
+            analyzeActiveTab();
+        }
     });
 }
 
@@ -588,15 +610,17 @@ solveBtn.addEventListener('click', () => {
             return;
         }
 
-        // Trigger Solve
-        solveBtn.disabled = true;
-        solveBtnText.innerText = "Starting...";
-        solveSpinner.style.display = 'block';
+        // New users can complete two guest trial forms before sign-in is needed.
+        chrome.storage.local.get(['useDirectKey'], () => {
+            // Trigger Solve
+            solveBtn.disabled = true;
+            solveBtnText.innerText = "Starting...";
+            solveSpinner.style.display = 'block';
 
-        chrome.scripting.executeScript({
-            target: { tabId },
-            files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
-        }).then(() => {
+            chrome.scripting.executeScript({
+                target: { tabId },
+                files: ['src/services/resumeExtractor.js', 'src/services/memoryRetriever.js', 'src/services/formAdapters.js', 'src/content/content.js']
+            }).then(() => {
             setTimeout(() => {
                 chrome.tabs.sendMessage(tabId, { action: "START_SOLVING" }, (res) => {
                     solveSpinner.style.display = 'none';
@@ -608,7 +632,7 @@ solveBtn.addEventListener('click', () => {
                         setSolvingButtonState(true);
                         updatePopupProgress(5, 1, 0);
                         startProgressPolling(tabId);
-                        showStatus('Solving form questions...', 'success');
+                        showStatus('Filling form questions...', 'success');
                     }
                 });
             }, 300);
@@ -617,6 +641,7 @@ solveBtn.addEventListener('click', () => {
             setSolvingButtonState(false);
             hidePopupProgress();
             showStatus('Cannot inject script into this tab', 'error');
+        });
         });
     });
 });
@@ -639,7 +664,9 @@ const userMonthlyQuotaText = document.getElementById('userMonthlyQuotaText');
 const btnUpgradeProUser = document.getElementById('btnUpgradeProUser');
 const upgradeModalBackdrop = document.getElementById('upgradeModalBackdrop');
 const btnCloseUpgradeModal = document.getElementById('btnCloseUpgradeModal');
-const btnActivateDemoPro = document.getElementById('btnActivateDemoPro');
+const razorpayPaymentIdInput = document.getElementById('razorpayPaymentIdInput');
+const btnVerifyPayment = document.getElementById('btnVerifyPayment');
+const paymentVerifyStatus = document.getElementById('paymentVerifyStatus');
 
 /**
  * Fetches the latest authentication and subscription quota status from background.
@@ -647,7 +674,7 @@ const btnActivateDemoPro = document.getElementById('btnActivateDemoPro');
 function refreshAuthAndSubscriptionStatus() {
     chrome.runtime.sendMessage({ action: "GET_AUTH_STATUS" }, (res) => {
         if (chrome.runtime.lastError || !res || !res.success) return;
-        renderAuthUI(res.user, res.stats, res.quota);
+        renderAuthUI(res.user, res.stats, res.quota, res.guestTrialCompletedForms);
     });
 }
 
@@ -657,23 +684,25 @@ function refreshAuthAndSubscriptionStatus() {
  * @param {Object} stats 
  * @param {Object} quota 
  */
-function renderAuthUI(user = {}, stats = {}, quota = {}) {
+function renderAuthUI(user = {}, stats = {}, quota = {}, guestTrialCompletedForms = 0) {
     const isPro = Boolean(quota.isPro || (user?.plan === 'pro'));
     const isGuest = !user?.id;
+    const limit = quota.limit !== undefined ? quota.limit : (isPro ? 300 : 10);
+    const remaining = quota.remaining !== undefined ? quota.remaining : (isPro ? 300 : 10);
 
     if (isGuest) {
         if (loggedOutView) loggedOutView.style.display = 'flex';
         if (loggedInView) loggedInView.style.display = 'none';
 
         if (planBadgeGuest) {
-            planBadgeGuest.textContent = isPro ? 'PRO' : 'FREE';
-            planBadgeGuest.className = `plan-tag-badge ${isPro ? 'plan-badge-pro' : 'plan-badge-free'}`;
+            planBadgeGuest.textContent = 'FREE';
+            planBadgeGuest.className = 'plan-tag-badge plan-badge-free';
         }
         if (monthlyQuotaDisplayGuest) {
-            monthlyQuotaDisplayGuest.textContent = isPro ? 'Unlimited' : `${quota.remaining !== undefined ? quota.remaining : 25}/${quota.limit || 25} left`;
+            monthlyQuotaDisplayGuest.textContent = `${Math.max(0, 2 - guestTrialCompletedForms)} of 2 free trials left`;
         }
         if (btnUpgradeProGuest) {
-            btnUpgradeProGuest.style.display = isPro ? 'none' : 'inline-flex';
+            btnUpgradeProGuest.style.display = 'none';
         }
     } else {
         if (loggedOutView) loggedOutView.style.display = 'none';
@@ -698,21 +727,24 @@ function renderAuthUI(user = {}, stats = {}, quota = {}) {
             userPlanBadge.className = `plan-tag-badge ${isPro ? 'plan-badge-pro' : 'plan-badge-free'}`;
         }
         if (userMonthlyQuotaText) {
-            userMonthlyQuotaText.textContent = isPro ? 'Unlimited Qs' : `${quota.remaining !== undefined ? quota.remaining : 25}/${quota.limit || 25} left`;
+            userMonthlyQuotaText.textContent = isPro 
+                ? 'Unlimited Forms' 
+                : `${remaining} of ${limit} forms left this month`;
         }
+        const paymentsEnabled = quota.paymentsEnabled !== false;
         if (btnUpgradeProUser) {
-            btnUpgradeProUser.style.display = isPro ? 'none' : 'inline-flex';
+            btnUpgradeProUser.style.display = (isPro || !paymentsEnabled) ? 'none' : 'inline-flex';
         }
     }
 
     window._hasMonthlyQuotaRendered = true;
     if (quotaFooterText) {
-        if (isPro) {
-            quotaFooterText.innerText = 'Pro: Unlimited Qs';
+        if (isGuest) {
+            quotaFooterText.innerText = '10 free forms/month with Google account';
+        } else if (isPro) {
+            quotaFooterText.innerText = 'Pro: Unlimited forms (Fair-use 300/mo)';
         } else {
-            const rem = quota.remaining !== undefined ? quota.remaining : 25;
-            const lim = quota.limit || 25;
-            quotaFooterText.innerText = `Free: ${rem}/${lim} Qs/mo left`;
+            quotaFooterText.innerText = `${remaining} of ${limit} forms left this month`;
         }
     }
 }
@@ -720,17 +752,32 @@ function renderAuthUI(user = {}, stats = {}, quota = {}) {
 // Google Sign-In button
 if (btnGoogleSignIn) {
     btnGoogleSignIn.addEventListener('click', () => {
+        // Run permission request synchronously inside user click handler before any await or message
+        const consentPromise = (typeof AutoFormAuth !== 'undefined' && typeof AutoFormAuth.requestOptionalDataConsent === 'function')
+            ? AutoFormAuth.requestOptionalDataConsent('authenticationInfo')
+            : Promise.resolve({ granted: true });
+
         btnGoogleSignIn.disabled = true;
         btnGoogleSignIn.style.opacity = '0.7';
-        chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
-            btnGoogleSignIn.disabled = false;
-            btnGoogleSignIn.style.opacity = '1';
-            if (chrome.runtime.lastError || !res || !res.success) {
-                showStatus(res?.error || 'Sign-in cancelled', 'error');
+
+        consentPromise.then((consent) => {
+            if (!consent.granted) {
+                btnGoogleSignIn.disabled = false;
+                btnGoogleSignIn.style.opacity = '1';
+                showStatus(consent.error || 'Permission to access authentication info was declined.', 'error');
                 return;
             }
-            renderAuthUI(res.user, res.stats, res.quota);
-            showStatus(`Welcome, ${res.user?.name || 'User'}!`, 'success');
+
+            chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
+                btnGoogleSignIn.disabled = false;
+                btnGoogleSignIn.style.opacity = '1';
+                if (chrome.runtime.lastError || !res || !res.success) {
+                    showStatus(res?.error || 'Sign-in cancelled', 'error');
+                    return;
+                }
+                renderAuthUI(res.user, res.stats, res.quota);
+                showStatus(`Welcome, ${res.user?.name || 'User'}!`, 'success');
+            });
         });
     });
 }
@@ -763,6 +810,45 @@ if (btnUpgradeProGuest) btnUpgradeProGuest.addEventListener('click', openUpgrade
 if (btnUpgradeProUser) btnUpgradeProUser.addEventListener('click', openUpgradeModal);
 if (btnCloseUpgradeModal) btnCloseUpgradeModal.addEventListener('click', closeUpgradeModal);
 
+const btnCheckoutPro = document.getElementById('btnCheckoutPro');
+let selectedPopupPlan = 'pass_30d';
+const passOptionButtons = document.querySelectorAll('.pass-option-btn');
+passOptionButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+        passOptionButtons.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedPopupPlan = btn.dataset.plan || 'pass_30d';
+        if (btnCheckoutPro) {
+            const planNames = {
+                'pass_14d': '14-Day Pass (₹99)',
+                'pass_30d': '30-Day Pass (₹149)',
+                'pass_90d': '90-Day Pass (₹349)'
+            };
+            btnCheckoutPro.innerHTML = `<span>⭐ Get ${planNames[selectedPopupPlan] || 'Pass'}</span>`;
+        }
+    });
+});
+
+if (btnCheckoutPro) {
+    btnCheckoutPro.addEventListener('click', () => {
+        // Run permission request synchronously inside user click handler before any await or message
+        const consentPromise = (typeof AutoFormAuth !== 'undefined' && typeof AutoFormAuth.requestOptionalDataConsent === 'function')
+            ? AutoFormAuth.requestOptionalDataConsent('financialAndPaymentInfo')
+            : Promise.resolve({ granted: true });
+
+        consentPromise.then((consent) => {
+            if (!consent.granted) {
+                showStatus(consent.error || 'Permission to process payment info was declined.', 'error');
+                return;
+            }
+
+            chrome.runtime.sendMessage({ action: "OPEN_CHECKOUT_PAGE", plan: selectedPopupPlan }, () => {
+                closeUpgradeModal();
+            });
+        });
+    });
+}
+
 if (upgradeModalBackdrop) {
     upgradeModalBackdrop.addEventListener('click', (e) => {
         if (e.target === upgradeModalBackdrop) {
@@ -771,23 +857,95 @@ if (upgradeModalBackdrop) {
     });
 }
 
-// Demo Pro Activation (allows testing Pro features offline)
-if (btnActivateDemoPro) {
-    btnActivateDemoPro.addEventListener('click', () => {
-        btnActivateDemoPro.disabled = true;
-        chrome.runtime.sendMessage({
-            action: "UPGRADE_TO_PRO",
-            details: { plan: 'pro', stripeCustomerId: 'cus_demo_' + Date.now() }
-        }, (res) => {
-            btnActivateDemoPro.disabled = false;
-            if (chrome.runtime.lastError || !res || !res.success) {
-                showStatus('Failed to activate Pro test mode', 'error');
-                return;
+// Production Razorpay Payment ID Verification & Activation
+function handleRazorpayActivation() {
+    const paymentId = razorpayPaymentIdInput?.value?.trim();
+    if (!paymentId) {
+        if (paymentVerifyStatus) {
+            paymentVerifyStatus.textContent = 'Please enter your Razorpay Payment ID.';
+            paymentVerifyStatus.className = 'payment-verify-status error';
+            paymentVerifyStatus.style.display = 'block';
+        }
+        return;
+    }
+
+    if (!paymentId.startsWith('pay_')) {
+        if (paymentVerifyStatus) {
+            paymentVerifyStatus.textContent = 'Invalid ID. Razorpay Payment IDs start with "pay_".';
+            paymentVerifyStatus.className = 'payment-verify-status error';
+            paymentVerifyStatus.style.display = 'block';
+        }
+        return;
+    }
+
+    if (btnVerifyPayment) {
+        btnVerifyPayment.disabled = true;
+        btnVerifyPayment.textContent = 'Verifying...';
+    }
+    if (paymentVerifyStatus) paymentVerifyStatus.style.display = 'none';
+
+    // Run permission request synchronously inside user click handler before any await or message
+    const consentPromise = (typeof AutoFormAuth !== 'undefined' && typeof AutoFormAuth.requestOptionalDataConsent === 'function')
+        ? AutoFormAuth.requestOptionalDataConsent('financialAndPaymentInfo')
+        : Promise.resolve({ granted: true });
+
+    consentPromise.then((consent) => {
+        if (!consent.granted) {
+            if (btnVerifyPayment) {
+                btnVerifyPayment.disabled = false;
+                btnVerifyPayment.textContent = 'Activate';
             }
+            if (paymentVerifyStatus) {
+                paymentVerifyStatus.textContent = consent.error || 'Permission to process payment info was declined.';
+                paymentVerifyStatus.className = 'payment-verify-status error';
+                paymentVerifyStatus.style.display = 'block';
+            }
+            return;
+        }
+
+        chrome.runtime.sendMessage({
+            action: "VERIFY_PAYMENT",
+            paymentId
+        }, (res) => {
+        if (btnVerifyPayment) {
+            btnVerifyPayment.disabled = false;
+            btnVerifyPayment.textContent = 'Activate';
+        }
+
+        if (chrome.runtime.lastError || !res || !res.success) {
+            if (paymentVerifyStatus) {
+                paymentVerifyStatus.textContent = res?.error || 'Verification failed. Please check the ID.';
+                paymentVerifyStatus.className = 'payment-verify-status error';
+                paymentVerifyStatus.style.display = 'block';
+            }
+            return;
+        }
+
+        if (paymentVerifyStatus) {
+            paymentVerifyStatus.textContent = '✓ Payment verified! AutoForm Pro Activated!';
+            paymentVerifyStatus.className = 'payment-verify-status success';
+            paymentVerifyStatus.style.display = 'block';
+        }
+
+        renderAuthUI(res.user, res.stats, res.quota);
+        showStatus('AutoForm Pro Activated! ⭐', 'success');
+
+        setTimeout(() => {
             closeUpgradeModal();
-            renderAuthUI(res.user, res.stats, res.quota);
-            showStatus('AutoForm Pro Activated! ⭐', 'success');
-        });
+        }, 1600);
+    });
     });
 }
 
+if (btnVerifyPayment) {
+    btnVerifyPayment.addEventListener('click', handleRazorpayActivation);
+}
+
+if (razorpayPaymentIdInput) {
+    razorpayPaymentIdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            handleRazorpayActivation();
+        }
+    });
+}

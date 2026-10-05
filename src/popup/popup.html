@@ -22,13 +22,14 @@
             </div>
 
             <div class="header-status">
-                <div id="quotaBadge" class="quota-badge" style="display: none;" title="Hourly AI solve quota remaining" aria-label="Quota Remaining">
+                <div id="quotaBadge" class="quota-badge" style="display: none;" title="Hourly AI fill quota remaining" aria-label="Quota Remaining">
                     <svg class="quota-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                     </svg>
                     <span id="quotaCount">--</span>
                 </div>
-                <div id="connectionPill" class="connection-pill status-online" aria-live="polite" title="4 AI Engines: Groq • Gemini • OpenRouter • NVIDIA">
+                <div id="connectionPill" class="connection-pill status-online" aria-live="polite" title="Multi-Engine AI Failover Online">
+                    <span class="pulse-indicator" aria-hidden="true"></span>
                     <span id="connectionText" class="connection-text">4 Engines</span>
                 </div>
             </div>
@@ -38,36 +39,36 @@
         <div id="userAccountBanner" class="user-account-banner">
             <div id="loggedOutView" class="auth-bar-row">
                 <button id="btnGoogleSignIn" class="btn-google-auth" type="button" title="Sign in with Google">
-                    <svg class="google-svg-icon" viewBox="0 0 24 24" width="13" height="13">
+                    <svg class="google-svg-icon" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
                     </svg>
-                    <span>Sign in</span>
+                    <span>Sign in with Google</span>
                 </button>
                 <div class="guest-quota-pill">
                     <span id="planBadgeGuest" class="plan-tag-badge plan-badge-free">FREE</span>
-                    <span id="monthlyQuotaDisplayGuest" class="quota-mini-text">25/25 left</span>
+                    <span id="monthlyQuotaDisplayGuest" class="quota-mini-text">10 free forms/mo</span>
                     <button id="btnUpgradeProGuest" class="btn-upgrade-mini" type="button">Upgrade</button>
                 </div>
             </div>
 
             <div id="loggedInView" class="auth-bar-row" style="display: none;">
                 <div class="user-meta-left">
-                    <div id="userAvatar" class="user-avatar-badge">U</div>
+                    <div id="userAvatar" class="user-avatar-badge" aria-hidden="true">U</div>
                     <div class="user-info-text">
-                        <span id="userNameDisplay" class="user-name-title">Alex Rivera</span>
+                        <span id="userNameDisplay" class="user-name-title">User</span>
                         <div class="user-plan-subline">
                             <span id="userPlanBadge" class="plan-tag-badge plan-badge-free">FREE</span>
-                            <span id="userMonthlyQuotaText" class="quota-mini-text">25/25 left</span>
+                            <span id="userMonthlyQuotaText" class="quota-mini-text">10/10 forms left</span>
                         </div>
                     </div>
                 </div>
                 <div class="user-actions-right">
-                    <button id="btnUpgradeProUser" class="btn-upgrade-mini" type="button">⭐ Upgrade</button>
-                    <button id="btnSignOut" class="btn-logout-icon" type="button" title="Sign out">
-                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <button id="btnUpgradeProUser" class="btn-upgrade-mini btn-upgrade-pro-gold" type="button">⭐ Upgrade</button>
+                    <button id="btnSignOut" class="btn-logout-icon" type="button" title="Sign out" aria-label="Sign out">
+                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                             <polyline points="16 17 21 12 16 7"></polyline>
                             <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -78,8 +79,8 @@
         </div>
 
         <!-- Main Form Detection Card -->
-        <section id="formStatusCard" class="card form-status-card" aria-label="Form Status">
-            <div class="card-icon-bubble">
+        <section id="formStatusCard" class="card form-status-card" role="button" tabindex="0" aria-label="Form Status. Click to rescan active tab.">
+            <div class="card-icon-bubble" id="formStatusIconBubble">
                 <svg class="card-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                     <polyline points="14 2 14 8 20 8"/>
@@ -90,7 +91,7 @@
             </div>
             <div class="card-content">
                 <div id="formStatusTitle" class="card-title">Scanning tab...</div>
-                <div id="formStatusDesc" class="card-desc">Navigate to any Google Form</div>
+                <div id="formStatusDesc" class="card-desc">Navigate to any Google Form or Job Application</div>
             </div>
             <span id="questionBadge" class="badge" style="display: none;">0 Qs</span>
         </section>
@@ -106,7 +107,7 @@
             </button>
         </div>
 
-        <!-- Action Buttons Group -->
+        <!-- Action Buttons Group (Von Restorff Salience & Fitts's Law) -->
         <div class="action-buttons-group">
             <button id="solveBtn" class="btn btn-primary" disabled aria-label="Fill Current Form">
                 <span id="solveBtnIcon" class="btn-icon">
@@ -119,20 +120,20 @@
             </button>
 
             <button id="instantAutofillBtn" class="btn btn-secondary" disabled aria-label="Instant Profile Autofill" title="Fills verified personal & contact fields instantly without using AI quota">
-                <span class="btn-icon" style="color: #7241ff;">
+                <span class="btn-icon instant-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
                     </svg>
                 </span>
                 <span class="btn-text">Instant Profile Fill</span>
-                <span class="badge" style="font-size: 10px; padding: 1px 6px; background: rgba(114, 65, 255, 0.08); color: #7241ff; border: 1px solid rgba(114, 65, 255, 0.2);">0ms</span>
+                <span class="badge badge-instant">0ms</span>
             </button>
         </div>
 
         <!-- Live Solving Progress Card -->
         <div id="popupProgressCard" class="popup-progress-card" style="display: none;" aria-live="polite">
             <div class="popup-progress-header">
-                <span id="popupProgressStatus" class="popup-progress-status">Solving questions...</span>
+                <span id="popupProgressStatus" class="popup-progress-status">Filling questions...</span>
                 <span id="popupProgressPercent" class="popup-progress-percent">0%</span>
             </div>
             <div class="popup-progress-track">
@@ -140,147 +141,187 @@
             </div>
         </div>
 
-        <!-- Configuration Section -->
-        <section class="section">
-            <div class="section-header">
-                <span class="section-title">Preferences</span>
-            </div>
-
-            <div class="toggle-group">
-                <div class="toggle-info">
-                    <label for="previewBeforeFill" class="label toggle-label">
-                        <span>Preview Before Fill</span>
-                        <span class="preview-badge">Recommended</span>
-                    </label>
-                    <span class="toggle-hint">Review answers &amp; highlight unsure questions before filling</span>
-                </div>
-                <label class="switch" for="previewBeforeFill">
-                    <input type="checkbox" id="previewBeforeFill" checked>
-                    <span class="slider"></span>
+        <!-- High-Confidence Safety Control: Preview Before Fill (Permanently Prominent) -->
+        <div class="toggle-group preview-toggle-card">
+            <div class="toggle-info">
+                <label for="previewBeforeFill" class="label toggle-label">
+                    <span>Preview Before Fill</span>
+                    <span class="preview-badge">Recommended</span>
                 </label>
+                <span class="toggle-hint">Verify answers &amp; review negative trick questions before submitting</span>
             </div>
+            <label class="switch" for="previewBeforeFill">
+                <input type="checkbox" id="previewBeforeFill" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
 
-            <div class="input-group">
-                <label for="fabVisibilitySelect" class="label">Floating AI Button</label>
-                <div class="select-wrapper">
-                    <select id="fabVisibilitySelect" class="select">
-                        <option value="smart" selected>Smart (Verified Forms Only)</option>
-                        <option value="dedicated_only">Google Forms & Job ATS Only</option>
-                        <option value="hidden">Hidden (Shortcut & Popup Only)</option>
-                    </select>
-                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="pacingSelect" class="label">Pacing & Speed</label>
-                <div class="select-wrapper">
-                    <select id="pacingSelect" class="select">
-                        <option value="turbo">Turbo (~150ms • Fastest)</option>
-                        <option value="natural" selected>Natural (~800ms • Balanced)</option>
-                        <option value="stealth">Stealth Human (~1.5s • Human-like)</option>
-                    </select>
-                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="toneSelect" class="label">Answer Style</label>
-                <div class="select-wrapper">
-                    <select id="toneSelect" class="select">
-                        <option value="accurate" selected>Accurate & Direct (High Precision)</option>
-                        <option value="concise">Concise & Brief (1–2 Sentences)</option>
-                        <option value="detailed">Detailed & Explanatory</option>
-                    </select>
-                    <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                        <polyline points="6 9 12 15 18 9"/>
-                    </svg>
-                </div>
-            </div>
-
-            <div class="input-group">
-                <label for="customContext" class="label">
-                    <span>Target Persona</span>
-                    <span class="label-hint">Optional</span>
-                </label>
-                <input type="text" id="customContext" class="input" placeholder="e.g. Computer Science student...">
-            </div>
-
-            <div class="memory-link-row">
-                <button id="openMemoryBtn" class="memory-link-btn" title="Open Memory & Profile manager">
+        <!-- Quick Memory Vault & Resume Link Strip -->
+        <div class="memory-quick-strip">
+            <button id="openMemoryBtn" class="memory-link-btn" type="button" title="Open Memory Vault & Profile settings">
+                <div class="memory-link-left">
                     <svg class="memory-link-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <path d="M12 2a4 4 0 0 1 4 4v1a3 3 0 0 1 3 3v1a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-1a3 3 0 0 1 3-3V6a4 4 0 0 1 4-4z"/>
                         <path d="M6 13v6a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-6"/>
                     </svg>
-                    <span>Memory & Profile</span>
+                    <span class="memory-link-text">Memory Vault &amp; Profile</span>
+                </div>
+                <div class="memory-link-right">
                     <span id="memoryCount" class="memory-count" style="display: none;">0</span>
                     <svg class="memory-link-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                         <polyline points="9 18 15 12 9 6"/>
                     </svg>
-                </button>
-            </div>
-
-            <!-- Stored Resume Status Indicator -->
-            <div id="resumeStatusRow" class="resume-status-row" style="display: none; margin-top: 8px; padding: 7px 11px; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.2); border-radius: 8px; font-size: 11.5px; align-items: center; justify-content: space-between;">
-                <div style="display: flex; align-items: center; gap: 6px; overflow: hidden;">
-                    <span style="color: #6366f1;">📄</span>
-                    <span id="popupResumeName" style="font-weight: 600; color: #1e1b4b; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 175px;">Resume.pdf</span>
                 </div>
-                <span style="color: #10b981; font-weight: 700; font-size: 10px; text-transform: uppercase;">Ready</span>
+            </button>
+        </div>
+
+        <!-- Stored Resume Status Indicator -->
+        <div id="resumeStatusRow" class="resume-status-row" style="display: none;">
+            <div class="resume-meta">
+                <span class="resume-file-icon" aria-hidden="true">📄</span>
+                <span id="popupResumeName" class="resume-name-text">Resume.pdf</span>
             </div>
-        </section>
+            <span class="resume-ready-badge">Auto-Attach Ready</span>
+        </div>
+
+        <!-- Collapsible Preferences Accordion (Hick's Law: Progressive Disclosure) -->
+        <details class="preferences-accordion">
+            <summary class="preferences-summary">
+                <span class="summary-title-row">
+                    <svg class="summary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <circle cx="12" cy="12" r="3"></circle>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                    </svg>
+                    <span>Advanced Tuning &amp; Pacing</span>
+                </span>
+                <svg class="summary-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9"/>
+                </svg>
+            </summary>
+
+            <div class="preferences-content">
+                <div class="input-group">
+                    <label for="fabVisibilitySelect" class="label">Floating AI Button</label>
+                    <div class="select-wrapper">
+                        <select id="fabVisibilitySelect" class="select">
+                            <option value="smart" selected>Smart (Verified Forms Only)</option>
+                            <option value="dedicated_only">Google Forms &amp; Job ATS Only</option>
+                            <option value="hidden">Hidden (Shortcut &amp; Popup Only)</option>
+                        </select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="pacingSelect" class="label">Pacing &amp; Speed</label>
+                    <div class="select-wrapper">
+                        <select id="pacingSelect" class="select">
+                            <option value="turbo">Turbo (~150ms • Fastest)</option>
+                            <option value="natural" selected>Natural (~800ms • Balanced)</option>
+                            <option value="slow">Slow (~1.5s • Relaxed)</option>
+                        </select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="toneSelect" class="label">Answer Style</label>
+                    <div class="select-wrapper">
+                        <select id="toneSelect" class="select">
+                            <option value="accurate" selected>Accurate &amp; Direct (High Precision)</option>
+                            <option value="concise">Concise &amp; Brief (1–2 Sentences)</option>
+                            <option value="detailed">Detailed &amp; Explanatory</option>
+                        </select>
+                        <svg class="select-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <polyline points="6 9 12 15 18 9"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="customContext" class="label">
+                        <span>Target Persona</span>
+                        <span class="label-hint">Optional</span>
+                    </label>
+                    <input type="text" id="customContext" class="input" placeholder="e.g. Computer Science student...">
+                </div>
+            </div>
+        </details>
 
         <!-- Status Notification Toast -->
         <div id="popupStatus" class="status-msg" style="display: none;" role="status"></div>
 
         <!-- Upgrade to Pro Modal Backdrop -->
-        <div id="upgradeModalBackdrop" class="upgrade-modal-backdrop" style="display: none;">
+        <div id="upgradeModalBackdrop" class="upgrade-modal-backdrop" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="upgradeModalTitle">
             <div class="upgrade-modal-card">
                 <div class="upgrade-modal-header">
                     <span class="pro-tag-gold">⭐ AUTOFORM PRO</span>
-                    <button id="btnCloseUpgradeModal" class="btn-close-modal" type="button">✕</button>
+                    <button id="btnCloseUpgradeModal" class="btn-close-modal" type="button" aria-label="Close modal">✕</button>
                 </div>
-                <h2 class="upgrade-modal-title">Supercharge Your Solving</h2>
-                <p class="upgrade-modal-subtitle">Unlimited forms every month, advanced reasoning models, and zero waiting.</p>
+                <h2 id="upgradeModalTitle" class="upgrade-modal-title">Supercharge Your Form Filling</h2>
+                <p class="upgrade-modal-subtitle">Fill up to 300 forms every month with high-speed priority AI models.</p>
                 <div class="upgrade-perks-list">
                     <div class="perk-item">
                         <span class="perk-icon">✓</span>
-                        <div class="perk-text"><strong>Unlimited Questions</strong> every month (No 25/mo cap)</div>
+                        <div class="perk-text"><strong>300 AI Form Fills</strong> every month (Fair-use cap)</div>
                     </div>
                     <div class="perk-item">
                         <span class="perk-icon">✓</span>
-                        <div class="perk-text"><strong>Claude 3.5 Sonnet & GPT-4o</strong> advanced reasoning</div>
+                        <div class="perk-text"><strong>Multi-Engine Cloud AI</strong> high-speed models</div>
                     </div>
                     <div class="perk-item">
                         <span class="perk-icon">✓</span>
-                        <div class="perk-text"><strong>ATS Super-Autofill</strong> on Greenhouse, Lever & Workday</div>
+                        <div class="perk-text"><strong>ATS Super-Autofill</strong> on Greenhouse, Lever &amp; Workday</div>
                     </div>
                     <div class="perk-item">
                         <span class="perk-icon">✓</span>
-                        <div class="perk-text"><strong>Ultra-Fast Priority Speed</strong> with 0 wait times</div>
+                        <div class="perk-text"><strong>Non-recurring</strong> — 14d, 30d, or 90d passes (Never auto-billed)</div>
                     </div>
                 </div>
                 <div class="upgrade-action-block">
-                    <a id="btnCheckoutStripe" class="btn btn-pro-cta" href="https://buy.stripe.com/autoform-pro" target="_blank" rel="noopener">
-                        <span>Upgrade to Pro — $9.99/mo</span>
-                    </a>
-                    <button id="btnActivateDemoPro" class="btn-link-demo" type="button">Activate Pro (Test Mode)</button>
+                    <div class="pass-options-grid">
+                        <button class="pass-option-btn" data-plan="pass_14d" type="button" title="Get 14-Day Pro Pass for ₹99">
+                            <span class="pass-duration">14 Days</span>
+                            <span class="pass-price">₹99</span>
+                        </button>
+                        <button class="pass-option-btn pass-option-popular selected" data-plan="pass_30d" type="button" title="Get 30-Day Pro Pass for ₹149">
+                            <span class="pass-popular-tag">MOST POPULAR</span>
+                            <span class="pass-duration">30 Days</span>
+                            <span class="pass-price">₹149</span>
+                        </button>
+                        <button class="pass-option-btn" data-plan="pass_90d" type="button" title="Get 90-Day Pro Pass for ₹349">
+                            <span class="pass-duration">90 Days</span>
+                            <span class="pass-price">₹349</span>
+                        </button>
+                    </div>
+                    <button id="btnCheckoutPro" class="btn btn-pro-cta" type="button">
+                        <span>⭐ Get 30-Day Pass (₹149)</span>
+                    </button>
+                    <div class="activate-license-block">
+                        <span class="activate-sublabel">Already paid? Enter Razorpay Payment ID:</span>
+                        <div class="activate-input-row">
+                            <input type="text" id="razorpayPaymentIdInput" class="activate-input" placeholder="e.g. pay_P123456789abcde" autocomplete="off" spellcheck="false">
+                            <button id="btnVerifyPayment" class="btn-activate-license" type="button">Activate</button>
+                        </div>
+                        <div id="paymentVerifyStatus" class="payment-verify-status" style="display: none;"></div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Footer -->
+        <!-- Footer with Trust Signals & Social Proof -->
         <footer class="footer">
-            <span id="quotaFooterText">Free tier: 25 Qs/mo</span>
+            <span id="quotaFooterText" class="footer-quota-text">10 free forms/month with Google account</span>
             <a id="btnFooterReview" class="footer-review-link" href="https://chromewebstore.google.com/detail/autoform-ai/reviews" target="_blank" rel="noopener" title="Leave a 5-star review">⭐ Rate Us (5★)</a>
-            <span id="footerProviders">Connecting...</span>
+            <span id="footerProviders" class="footer-providers-text">Connecting...</span>
         </footer>
     </div>
 
+    <script src="../services/authService.js"></script>
     <script src="popup.js"></script>
 </body>
 </html>
