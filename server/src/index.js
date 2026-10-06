@@ -271,6 +271,369 @@ app.post('/api/v1/auth/device-link', rateLimiter, async (req, res) => {
     }
 });
 
+// ---------------------------------------------------------------------------
+// Hosted Web Authentication for Mobile & Firefox Android
+// ---------------------------------------------------------------------------
+
+const webAuthSessions = new Map();
+function cleanupExpiredWebAuthSessions() {
+    const now = Date.now();
+    for (const [id, entry] of webAuthSessions.entries()) {
+        if (entry.expiresAt < now) {
+            webAuthSessions.delete(id);
+        }
+    }
+}
+setInterval(cleanupExpiredWebAuthSessions, 60 * 1000).unref?.();
+
+// 1. Hosted Web Login Page
+app.get(['/auth/login', '/api/v1/auth/web/login'], rateLimiter, (req, res) => {
+    cleanupExpiredWebAuthSessions();
+    const session = (req.query.session || '').toString().replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 80);
+    const googleClientId = process.env.GOOGLE_CLIENT_ID || '124825767907-8i59japp45ibhclluloh8bs5ididjmkp.apps.googleusercontent.com';
+    const callbackUrl = `https://${req.get('host')}/api/v1/auth/web/callback`;
+    const oauthDirectUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
+        client_id: googleClientId,
+        response_type: 'id_token',
+        redirect_uri: callbackUrl,
+        scope: 'openid email profile',
+        nonce: Math.random().toString(36).substring(2) + Date.now().toString(36),
+        state: session,
+        prompt: 'select_account'
+    }).toString();
+
+    const existing = session ? webAuthSessions.get(session) : null;
+    const isAlreadyDone = existing && existing.status === 'success';
+
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Sign in to AutoForm AI</title>
+    <link rel="icon" href="https://whoisadheep.github.io/AutoForm-AI/assets/icons/icon48.png" type="image/png">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #090a10;
+            color: #f1f5f9;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .login-card {
+            background: #11131f;
+            border: 1px solid #1e2238;
+            border-radius: 16px;
+            max-width: 420px;
+            width: 100%;
+            padding: 32px 24px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            text-align: center;
+        }
+        .brand-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(99, 102, 241, 0.15);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            color: #a5b4fc;
+            padding: 4px 12px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        h1 { font-size: 22px; font-weight: 700; margin-bottom: 8px; color: #ffffff; }
+        p.subtitle { font-size: 13.5px; color: #94a3b8; line-height: 1.5; margin-bottom: 24px; }
+        .google-btn-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+            min-height: 44px;
+        }
+        .or-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 16px 0;
+            color: #475569;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .or-divider::before, .or-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid #1e2238;
+        }
+        .or-divider:not(:empty)::before { margin-right: .5em; }
+        .or-divider:not(:empty)::after { margin-left: .5em; }
+        .btn-direct-oauth {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            background: #1e2238;
+            border: 1px solid #2d3356;
+            color: #e2e8f0;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.15s ease;
+        }
+        .btn-direct-oauth:hover { background: #282f4d; color: #ffffff; }
+        .state-box { display: none; padding: 16px; border-radius: 12px; margin-top: 16px; font-size: 13px; line-height: 1.5; }
+        .state-success { background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.3); color: #6ee7b7; }
+        .state-error { background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; }
+        .sync-code-display {
+            background: #090a10;
+            border: 1px dashed #6366f1;
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 12px;
+        }
+        .sync-code-num { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: #a5b4fc; font-family: monospace; }
+        .sync-code-note { font-size: 11.5px; color: #94a3b8; margin-top: 4px; }
+        .security-footer {
+            margin-top: 24px;
+            font-size: 11px;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="brand-badge">⚡ AutoForm AI</div>
+        <h1>Sign in with Google</h1>
+        <p class="subtitle">Connect your account to enable instant AI form filling and sync your quota across Firefox Android and Desktop.</p>
+
+        <div id="authActions">
+            <div class="google-btn-wrapper">
+                <div id="g_id_onload"
+                     data-client_id="${googleClientId}"
+                     data-callback="handleGoogleCredential"
+                     data-auto_prompt="false">
+                </div>
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="pill"
+                     data-theme="filled_black"
+                     data-text="continue_with"
+                     data-size="large"
+                     data-logo_alignment="left">
+                </div>
+            </div>
+
+            <div class="or-divider">Or Direct Redirect</div>
+
+            <a href="${oauthDirectUrl}" class="btn-direct-oauth">
+                <span>Open Google Sign-in Page</span> ➔
+            </a>
+        </div>
+
+        <div id="stateLoading" class="state-box" style="display: none; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: #c7d2fe;">
+            Verifying your Google account...
+        </div>
+
+        <div id="stateSuccess" class="state-box state-success" style="${isAlreadyDone ? 'display: block;' : ''}">
+            <div style="font-size: 20px; margin-bottom: 4px;">✓</div>
+            <strong id="successTitle">Signed in successfully!</strong>
+            <p style="margin-top: 4px;">AutoForm AI is now connected. You can close this tab and return to your form.</p>
+            <div id="syncCodeSection" class="sync-code-display" style="${isAlreadyDone && existing.code ? '' : 'display: none;'}">
+                <div class="sync-code-note">Your Mobile Sync Code:</div>
+                <div id="syncCodeValue" class="sync-code-num">${isAlreadyDone && existing.code ? existing.code : ''}</div>
+                <div class="sync-code-note">Valid for 10 minutes</div>
+            </div>
+        </div>
+
+        <div id="stateError" class="state-box state-error"></div>
+
+        <div class="security-footer">
+            <span>🔒 100% Private &amp; Secure • Direct Google Authentication</span>
+        </div>
+    </div>
+
+    <script>
+        const sessionId = "${session}";
+
+        async function handleGoogleCredential(response) {
+            const idToken = response.credential;
+            if (!idToken) return;
+
+            document.getElementById('authActions').style.display = 'none';
+            document.getElementById('stateLoading').style.display = 'block';
+            document.getElementById('stateError').style.display = 'none';
+
+            try {
+                const res = await fetch('/api/v1/auth/web/complete', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session: sessionId, idToken })
+                });
+
+                const data = await res.json();
+                document.getElementById('stateLoading').style.display = 'none';
+
+                if (res.ok && data.success) {
+                    document.getElementById('stateSuccess').style.display = 'block';
+                    document.getElementById('successTitle').textContent = 'Welcome, ' + (data.user?.name || data.user?.email || 'User') + '!';
+                    if (data.code) {
+                        document.getElementById('syncCodeValue').textContent = data.code;
+                        document.getElementById('syncCodeSection').style.display = 'block';
+                    }
+                } else {
+                    document.getElementById('stateError').textContent = data.error || 'Authentication failed. Please try again.';
+                    document.getElementById('stateError').style.display = 'block';
+                    document.getElementById('authActions').style.display = 'block';
+                }
+            } catch (err) {
+                document.getElementById('stateLoading').style.display = 'none';
+                document.getElementById('stateError').textContent = 'Network error: ' + err.message;
+                document.getElementById('stateError').style.display = 'block';
+                document.getElementById('authActions').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>`);
+});
+
+// 2. Web OAuth Complete Endpoint
+app.post('/api/v1/auth/web/complete', rateLimiter, async (req, res) => {
+    try {
+        cleanupExpiredWebAuthSessions();
+        const { session, idToken } = req.body || {};
+        if (!idToken) {
+            return res.status(400).json({ success: false, error: 'Google ID token is required.' });
+        }
+
+        const profile = await verifyGoogleIdToken(idToken);
+        const user = await findOrCreateGoogleUser(profile);
+        const token = signUserToken(user);
+        const quota = await formSessionManager.getUserQuotaStatus(user.id);
+
+        // Generate backup 6-digit sync code
+        const crypto = require('crypto');
+        const code = crypto.randomInt(100000, 999999).toString();
+        devicePairingCodes.set(code, {
+            userId: user.id,
+            token,
+            expiresAt: Date.now() + 10 * 60 * 1000
+        });
+
+        // Store into web auth sessions for polling extension
+        if (session) {
+            webAuthSessions.set(session, {
+                status: 'success',
+                token,
+                user: {
+                    id: user.id,
+                    email: user.email,
+                    name: profile.name,
+                    picture: profile.picture,
+                    plan: quota.plan
+                },
+                quota,
+                code,
+                expiresAt: Date.now() + 10 * 60 * 1000
+            });
+        }
+
+        res.json({
+            success: true,
+            token,
+            user: {
+                id: user.id,
+                email: user.email,
+                name: profile.name,
+                picture: profile.picture,
+                plan: quota.plan
+            },
+            quota,
+            code
+        });
+    } catch (err) {
+        console.error('[Web Complete Auth Error]:', err.message);
+        res.status(401).json({ success: false, error: err.message || 'Google authentication failed.' });
+    }
+});
+
+// 3. Web OAuth Poll Endpoint (Called by browser extension)
+app.get('/api/v1/auth/web/poll', rateLimiter, (req, res) => {
+    cleanupExpiredWebAuthSessions();
+    const session = (req.query.session || '').toString().trim();
+    if (!session) {
+        return res.status(400).json({ success: false, error: 'Session ID is required.' });
+    }
+
+    const entry = webAuthSessions.get(session);
+    if (!entry) {
+        return res.json({ success: true, status: 'pending' });
+    }
+
+    if (entry.status === 'success') {
+        return res.json({
+            success: true,
+            status: 'success',
+            token: entry.token,
+            user: entry.user,
+            quota: entry.quota,
+            code: entry.code
+        });
+    }
+
+    res.json({ success: true, status: 'pending' });
+});
+
+// 4. Web OAuth Callback Fragment Endpoint
+app.get('/api/v1/auth/web/callback', (req, res) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    res.send(`<!DOCTYPE html>
+<html>
+<head><title>Authenticating AutoForm AI...</title></head>
+<body style="background:#090a10;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;">
+<p id="msg">Processing authentication with AutoForm AI...</p>
+<script>
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    const idToken = params.get('id_token');
+    const session = params.get('state');
+
+    if (idToken) {
+        fetch('/api/v1/auth/web/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ session, idToken })
+        }).then(r => r.json()).then(data => {
+            if (data.success) {
+                window.location.href = '/auth/login?session=' + encodeURIComponent(session || '') + '&success=1';
+            } else {
+                document.getElementById('msg').textContent = 'Authentication failed: ' + (data.error || 'Unknown error');
+            }
+        }).catch(e => {
+            document.getElementById('msg').textContent = 'Error: ' + e.message;
+        });
+    } else {
+        document.getElementById('msg').textContent = 'No authentication token received.';
+    }
+</script>
+</body>
+</html>`);
+});
+
 // Form Session Start Endpoint
 // Enforces monthly quotas, reserves a form usage slot, and issues a 30-minute session token.
 app.post('/api/v1/form/start', requireAuth, async (req, res) => {

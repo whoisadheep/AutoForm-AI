@@ -654,6 +654,14 @@ async function signInWithGoogle(options = {}) {
     // OAuth failure into a fake "Demo User" sign-in.
     if (!options.mockIdToken) {
         if (!identityApi) {
+            const hasTabsApi = (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function')
+                || (typeof browser !== 'undefined' && browser.tabs && typeof browser.tabs.create === 'function')
+                || (typeof window !== 'undefined' && typeof window.open === 'function');
+
+            if (hasTabsApi && options.useWebAuth !== false) {
+                return signInWithWebAuth({ ...options, googleClientId, serverUrl });
+            }
+
             const isFf = isFirefoxRuntime();
             return {
                 success: false,
@@ -892,6 +900,116 @@ async function createDevicePairCode(options = {}) {
     }
 }
 
+/**
+ * Initiates Hosted Web Auth flow by opening a browser tab to the server auth page
+ * and polling for completion. Enables direct Google sign-in on Firefox Android.
+ * @param {Object} [options={}]
+ * @returns {Promise<{ success: boolean, token?: string, user?: Object, quota?: Object, error?: string, code?: string }>}
+ */
+async function signInWithWebAuth(options = {}) {
+    const hasTabsApi = (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function')
+        || (typeof browser !== 'undefined' && browser.tabs && typeof browser.tabs.create === 'function')
+        || (typeof window !== 'undefined' && typeof window.open === 'function');
+
+    if (!hasTabsApi) {
+        const isFf = isFirefoxRuntime();
+        return {
+            success: false,
+            code: 'IDENTITY_API_UNSUPPORTED',
+            error: isFf
+                ? 'Google Sign-In popup is not supported by Firefox for Android. Please use "Device Sync Code" from your laptop to link your account.'
+                : 'Web authentication flow is not supported by this browser. Please link your account using a Device Sync Code from your desktop browser.'
+        };
+    }
+
+    const serverUrl = options.serverUrl || 'https://autoform-ai.onrender.com';
+    const sessionId = 'wa_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const loginUrl = `${serverUrl.replace(/\/+$/, '')}/auth/login?session=${sessionId}`;
+
+    try {
+        if (typeof chrome !== 'undefined' && chrome.tabs && typeof chrome.tabs.create === 'function') {
+            chrome.tabs.create({ url: loginUrl, active: true });
+        } else if (typeof browser !== 'undefined' && browser.tabs && typeof browser.tabs.create === 'function') {
+            browser.tabs.create({ url: loginUrl, active: true });
+        } else if (typeof window !== 'undefined' && typeof window.open === 'function') {
+            window.open(loginUrl, '_blank');
+        }
+    } catch (_) {}
+
+    const startTime = Date.now();
+    const timeoutMs = 3 * 60 * 1000; // 3 minutes
+    const pollIntervalMs = 1500;
+
+    return new Promise((resolve) => {
+        const intervalId = setInterval(async () => {
+            if (Date.now() - startTime > timeoutMs) {
+                clearInterval(intervalId);
+                return resolve({
+                    success: false,
+                    code: 'TIMEOUT',
+                    error: 'Sign-in timed out. If you signed in on the webpage, you can enter your 6-digit sync code below.'
+                });
+            }
+
+            try {
+                const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/web/poll?session=${sessionId}`);
+                if (!res.ok) return;
+
+                const data = await res.json();
+                if (data.status === 'success' && data.token) {
+                    clearInterval(intervalId);
+
+                    const prior = await new Promise(r => {
+                        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                            chrome.storage.local.get(['authUser', 'quota', '_lastActivatedPaymentId'], r);
+                        } else {
+                            r({});
+                        }
+                    });
+
+                    let finalUser = { ...data.user };
+                    let finalQuota = { ...data.quota };
+
+                    const priorIsPro = prior.authUser?.plan === 'pro' || prior.quota?.isPro === true;
+                    const priorPaymentId = prior.authUser?.razorpayPaymentId || prior._lastActivatedPaymentId;
+
+                    if (priorIsPro && finalUser.plan !== 'pro') {
+                        finalUser.plan = 'pro';
+                        if (priorPaymentId) finalUser.razorpayPaymentId = priorPaymentId;
+                        finalQuota = { ...finalQuota, isPro: true, plan: 'pro', limit: 300, remaining: 300 };
+                    }
+
+                    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                        chrome.storage.local.set({
+                            sessionToken: data.token,
+                            authUser: finalUser,
+                            quota: finalQuota
+                        }, () => {
+                            resolve({
+                                success: true,
+                                token: data.token,
+                                user: finalUser,
+                                quota: finalQuota,
+                                code: data.code
+                            });
+                        });
+                    } else {
+                        resolve({
+                            success: true,
+                            token: data.token,
+                            user: finalUser,
+                            quota: finalQuota,
+                            code: data.code
+                        });
+                    }
+                }
+            } catch (_) {
+                // Ignore transient network errors during polling
+            }
+        }, pollIntervalMs);
+    });
+}
+
 // ---------------------------------------------------------------------------
 // 6. Universal Module Exports (Node.js + Browser + Service Worker)
 // ---------------------------------------------------------------------------
@@ -918,6 +1036,7 @@ if (typeof module !== 'undefined' && module.exports) {
         updateUserPlan,
         verifyAndActivateRazorpayPayment,
         signInWithGoogle,
+        signInWithWebAuth,
         signOut,
         linkAccountWithToken,
         createDevicePairCode,
@@ -948,6 +1067,7 @@ if (typeof globalThis !== 'undefined') {
         updateUserPlan,
         verifyAndActivateRazorpayPayment,
         signInWithGoogle,
+        signInWithWebAuth,
         signOut,
         linkAccountWithToken,
         createDevicePairCode,

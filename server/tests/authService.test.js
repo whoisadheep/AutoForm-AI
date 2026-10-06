@@ -566,7 +566,53 @@ describe('Firefox Android & Cross-Device Account Linking', () => {
         assert.strictEqual(linkResult.user.email, 'mobilesync@example.com');
         assert.strictEqual(linkResult.token, testToken);
     });
+
+    it('renders hosted /auth/login page with Google Sign-in elements', async () => {
+        const res = await fetch(`${baseUrl}/auth/login?session=test_session_123`);
+        assert.strictEqual(res.ok, true);
+        assert.match(res.headers.get('content-type'), /text\/html/);
+        const html = await res.text();
+        assert.match(html, /Sign in with Google/);
+        assert.match(html, /accounts\.google\.com\/gsi\/client/);
+        assert.match(html, /test_session_123/);
+    });
+
+    it('processes web auth completion and delivers credentials to polling client', async () => {
+        const sessionId = 'poll_test_' + Date.now();
+
+        // 1. Initial poll returns pending
+        const initialPoll = await fetch(`${baseUrl}/api/v1/auth/web/poll?session=${sessionId}`);
+        assert.strictEqual(initialPoll.ok, true);
+        const initData = await initialPoll.json();
+        assert.strictEqual(initData.status, 'pending');
+
+        // 2. Complete authentication with mock Google token
+        const compRes = await fetch(`${baseUrl}/api/v1/auth/web/complete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                session: sessionId,
+                idToken: 'mock_google_token_sub_webauth'
+            })
+        });
+
+        assert.strictEqual(compRes.ok, true);
+        const compData = await compRes.json();
+        assert.strictEqual(compData.success, true);
+        assert.strictEqual(compData.user.email, 'webauth@example.com');
+        assert.ok(compData.token);
+        assert.ok(compData.code);
+
+        // 3. Subsequent poll retrieves success credentials
+        const finalPoll = await fetch(`${baseUrl}/api/v1/auth/web/poll?session=${sessionId}`);
+        assert.strictEqual(finalPoll.ok, true);
+        const finalData = await finalPoll.json();
+        assert.strictEqual(finalData.status, 'success');
+        assert.strictEqual(finalData.user.email, 'webauth@example.com');
+        assert.strictEqual(finalData.token, compData.token);
+    });
 });
+
 
 
 
