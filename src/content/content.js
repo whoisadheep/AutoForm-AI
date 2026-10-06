@@ -3943,7 +3943,8 @@ async function processQuestionQueue(questions) {
         if (successCount === 0 && formSessionToken) {
             sendRuntimeMessageWithRetry({
                 action: "RELEASE_FORM_SESSION",
-                sessionToken: formSessionToken
+                sessionToken: formSessionToken,
+                guestTrial
             }, 1, 100).catch(() => {});
         }
         removeGhostChip();
@@ -3997,6 +3998,8 @@ async function processQuestionQueue(questions) {
                             setTimeout(() => {
                                 showDelightReviewPrompt();
                             }, 1200);
+                        } else if (!chrome.runtime.lastError && res?.shouldPromptSignIn) {
+                            showNotification('You’ve used your two guest form trials. Sign in with Google to keep filling forms.', 'info');
                         }
                     });
                 } catch (_) {}

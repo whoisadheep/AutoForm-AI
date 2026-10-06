@@ -105,7 +105,7 @@ module.exports = {
     dailySolveCapPro: parseInt(process.env.DAILY_SOLVE_CAP_PRO || '1500', 10),
     legacyAnonSolve: process.env.LEGACY_ANON_SOLVE === 'true' || process.env.LEGACY_ANON_SOLVE === '1',
     legacyDailyIpCap: parseInt(process.env.LEGACY_DAILY_IP_CAP || '150', 10),
-    guestTrialDailyIpCap: parseInt(process.env.GUEST_TRIAL_DAILY_IP_CAP || '60', 10),
+    guestTrialDailyIpCap: parseInt(process.env.GUEST_TRIAL_DAILY_IP_CAP || '120', 10),
     paymentsEnabled: process.env.PAYMENTS_ENABLED === 'true' || process.env.PAYMENTS_ENABLED === '1',
     trustProxyHops: parseInt(process.env.TRUST_PROXY_HOPS || '1', 10),
     adminStatsToken: process.env.ADMIN_STATS_TOKEN || null,

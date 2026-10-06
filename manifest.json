@@ -1,7 +1,7 @@
 {
   "name": "AutoForm AI",
   "description": "Fill job applications and forms faster with intelligent AI auto-fill.",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "manifest_version": 3,
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4aNA+R4yRECb8ddy9ntx9FhAKvJbyT0FyqDR2/ggIfqMMQr/qomC75urywNZz7clCllBRemIx+qWsw2zb2F2R+v+kMgL3IrZhO5FH+6pscA2TpWdKoKNwsR7R45JJUKyvv6fH5vBDmR8w1CcMZmHK6LuVrrEGG0Vi5wcwVNd4VV41xT82Nz39Rtd7rvwaLCxaIeMJdOPVHT7rmI2W5JgaId+9PgY+Ie9sA2ONY3EVrLr4g7z0lsQ9zXpL0n5Ld7gHYYTvMaLhOErU8LjffTephe2iAaYelIbHlV2/X0jCQJZmg8W1wUx+Tu4m52HOl0IIVLoyIqAGPdDqhvux/SNNwIDAQAB",
   "browser_specific_settings": {

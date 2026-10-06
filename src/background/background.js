@@ -321,7 +321,7 @@ async function solveViaBackendProxy(questionData, preferences = {}, retryCount =
         if (formSessionToken) {
             headers['X-Form-Session-Token'] = formSessionToken;
         }
-        if (guestTrial) headers['X-AutoForm-Guest-Trial'] = '1';
+        if (guestTrial) headers['X-AutoForm-Guest-Session'] = formSessionToken;
 
         const response = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/solve`, {
             method: 'POST',
@@ -446,20 +446,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "START_FORM_SESSION") {
         (async () => {
             try {
-                const stored = await chrome.storage.local.get(['sessionToken', 'authUser', 'quota', 'guestTrialCompletedForms']);
+                const stored = await chrome.storage.local.get(['sessionToken', 'authUser', 'quota', 'useDirectKey']);
                 const sessionToken = stored.sessionToken;
 
                 if (!sessionToken) {
-                    const completedForms = Number(stored.guestTrialCompletedForms || 0);
-                    if (completedForms < 2) {
-                        sendResponse({ success: true, guestTrial: true, quota: { limit: 2, remaining: 2 - completedForms } });
+                    if (stored.useDirectKey) {
+                        sendResponse({ success: true, guestTrial: false, byok: true });
                         return;
                     }
-                    sendResponse({
-                        success: false,
-                        code: "AUTH_REQUIRED",
-                        error: "Your two free form trials are complete. Sign in with Google to continue."
+                    const serverUrl = await getEffectiveServerUrl();
+                    const guestRes = await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/guest/form/start`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ formCategory: request.formCategory || 'generic' }),
+                        signal: AbortSignal.timeout(8000)
                     });
+                    const guestData = await guestRes.json();
+                    if (!guestRes.ok || !guestData.success) {
+                        sendResponse({
+                            success: false,
+                            code: guestData.code === 'GUEST_TRIAL_EXHAUSTED' ? 'AUTH_REQUIRED' : guestData.code,
+                            error: guestData.error || `Could not start guest form session (HTTP ${guestRes.status})`,
+                            quota: guestData.quota
+                        });
+                        return;
+                    }
+                    sendResponse({ success: true, guestTrial: true, sessionToken: guestData.sessionToken, quota: guestData.quota });
                     return;
                 }
 
@@ -528,8 +540,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         (async () => {
             try {
                 const stored = await chrome.storage.local.get(['sessionToken']);
-                if (stored.sessionToken && request.sessionToken) {
+                if (request.sessionToken) {
                     const serverUrl = await getEffectiveServerUrl();
+                    if (!stored.sessionToken && request.guestTrial) {
+                        await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/guest/form/release`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-AutoForm-Guest-Session': request.sessionToken
+                            },
+                            body: JSON.stringify({ sessionToken: request.sessionToken }),
+                            signal: AbortSignal.timeout(4000)
+                        });
+                        sendResponse({ success: true });
+                        return;
+                    }
+                    if (!stored.sessionToken) {
+                        sendResponse({ success: true });
+                        return;
+                    }
                     await fetch(`${serverUrl.replace(/\/$/, '')}/api/v1/form/release`, {
                         method: 'POST',
                         headers: {
@@ -892,7 +921,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "GET_AUTH_STATUS") {
         (async () => {
             try {
-                const stored = await chrome.storage.local.get(['sessionToken', 'authUser', 'quota', 'guestTrialCompletedForms']);
+                const stored = await chrome.storage.local.get(['sessionToken', 'authUser', 'quota']);
                 let user = stored.authUser || { plan: 'free' };
                 let quota = stored.quota || { limit: 10, used: 0, remaining: 10, isPro: false, plan: 'free' };
 
@@ -922,8 +951,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     success: true,
                     isAuthenticated: !!stored.sessionToken || !!user.id,
                     user,
-                    quota,
-                    guestTrialCompletedForms: Number(stored.guestTrialCompletedForms || 0)
+                    quota
                 });
             } catch (e) {
                 sendResponse({ success: false, error: e.message });
@@ -1083,7 +1111,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 if (!stored.sessionToken) {
                     const completedForms = Math.min(2, Number(stored.guestTrialCompletedForms || 0) + 1);
                     await chrome.storage.local.set({ guestTrialCompletedForms: completedForms });
-                    sendResponse({ success: true, shouldShowReview: false, guestTrialCompletedForms: completedForms });
+                    sendResponse({
+                        success: true,
+                        shouldShowReview: false,
+                        shouldPromptSignIn: completedForms === 2,
+                        guestTrialCompletedForms: completedForms
+                    });
                     return;
                 }
                 const stats = typeof recordFormCompleted === 'function' ? await recordFormCompleted() : {};

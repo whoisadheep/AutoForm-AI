@@ -21,7 +21,8 @@ const memoryStore = {
     daily_solves: new Map(), // "userId:YYYY-MM-DD" -> count
     instant_fill_summaries: new Map(), // "userId:YYYY-MM-DD" -> { id, user_id, day_key, count, created_at, updated_at }
     limit_hit_events: new Map(), // "userId:YYYY-MM-DD" -> { id, user_id, day_key, created_at }
-    legacy_ip_solve_counts: new Map() // "ip:YYYY-MM-DD" -> count
+    legacy_ip_solve_counts: new Map(), // "ip:YYYY-MM-DD" -> count
+    guest_trial_forms: new Map() // sessionId -> { ip_hash, status, created_at }
 };
 
 /**
@@ -125,6 +126,16 @@ async function initDb(connectionString) {
                     created_at TIMESTAMPTZ DEFAULT NOW(),
                     PRIMARY KEY(ip, day_key)
                 );
+
+                CREATE TABLE IF NOT EXISTS guest_trial_forms (
+                    session_id TEXT PRIMARY KEY,
+                    ip_hash TEXT NOT NULL,
+                    status TEXT NOT NULL CHECK (status IN ('reserved', 'used')),
+                    solve_count INT NOT NULL DEFAULT 0,
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                );
+                ALTER TABLE guest_trial_forms ADD COLUMN IF NOT EXISTS solve_count INT NOT NULL DEFAULT 0;
+                CREATE INDEX IF NOT EXISTS idx_guest_trial_ip_created ON guest_trial_forms(ip_hash, created_at);
 
                 CREATE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub);
                 CREATE INDEX IF NOT EXISTS idx_usage_events_user_created ON usage_events(user_id, created_at);
@@ -920,6 +931,131 @@ function hashIp(ip) {
     return crypto.createHmac('sha256', secret).update(String(ip || '127.0.0.1').trim()).digest('hex');
 }
 
+const GUEST_TRIAL_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+const GUEST_TRIAL_SESSION_TTL_MS = 30 * 60 * 1000;
+
+async function reserveGuestTrialForm(ip, limit = 2) {
+    const ipHash = hashIp(ip);
+    const now = Date.now();
+    const cutoff = new Date(now - GUEST_TRIAL_WINDOW_MS);
+    const sessionId = `gfs_${crypto.randomBytes(32).toString('hex')}`;
+
+    if (isInMemory) {
+        return withUserLock(`guest:${ipHash}`, async () => {
+            for (const [id, row] of memoryStore.guest_trial_forms) {
+                const age = now - new Date(row.created_at).getTime();
+                if (age >= GUEST_TRIAL_WINDOW_MS || (row.status === 'reserved' && age >= GUEST_TRIAL_SESSION_TTL_MS)) {
+                    memoryStore.guest_trial_forms.delete(id);
+                }
+            }
+            const rows = [...memoryStore.guest_trial_forms.values()].filter(row => row.ip_hash === ipHash);
+            if (rows.length >= limit) return { allowed: false, remaining: 0 };
+            memoryStore.guest_trial_forms.set(sessionId, { ip_hash: ipHash, status: 'reserved', solve_count: 0, created_at: new Date(now) });
+            return { allowed: true, sessionId, remaining: Math.max(0, limit - rows.length - 1) };
+        });
+    }
+
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`guest:${ipHash}`]);
+        await client.query('DELETE FROM guest_trial_forms WHERE created_at < $1 OR (status = \'reserved\' AND created_at < NOW() - INTERVAL \'30 minutes\')', [cutoff]);
+        const countRes = await client.query(
+            `SELECT COUNT(*)::int AS count FROM guest_trial_forms
+             WHERE ip_hash = $1 AND created_at >= $2
+               AND (status = 'used' OR created_at >= NOW() - INTERVAL '30 minutes')`,
+            [ipHash, cutoff]
+        );
+        const count = countRes.rows[0]?.count || 0;
+        if (count >= limit) {
+            await client.query('COMMIT');
+            return { allowed: false, remaining: 0 };
+        }
+        await client.query('INSERT INTO guest_trial_forms (session_id, ip_hash, status) VALUES ($1, $2, \'reserved\')', [sessionId, ipHash]);
+        await client.query('COMMIT');
+        return { allowed: true, sessionId, remaining: Math.max(0, limit - count - 1) };
+    } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+    } finally {
+        client.release();
+    }
+}
+
+async function validateGuestTrialForm(sessionId, ip) {
+    if (!sessionId || typeof sessionId !== 'string') return false;
+    const ipHash = hashIp(ip);
+    const cutoff = new Date(Date.now() - GUEST_TRIAL_WINDOW_MS);
+    if (isInMemory) {
+        const row = memoryStore.guest_trial_forms.get(sessionId);
+        const age = row ? Date.now() - new Date(row.created_at).getTime() : Infinity;
+        return Boolean(row && row.ip_hash === ipHash && age < GUEST_TRIAL_SESSION_TTL_MS && new Date(row.created_at) >= cutoff);
+    }
+    const result = await pool.query(
+        `SELECT 1 FROM guest_trial_forms WHERE session_id = $1 AND ip_hash = $2
+         AND created_at >= $3 AND created_at >= NOW() - INTERVAL '30 minutes' LIMIT 1`,
+        [sessionId, ipHash, cutoff]
+    );
+    return result.rowCount > 0;
+}
+
+async function markGuestTrialFormUsed(sessionId, ip) {
+    const ipHash = hashIp(ip);
+    if (isInMemory) {
+        const row = memoryStore.guest_trial_forms.get(sessionId);
+        if (row && row.ip_hash === ipHash) row.status = 'used';
+        return Boolean(row && row.ip_hash === ipHash);
+    }
+    const result = await pool.query(
+        "UPDATE guest_trial_forms SET status = 'used' WHERE session_id = $1 AND ip_hash = $2 AND status = 'reserved' RETURNING session_id",
+        [sessionId, ipHash]
+    );
+    return result.rowCount > 0;
+}
+
+async function releaseGuestTrialForm(sessionId, ip) {
+    const ipHash = hashIp(ip);
+    if (isInMemory) {
+        const row = memoryStore.guest_trial_forms.get(sessionId);
+        if (row && row.ip_hash === ipHash && row.status === 'reserved' && row.solve_count === 0) return memoryStore.guest_trial_forms.delete(sessionId);
+        return false;
+    }
+    const result = await pool.query(
+        "DELETE FROM guest_trial_forms WHERE session_id = $1 AND ip_hash = $2 AND status = 'reserved' AND solve_count = 0 RETURNING session_id",
+        [sessionId, ipHash]
+    );
+    return result.rowCount > 0;
+}
+
+async function beginGuestTrialSolve(sessionId, ip) {
+    const ipHash = hashIp(ip);
+    if (isInMemory) {
+        const row = memoryStore.guest_trial_forms.get(sessionId);
+        const age = row ? Date.now() - new Date(row.created_at).getTime() : Infinity;
+        if (!row || row.ip_hash !== ipHash || age >= GUEST_TRIAL_SESSION_TTL_MS || row.solve_count >= 60) return false;
+        row.solve_count++;
+        return true;
+    }
+    const result = await pool.query(
+        `UPDATE guest_trial_forms SET solve_count = solve_count + 1
+         WHERE session_id = $1 AND ip_hash = $2 AND created_at >= NOW() - INTERVAL '30 minutes'
+           AND solve_count < 60 RETURNING session_id`,
+        [sessionId, ipHash]
+    );
+    return result.rowCount > 0;
+}
+
+async function cleanupGuestTrialForms() {
+    const cutoff = new Date(Date.now() - GUEST_TRIAL_WINDOW_MS);
+    if (isInMemory) {
+        for (const [id, row] of memoryStore.guest_trial_forms) {
+            if (new Date(row.created_at) < cutoff) memoryStore.guest_trial_forms.delete(id);
+        }
+        return;
+    }
+    if (pool) await pool.query('DELETE FROM guest_trial_forms WHERE created_at < $1', [cutoff]);
+}
+
 /**
  * Automatically cleans up legacy IP counter records older than daysToKeep (default: 7 days).
  * @param {number} [daysToKeep=7]
@@ -1306,7 +1442,7 @@ async function resetTestDb() {
         return;
     }
     if (pool) {
-        await pool.query('TRUNCATE users, entitlements, payments, usage_events, daily_solve_counts, instant_fill_summaries, limit_hit_events, legacy_ip_solve_counts CASCADE');
+        await pool.query('TRUNCATE users, entitlements, payments, usage_events, daily_solve_counts, instant_fill_summaries, limit_hit_events, legacy_ip_solve_counts, guest_trial_forms CASCADE');
     }
 }
 
@@ -1324,6 +1460,7 @@ function resetInMemoryDb() {
     memoryStore.instant_fill_summaries.clear();
     memoryStore.limit_hit_events.clear();
     memoryStore.legacy_ip_solve_counts.clear();
+    memoryStore.guest_trial_forms.clear();
     inMemoryUserLocks.clear();
 }
 
@@ -1371,6 +1508,12 @@ module.exports = {
     getLegacyIpDailySolveCount,
     incrementLegacyIpDailySolveCount,
     hashIp,
+    reserveGuestTrialForm,
+    validateGuestTrialForm,
+    markGuestTrialFormUsed,
+    releaseGuestTrialForm,
+    beginGuestTrialSolve,
+    cleanupGuestTrialForms,
     cleanupOldLegacyIpCounts,
     getAdminStats
 };

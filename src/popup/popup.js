@@ -674,7 +674,7 @@ const paymentVerifyStatus = document.getElementById('paymentVerifyStatus');
 function refreshAuthAndSubscriptionStatus() {
     chrome.runtime.sendMessage({ action: "GET_AUTH_STATUS" }, (res) => {
         if (chrome.runtime.lastError || !res || !res.success) return;
-        renderAuthUI(res.user, res.stats, res.quota, res.guestTrialCompletedForms);
+        renderAuthUI(res.user, res.stats, res.quota);
     });
 }
 
@@ -684,7 +684,7 @@ function refreshAuthAndSubscriptionStatus() {
  * @param {Object} stats 
  * @param {Object} quota 
  */
-function renderAuthUI(user = {}, stats = {}, quota = {}, guestTrialCompletedForms = 0) {
+function renderAuthUI(user = {}, stats = {}, quota = {}) {
     const isPro = Boolean(quota.isPro || (user?.plan === 'pro'));
     const isGuest = !user?.id;
     const limit = quota.limit !== undefined ? quota.limit : (isPro ? 300 : 10);
@@ -699,7 +699,7 @@ function renderAuthUI(user = {}, stats = {}, quota = {}, guestTrialCompletedForm
             planBadgeGuest.className = 'plan-tag-badge plan-badge-free';
         }
         if (monthlyQuotaDisplayGuest) {
-            monthlyQuotaDisplayGuest.textContent = `${Math.max(0, 2 - guestTrialCompletedForms)} of 2 free trials left`;
+            monthlyQuotaDisplayGuest.textContent = '2 free guest forms per network';
         }
         if (btnUpgradeProGuest) {
             btnUpgradeProGuest.style.display = 'none';

@@ -19,6 +19,13 @@ const formSessionManager = require('./services/formSessionManager');
 const paymentService = require('./services/paymentService');
 const statsService = require('./services/statsService');
 
+const guestTrialCleanupTimer = setInterval(() => {
+    db.cleanupGuestTrialForms().catch((err) => {
+        console.error('[Guest Trial Cleanup Error]:', err.message);
+    });
+}, 6 * 60 * 60 * 1000);
+guestTrialCleanupTimer.unref?.();
+
 // Enforce strict production safety checks before initializing
 if (config.env === 'production') {
     const prodCheck = config.validateProductionConfig(process.env);
@@ -62,7 +69,7 @@ app.use((req, res, next) => {
 app.use(cors({
     origin: '*', // Allows extension origins (chrome-extension://, moz-extension://)
     methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-ID', 'X-API-Key', 'X-Request-Id', 'X-Form-Session-Token', 'X-User-Plan'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Client-ID', 'X-API-Key', 'X-Request-Id', 'X-Form-Session-Token', 'X-AutoForm-Guest-Session', 'X-User-Plan'],
     exposedHeaders: ['X-Request-Id', 'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'Retry-After']
 }));
 // 5. Razorpay Webhook Endpoint (MUST use express.raw for HMAC-SHA256 signature verification)
@@ -96,7 +103,7 @@ app.get('/contact', (req, res) => res.sendFile(path.resolve(__dirname, '../../si
 app.get('/', (req, res) => {
     res.json({
         name: 'AutoForm AI Backend API',
-        version: '2.0.6',
+        version: '2.0.7',
         status: 'online',
         docs: 'https://github.com/whoisadheep/AutoForm-AI'
     });
@@ -113,7 +120,7 @@ app.get('/api/v1/health', (req, res) => {
     const mem = process.memoryUsage();
     res.json({
         status: 'healthy',
-        version: '2.0.6',
+        version: '2.0.7',
         uptimeSeconds: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
         memoryMb: {
@@ -181,6 +188,42 @@ app.get('/api/v1/auth/me', requireAuth, async (req, res) => {
         });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Anonymous guest trial is anchored to a server-side, HMAC-hashed IP. A
+// reservation is only counted as used after the first successful AI answer.
+app.post('/api/v1/guest/form/start', rateLimiter, async (req, res) => {
+    try {
+        const reservation = await db.reserveGuestTrialForm(req.ip || req.socket.remoteAddress, 2);
+        if (!reservation.allowed) {
+            return res.status(403).json({
+                success: false,
+                code: 'GUEST_TRIAL_EXHAUSTED',
+                error: 'Your two free guest forms have been used on this network. Sign in with Google to continue.',
+                quota: { limit: 2, remaining: 0, windowDays: 30 }
+            });
+        }
+        return res.json({
+            success: true,
+            guestTrial: true,
+            sessionToken: reservation.sessionId,
+            expiresIn: 1800,
+            quota: { limit: 2, remaining: reservation.remaining, windowDays: 30 }
+        });
+    } catch (err) {
+        console.error('[Guest Trial Start Error]:', err.message);
+        return res.status(500).json({ success: false, code: 'GUEST_TRIAL_ERROR', error: 'Could not start guest form session.' });
+    }
+});
+
+app.post('/api/v1/guest/form/release', rateLimiter, async (req, res) => {
+    try {
+        const sessionToken = req.headers['x-autoform-guest-session'] || req.body?.sessionToken;
+        const released = await db.releaseGuestTrialForm(sessionToken, req.ip || req.socket.remoteAddress);
+        return res.json({ success: true, released });
+    } catch (err) {
+        return res.status(500).json({ success: false, error: 'Could not release guest form session.' });
     }
 });
 
@@ -1548,7 +1591,7 @@ function renderPaymentSuccessHtml(paymentId = '') {
 app.get('/api/v1/config', (req, res) => {
     const status = router.getStatus();
     res.json({
-        version: '2.0.6',
+        version: '2.0.7',
         providers: status.activeProviders || [],
         rateLimitPerHour: config.rateLimitPerHour,
         maintenanceMode: false,
@@ -1576,11 +1619,22 @@ async function solveAuthMiddleware(req, res, next) {
         return requireAuth(req, res, next);
     }
 
-    // New installs get two locally tracked guest form trials. They identify
-    // these requests explicitly; older extension compatibility remains behind
-    // the legacy environment flag.
-    const guestTrialRequest = req.headers['x-autoform-guest-trial'] === '1';
-    const legacyAllowed = guestTrialRequest || config.legacyAnonSolve || process.env.LEGACY_ANON_SOLVE === 'true' || process.env.LEGACY_ANON_SOLVE === '1';
+    const guestSessionToken = req.headers['x-autoform-guest-session'];
+    if (guestSessionToken) {
+        let guestSessionValid = false;
+        try {
+            guestSessionValid = await db.validateGuestTrialForm(guestSessionToken, req.ip || req.socket.remoteAddress);
+        } catch (err) {
+            console.error('[Guest Trial Validation Error]:', err.message);
+            return res.status(503).json({ success: false, code: 'GUEST_TRIAL_UNAVAILABLE', error: 'Guest trial validation is temporarily unavailable.' });
+        }
+        if (!guestSessionValid) {
+            return res.status(403).json({ success: false, code: 'INVALID_GUEST_SESSION', error: 'Guest form session expired or is invalid. Start a new form session.' });
+        }
+        req.isGuestTrial = true;
+        req.guestTrialSessionToken = guestSessionToken;
+    }
+    const legacyAllowed = req.isGuestTrial || config.legacyAnonSolve || process.env.LEGACY_ANON_SOLVE === 'true' || process.env.LEGACY_ANON_SOLVE === '1';
 
     if (!legacyAllowed) {
         return res.status(401).json({
@@ -1593,7 +1647,7 @@ async function solveAuthMiddleware(req, res, next) {
     // Legacy anonymous solve mode: per-IP daily cap
     // Reads strictly from req.ip (trust proxy handled by Express), never raw X-Forwarded-For header
     const ip = req.ip || req.socket.remoteAddress || '127.0.0.1';
-    const legacyCap = guestTrialRequest
+    const legacyCap = req.isGuestTrial
         ? config.guestTrialDailyIpCap
         : (config.legacyDailyIpCap || parseInt(process.env.LEGACY_DAILY_IP_CAP || '150', 10));
     const dayKey = db.getTodayDateKeyIST();
@@ -1604,9 +1658,9 @@ async function solveAuthMiddleware(req, res, next) {
         return res.status(429).json({
             success: false,
             code: 'LEGACY_IP_CAP_EXCEEDED',
-            error: guestTrialRequest
+            error: req.isGuestTrial
                 ? 'Guest trial limit reached. Sign in with Google to continue.'
-                : `Daily anonymous legacy solve limit reached (${legacyCap} solves/day). Please update extension to AutoForm AI v2.0.6 and sign in with Google for full access.`,
+                : `Daily anonymous legacy solve limit reached (${legacyCap} solves/day). Please update extension to AutoForm AI v2.0.7 and sign in with Google for full access.`,
             dailyLimit: legacyCap,
             dailySolves: currentCount,
             requestId: req.id
@@ -1627,6 +1681,16 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
     const sessionToken = req.headers['x-form-session-token'] || req.body?.formSessionToken;
 
     try {
+        if (req.isGuestTrial) {
+            const allowed = await db.beginGuestTrialSolve(req.guestTrialSessionToken, req.ip || req.socket.remoteAddress);
+            if (!allowed) {
+                return res.status(429).json({
+                    success: false,
+                    code: 'GUEST_SESSION_QUESTION_CAP',
+                    error: 'This guest form session expired or reached its 60-question limit. Sign in or start another allowed guest form.'
+                });
+            }
+        }
         let isPro = false;
         if (!req.isLegacyAnon) {
             // Enforce session validation, expiration, and 60-question cap
@@ -1674,6 +1738,10 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
             if (result && (result.answer || (result.answers && result.answers.length > 0))) {
                 await formSessionManager.markSessionSuccess(sessionToken);
             }
+        }
+
+        if (req.isGuestTrial && result && (result.answer || (result.answers && result.answers.length > 0))) {
+            await db.markGuestTrialFormUsed(req.guestTrialSessionToken, req.ip || req.socket.remoteAddress);
         }
 
         res.json({

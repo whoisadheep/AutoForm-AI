@@ -56,6 +56,74 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
         formSessionManager.resetSessions();
     });
 
+    describe('Server-enforced guest trial', () => {
+        it('issues only two guest form sessions in a rolling window for the same network', async () => {
+            const start = () => fetch(`${baseUrl}/api/v1/guest/form/start`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ formCategory: 'generic' })
+            });
+
+            const first = await start();
+            const firstData = await first.json();
+            assert.equal(first.status, 200);
+            assert.equal(firstData.guestTrial, true);
+            assert.ok(firstData.sessionToken);
+            assert.equal(firstData.quota.remaining, 1);
+
+            const guestSolveValidation = await fetch(`${baseUrl}/api/v1/solve`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-AutoForm-Guest-Session': firstData.sessionToken
+                },
+                body: JSON.stringify({})
+            });
+            assert.equal(guestSolveValidation.status, 400, 'A valid guest token passes auth and reaches request validation');
+
+            const second = await start();
+            assert.equal(second.status, 200);
+
+            const third = await start();
+            const thirdData = await third.json();
+            assert.equal(third.status, 403);
+            assert.equal(thirdData.code, 'GUEST_TRIAL_EXHAUSTED');
+
+            const released = await fetch(`${baseUrl}/api/v1/guest/form/release`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-AutoForm-Guest-Session': firstData.sessionToken
+                },
+                body: JSON.stringify({ sessionToken: firstData.sessionToken })
+            });
+            assert.equal(released.status, 200);
+        });
+
+        it('allows only two concurrent or completed guest forms per network and survives new client sessions', async () => {
+            const results = await Promise.all(
+                Array.from({ length: 8 }, () => db.reserveGuestTrialForm('198.51.100.20', 2))
+            );
+            const allowed = results.filter(result => result.allowed);
+            assert.equal(allowed.length, 2, 'Concurrent reservations must not exceed the guest limit');
+
+            assert.equal(await db.beginGuestTrialSolve(allowed[0].sessionId, '198.51.100.20'), true);
+            assert.equal(await db.releaseGuestTrialForm(allowed[0].sessionId, '198.51.100.20'), false,
+                'A session cannot be released after AI solving has started');
+            await db.markGuestTrialFormUsed(allowed[0].sessionId, '198.51.100.20');
+            await db.releaseGuestTrialForm(allowed[1].sessionId, '198.51.100.20');
+
+            const replacement = await db.reserveGuestTrialForm('198.51.100.20', 2);
+            assert.equal(replacement.allowed, true, 'An unused reservation can be released');
+            await db.markGuestTrialFormUsed(replacement.sessionId, '198.51.100.20');
+
+            const afterReinstall = await db.reserveGuestTrialForm('198.51.100.20', 2);
+            assert.equal(afterReinstall.allowed, false, 'A new client on the same network cannot reset the allowance');
+            assert.equal(await db.validateGuestTrialForm(allowed[0].sessionId, '198.51.100.20'), true);
+            assert.equal(await db.validateGuestTrialForm(allowed[0].sessionId, '198.51.100.21'), false);
+        });
+    });
+
     describe('1. Google Authentication & Session Tokens', () => {
         it('authenticates with Google ID token, creates user, and returns signed JWT with quota', async () => {
             const res = await fetch(`${baseUrl}/api/v1/auth/google`, {
