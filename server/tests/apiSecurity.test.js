@@ -121,7 +121,7 @@ describe('HTTP API & Security Hardening', () => {
         assert.equal(res.status, 200);
         const data = await res.json();
 
-        assert.equal(data.version, '2.0.4');
+        assert.equal(data.version, '2.0.5');
         assert.ok(Array.isArray(data.providers));
         assert.ok(typeof data.rateLimitPerHour === 'number');
         assert.equal(data.maintenanceMode, false);

@@ -1,4 +1,4 @@
-# AutoForm AI ⚡ (v2.0.4 Production)
+# AutoForm AI ⚡ (v2.0.5 Production)
 
 > Fill job applications and forms faster with multi-provider AI, local memory, and smart resume auto-attach across Chrome, Firefox, Edge, and mobile extension browsers.
 
