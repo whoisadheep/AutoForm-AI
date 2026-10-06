@@ -96,7 +96,7 @@ app.get('/contact', (req, res) => res.sendFile(path.resolve(__dirname, '../../si
 app.get('/', (req, res) => {
     res.json({
         name: 'AutoForm AI Backend API',
-        version: '2.0.5',
+        version: '2.0.6',
         status: 'online',
         docs: 'https://github.com/whoisadheep/AutoForm-AI'
     });
@@ -113,7 +113,7 @@ app.get('/api/v1/health', (req, res) => {
     const mem = process.memoryUsage();
     res.json({
         status: 'healthy',
-        version: '2.0.5',
+        version: '2.0.6',
         uptimeSeconds: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
         memoryMb: {
@@ -1098,7 +1098,7 @@ function renderPaymentSuccessHtml(paymentId = '') {
 app.get('/api/v1/config', (req, res) => {
     const status = router.getStatus();
     res.json({
-        version: '2.0.5',
+        version: '2.0.6',
         providers: status.activeProviders || [],
         rateLimitPerHour: config.rateLimitPerHour,
         maintenanceMode: false,
@@ -1156,7 +1156,7 @@ async function solveAuthMiddleware(req, res, next) {
             code: 'LEGACY_IP_CAP_EXCEEDED',
             error: guestTrialRequest
                 ? 'Guest trial limit reached. Sign in with Google to continue.'
-                : `Daily anonymous legacy solve limit reached (${legacyCap} solves/day). Please update extension to AutoForm AI v2.0.5 and sign in with Google for full access.`,
+                : `Daily anonymous legacy solve limit reached (${legacyCap} solves/day). Please update extension to AutoForm AI v2.0.6 and sign in with Google for full access.`,
             dailyLimit: legacyCap,
             dailySolves: currentCount,
             requestId: req.id
