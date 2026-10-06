@@ -1428,8 +1428,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
                     btnGoogle.disabled = false;
                     btnGoogle.style.opacity = '1';
-                    if (chrome.runtime.lastError || !res || !res.success) {
-                        showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled'}`);
+                    if (chrome.runtime.lastError) {
+                        showSaveStatus(`Sign-in error: ${chrome.runtime.lastError.message}`);
+                        return;
+                    }
+                    if (!res || !res.success) {
+                        showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled or window closed'}`);
                         return;
                     }
                     showSaveStatus(`Signed in as ${res.user?.name || res.user?.email} ✓`);

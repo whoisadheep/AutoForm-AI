@@ -53,24 +53,28 @@ function isValidServerUrl(url) {
 }
 
 // Load MemoryRetriever Hybrid RAG Engine
-try {
-    importScripts('../services/memoryRetriever.js');
-} catch (e) {
+if (typeof importScripts === 'function') {
     try {
-        importScripts('src/services/memoryRetriever.js');
-    } catch (e2) {
-        console.warn('[AutoForm] memoryRetriever load error:', e2.message);
+        importScripts('../services/memoryRetriever.js');
+    } catch (e) {
+        try {
+            importScripts('src/services/memoryRetriever.js');
+        } catch (e2) {
+            console.warn('[AutoForm] memoryRetriever load error:', e2.message);
+        }
     }
 }
 
 // Load AuthService (Cloud Auth, Quota & Review Engine)
-try {
-    importScripts('../services/authService.js');
-} catch (e) {
+if (typeof importScripts === 'function') {
     try {
-        importScripts('src/services/authService.js');
-    } catch (e2) {
-        console.warn('[AutoForm] authService load error:', e2.message);
+        importScripts('../services/authService.js');
+    } catch (e) {
+        try {
+            importScripts('src/services/authService.js');
+        } catch (e2) {
+            console.warn('[AutoForm] authService load error:', e2.message);
+        }
     }
 }
 
@@ -933,9 +937,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     googleClientId = remoteCfg?.googleClientId || '124825767907-8i59japp45ibhclluloh8bs5ididjmkp.apps.googleusercontent.com';
                 }
 
-                let authResult = { success: false };
-                if (typeof signInWithGoogle === 'function') {
-                    authResult = await signInWithGoogle({
+                let authResult = { success: false, error: 'Authentication service not initialized.' };
+                const authFn = (typeof signInWithGoogle === 'function')
+                    ? signInWithGoogle
+                    : (typeof globalThis.AutoFormAuth !== 'undefined' && typeof globalThis.AutoFormAuth.signInWithGoogle === 'function')
+                        ? globalThis.AutoFormAuth.signInWithGoogle
+                        : null;
+
+                if (authFn) {
+                    authResult = await authFn({
                         serverUrl,
                         googleClientId
                     });
@@ -951,7 +961,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "SIGN_OUT") {
         (async () => {
             try {
-                if (typeof signOut === 'function') await signOut();
+                const signOutFn = (typeof signOut === 'function')
+                    ? signOut
+                    : (typeof globalThis.AutoFormAuth !== 'undefined' && typeof globalThis.AutoFormAuth.signOut === 'function')
+                        ? globalThis.AutoFormAuth.signOut
+                        : null;
+
+                if (signOutFn) await signOutFn();
                 sendResponse({
                     success: true,
                     user: { plan: 'free' },

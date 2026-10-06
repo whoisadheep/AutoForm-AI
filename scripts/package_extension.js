@@ -68,7 +68,11 @@ try {
     const firefoxManifest = {
         ...baseManifest,
         background: {
-            scripts: ["src/background/background.js"]
+            scripts: [
+                "src/services/memoryRetriever.js",
+                "src/services/authService.js",
+                "src/background/background.js"
+            ]
         },
         browser_specific_settings: {
             gecko: {

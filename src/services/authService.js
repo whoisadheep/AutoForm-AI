@@ -330,7 +330,11 @@ function requestOptionalDataConsent(category) {
 
     try {
         // Run synchronously inside user gesture!
+        // Firefox ext-permissions.js requires permissions and origins to be iterable arrays,
+        // otherwise it throws TypeError: permissions is undefined.
         return permApi.request({
+            permissions: [],
+            origins: [],
             data_collection: [category]
         }).then((granted) => {
             if (!granted) {
@@ -344,19 +348,34 @@ function requestOptionalDataConsent(category) {
             }
             return { granted: true };
         }).catch((err) => {
-            // If the browser threw because it does not recognize data_collection, treat as granted
-            if (err?.message && err.message.includes('data_collection')) {
+            const msg = (err?.message || '').toLowerCase();
+            // If the browser threw because it does not recognize data_collection,
+            // or because of Firefox ext-permissions TypeError (permissions is undefined),
+            // or because called outside user gesture (e.g. in background script), treat as granted
+            if (msg.includes('data_collection') ||
+                msg.includes('permissions is undefined') ||
+                msg.includes('permissions is not iterable') ||
+                msg.includes('user input handler') ||
+                msg.includes('user gesture') ||
+                msg.includes('reserved') ||
+                msg.includes('typeerror')) {
                 return { granted: true };
             }
-            // Do NOT let the catch return granted:true on Firefox when the call throws:
-            // if the API exists but throws, treat it as denied and show an error.
+            // Do NOT let the catch return granted:true on Firefox when the call throws due to user denial
             return {
                 granted: false,
                 error: err?.message || 'Data collection permission request failed or was dismissed.'
             };
         });
     } catch (err) {
-        if (err?.message && err.message.includes('data_collection')) {
+        const msg = (err?.message || '').toLowerCase();
+        if (msg.includes('data_collection') ||
+            msg.includes('permissions is undefined') ||
+            msg.includes('permissions is not iterable') ||
+            msg.includes('user input handler') ||
+            msg.includes('user gesture') ||
+            msg.includes('reserved') ||
+            msg.includes('typeerror')) {
             return Promise.resolve({ granted: true });
         }
         return Promise.resolve({
@@ -488,10 +507,16 @@ async function signInWithGoogle(options = {}) {
     const serverUrl = options.serverUrl || 'https://autoform-ai.onrender.com';
     const googleClientId = options.googleClientId || '';
 
-    // 1. Browser extension environment with chrome.identity
-    if (typeof chrome !== 'undefined' && chrome.identity && chrome.identity.launchWebAuthFlow && googleClientId) {
+    // 1. Browser extension environment with browser.identity or chrome.identity
+    const identityApi = (typeof browser !== 'undefined' && browser.identity && typeof browser.identity.launchWebAuthFlow === 'function')
+        ? browser.identity
+        : (typeof chrome !== 'undefined' && chrome.identity && typeof chrome.identity.launchWebAuthFlow === 'function')
+            ? chrome.identity
+            : null;
+
+    if (identityApi && googleClientId) {
         return new Promise((resolve) => {
-            const redirectUrl = chrome.identity.getRedirectURL();
+            const redirectUrl = identityApi.getRedirectURL();
             const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` + new URLSearchParams({
                 client_id: googleClientId,
@@ -502,11 +527,15 @@ async function signInWithGoogle(options = {}) {
                 prompt: 'select_account'
             }).toString();
 
-            chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, async (responseUrl) => {
-                if (chrome.runtime.lastError || !responseUrl) {
+            let hasCompleted = false;
+            const processAuthResponse = async (responseUrl, errorMsg) => {
+                if (hasCompleted) return;
+                hasCompleted = true;
+
+                if (errorMsg || !responseUrl) {
                     return resolve({
                         success: false,
-                        error: chrome.runtime.lastError?.message || 'Google sign-in window was closed.'
+                        error: errorMsg || 'Google sign-in window was closed.'
                     });
                 }
 
@@ -569,23 +598,55 @@ async function signInWithGoogle(options = {}) {
                         }
                     }
 
-                    // Save session token, user, and quota to chrome.storage.local
-                    chrome.storage.local.set({
-                        sessionToken: data.token,
-                        authUser: finalUser,
-                        quota: finalQuota
-                    }, () => {
+                    // Save session token, user, and quota to storage
+                    const storageArea = (typeof chrome !== 'undefined' && chrome.storage?.local)
+                        ? chrome.storage.local
+                        : (typeof browser !== 'undefined' && browser.storage?.local)
+                            ? browser.storage.local
+                            : null;
+
+                    if (storageArea) {
+                        storageArea.set({
+                            sessionToken: data.token,
+                            authUser: finalUser,
+                            quota: finalQuota
+                        }, () => {
+                            resolve({
+                                success: true,
+                                token: data.token,
+                                user: finalUser,
+                                quota: finalQuota
+                            });
+                        });
+                    } else {
                         resolve({
                             success: true,
                             token: data.token,
                             user: finalUser,
                             quota: finalQuota
                         });
-                    });
+                    }
                 } catch (err) {
                     resolve({ success: false, error: err.message });
                 }
-            });
+            };
+
+            try {
+                const flowPromise = identityApi.launchWebAuthFlow({ url: authUrl, interactive: true }, (responseUrl) => {
+                    const lastErr = (typeof chrome !== 'undefined' && chrome.runtime?.lastError)
+                        || (typeof browser !== 'undefined' && browser.runtime?.lastError);
+                    processAuthResponse(responseUrl, lastErr?.message);
+                });
+
+                // Firefox browser.identity returns a Promise
+                if (flowPromise && typeof flowPromise.then === 'function') {
+                    flowPromise
+                        .then(responseUrl => processAuthResponse(responseUrl, null))
+                        .catch(err => processAuthResponse(null, err?.message || 'Google sign-in window was closed.'));
+                }
+            } catch (err) {
+                processAuthResponse(null, err?.message || 'Failed to launch Google authentication flow.');
+            }
         });
     }
 

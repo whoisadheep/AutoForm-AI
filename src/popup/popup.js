@@ -771,8 +771,12 @@ if (btnGoogleSignIn) {
             chrome.runtime.sendMessage({ action: "SIGN_IN_GOOGLE" }, (res) => {
                 btnGoogleSignIn.disabled = false;
                 btnGoogleSignIn.style.opacity = '1';
-                if (chrome.runtime.lastError || !res || !res.success) {
-                    showStatus(res?.error || 'Sign-in cancelled', 'error');
+                if (chrome.runtime.lastError) {
+                    showStatus(`Sign-in error: ${chrome.runtime.lastError.message}`, 'error');
+                    return;
+                }
+                if (!res || !res.success) {
+                    showStatus(res?.error || 'Sign-in cancelled or window closed', 'error');
                     return;
                 }
                 renderAuthUI(res.user, res.stats, res.quota);
