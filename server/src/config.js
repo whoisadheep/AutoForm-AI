@@ -110,7 +110,7 @@ module.exports = {
     trustProxyHops: parseInt(process.env.TRUST_PROXY_HOPS || '1', 10),
     adminStatsToken: process.env.ADMIN_STATS_TOKEN || null,
     apiSecretKey: process.env.API_SECRET_KEY || null,
-    piiAllowedProviders: (process.env.PII_ALLOWED_PROVIDERS || 'groq')
+    piiAllowedProviders: (process.env.PII_ALLOWED_PROVIDERS || 'groq,gemini')
         .split(',')
         .map(s => s.trim().toLowerCase())
         .filter(Boolean),
@@ -129,7 +129,7 @@ module.exports = {
             keys: parseKeyList(process.env.GROQ_API_KEYS),
             model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
             piiModel: process.env.GROQ_PII_MODEL || 'llama-3.3-70b-versatile',
-            fallbackModels: (process.env.GROQ_FALLBACK_MODELS || 'llama-3.1-8b-instant,deepseek-r1-distill-llama-70b,gemma2-9b-it')
+            fallbackModels: (process.env.GROQ_FALLBACK_MODELS || 'llama-3.1-8b-instant,openai/gpt-oss-120b,openai/gpt-oss-20b,qwen/qwen3.6-27b,deepseek-r1-distill-llama-70b,gemma2-9b-it')
                 .split(',')
                 .map(m => m.trim())
                 .filter(Boolean),

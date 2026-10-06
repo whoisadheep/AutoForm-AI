@@ -34,12 +34,10 @@ class GroqProvider {
         let modelsToTry;
         if (questionData.isPro) {
             const proPrimary = 'llama-3.3-70b-versatile';
-            const proFallback = 'llama-3.1-8b-instant';
-            modelsToTry = Array.from(new Set([proPrimary, proFallback]));
+            modelsToTry = Array.from(new Set([proPrimary, ...(this.config.fallbackModels || ['llama-3.1-8b-instant'])]));
         } else if (isPii) {
             const piiPrimary = this.config.piiModel || 'llama-3.3-70b-versatile';
-            const piiFallback = 'llama-3.1-8b-instant';
-            modelsToTry = Array.from(new Set([piiPrimary, piiFallback]));
+            modelsToTry = Array.from(new Set([piiPrimary, ...(this.config.fallbackModels || ['llama-3.1-8b-instant'])]));
         } else {
             modelsToTry = [this.activeModel, ...this.candidates.filter(m => m !== this.activeModel)];
         }

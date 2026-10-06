@@ -295,12 +295,12 @@ async function buildMemoryContext(questionData = {}, customContext = '') {
  * @param {Object} preferences
  * @returns {Promise<Object>}
  */
-async function solveViaBackendProxy(questionData, preferences = {}) {
+async function solveViaBackendProxy(questionData, preferences = {}, retryCount = 0) {
     const clientId = await getOrCreateClientId();
     const serverUrl = preferences.serverUrl || await getEffectiveServerUrl();
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
+    const timeout = setTimeout(() => controller.abort(), 35000);
 
     const userPlan = preferences.userPlan || 'free';
     const userId = preferences.userId || clientId;
@@ -352,6 +352,17 @@ async function solveViaBackendProxy(questionData, preferences = {}) {
 
         return data;
 
+    } catch (networkErr) {
+        // If server cold-started or temporary network drop, retry once after 1.2s
+        const isNetworkOrTimeout = networkErr.name === 'AbortError' ||
+            networkErr.message?.toLowerCase().includes('failed to fetch') ||
+            networkErr.message?.toLowerCase().includes('network');
+        if (isNetworkOrTimeout && retryCount < 1) {
+            console.warn(`[AutoForm] Backend fetch failed (${networkErr.message}), retrying in 1.2s...`);
+            await new Promise(r => setTimeout(r, 1200));
+            return solveViaBackendProxy(questionData, preferences, retryCount + 1);
+        }
+        throw networkErr;
     } finally {
         clearTimeout(timeout);
     }
@@ -659,10 +670,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     });
                     return;
                 }
+                let friendlyMsg = error.message || 'Failed to solve question';
+                if (friendlyMsg.toLowerCase().includes('failed to fetch') || error.name === 'AbortError') {
+                    friendlyMsg = 'AutoForm AI server unreachable (cold start or network error). Please try again in a few moments.';
+                }
                 sendResponse({
                     success: false,
                     code: error.code || "SOLVE_ERROR",
-                    error: error.message || 'Failed to solve question'
+                    error: friendlyMsg
                 });
             }
         })();

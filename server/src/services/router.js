@@ -67,7 +67,7 @@ class ProviderRouter {
             (typeof questionData.customContext === 'string' && questionData.customContext.trim().length > 0)
         );
 
-        const piiAllowed = this.piiAllowedProviders || config.piiAllowedProviders || ['groq'];
+        const piiAllowed = this.piiAllowedProviders || config.piiAllowedProviders || ['groq', 'gemini'];
 
         let candidateProviders;
         if (hasPersonalContext) {
