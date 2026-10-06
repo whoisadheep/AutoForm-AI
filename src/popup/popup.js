@@ -137,7 +137,7 @@ async function checkServerHealth() {
             connectionPill.className = 'connection-pill status-online';
             const providers = res.data?.activeProviders || [];
             const count = providers.length || 1;
-            connectionText.innerText = `${count} Engine${count > 1 ? 's' : ''}`;
+            connectionText.innerHTML = `${count} <span class="engine-word">Engine${count > 1 ? 's' : ''}</span>`;
             const providerNames = providers.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(' • ');
             connectionPill.title = `AI Engines Online: ${providerNames || 'Active'} (Connected to ${res.serverUrl || 'Cloud'})`;
             if (footerProviders) footerProviders.textContent = providerNames || 'Connected';

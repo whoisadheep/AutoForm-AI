@@ -72,6 +72,7 @@ html {
 body {
     width: 360px;
     max-width: 100vw;
+    min-width: 280px;
     margin: 0 auto;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
@@ -81,15 +82,26 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+@media (max-width: 360px) {
+    body {
+        width: 100%;
+    }
 }
 
 /* Main Extension Container */
 .container {
     width: 100%;
-    padding: 12px 14px;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 10px 12px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    box-sizing: border-box;
 }
 
 /* ==========================================================================
@@ -100,64 +112,73 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     padding-bottom: 2px;
+    width: 100%;
+    min-width: 0;
 }
 
 .brand {
     display: flex;
     align-items: center;
-    gap: 7px;
-    flex-shrink: 0;
+    gap: 6px;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 .brand-logo {
-    width: 22px;
-    height: 22px;
+    width: 20px;
+    height: 20px;
     display: block;
     border-radius: var(--radius-sm);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
 }
 
 .brand-text {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
+    min-width: 0;
 }
 
 .title {
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: 700;
     color: var(--text-primary);
     letter-spacing: -0.3px;
     line-height: 1.2;
+    white-space: nowrap;
 }
 
 .version-tag {
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 600;
     color: var(--text-secondary);
     background-color: var(--bg-surface);
     border: var(--border-medium);
-    padding: 1px 6px;
+    padding: 1px 5px;
     border-radius: var(--radius-full);
+    flex-shrink: 0;
+    line-height: 1.3;
 }
 
 .header-status {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     flex-shrink: 0;
+    min-width: 0;
 }
 
 /* Quota Pill */
 .quota-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    padding: 3px 8px;
+    gap: 3.5px;
+    padding: 2.5px 7px;
     border-radius: var(--radius-full);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     color: var(--text-secondary);
     background-color: var(--bg-card);
@@ -166,11 +187,13 @@ body {
     cursor: default;
     user-select: none;
     line-height: 1.2;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .quota-svg {
-    width: 11px;
-    height: 11px;
+    width: 10px;
+    height: 10px;
     color: var(--primary);
     flex-shrink: 0;
 }
@@ -191,10 +214,10 @@ body {
 .connection-pill {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 3px 9px;
+    gap: 4px;
+    padding: 2.5px 7px;
     border-radius: var(--radius-full);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     letter-spacing: -0.1px;
     background-color: var(--bg-card);
@@ -203,6 +226,23 @@ body {
     box-shadow: var(--shadow-sm);
     user-select: none;
     line-height: 1.2;
+    flex-shrink: 0;
+    min-width: 0;
+    white-space: nowrap;
+}
+
+.connection-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 2.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+}
+
+.engine-word {
+    white-space: nowrap;
 }
 
 .pulse-indicator {
@@ -263,23 +303,27 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
+    flex-wrap: wrap;
+    min-width: 0;
 }
 
 .btn-google-auth {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 9px;
+    gap: 5px;
+    padding: 4px 8px;
     background: #ffffff;
     border: 1px solid #cbd5e1;
     border-radius: var(--radius-sm);
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     color: var(--text-primary);
     cursor: pointer;
     transition: background var(--transition-fast), border-color var(--transition-fast);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .btn-google-auth:hover {
@@ -290,11 +334,14 @@ body {
 .guest-quota-pill {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     background: var(--bg-surface);
     border: var(--border-subtle);
     border-radius: var(--radius-full);
-    padding: 2px 7px;
+    padding: 2px 6px;
+    flex-shrink: 1;
+    min-width: 0;
+    white-space: nowrap;
 }
 
 .plan-tag-badge {
@@ -319,10 +366,12 @@ body {
 }
 
 .quota-mini-text {
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     color: var(--text-secondary);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .btn-upgrade-mini {
@@ -333,12 +382,14 @@ body {
     color: #ffffff;
     border: none;
     border-radius: var(--radius-full);
-    padding: 2.5px 8px;
-    font-size: 10px;
+    padding: 2px 7px;
+    font-size: 9.5px;
     font-weight: 700;
     cursor: pointer;
     box-shadow: 0 1px 4px rgba(99, 102, 241, 0.3);
     transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .btn-upgrade-mini:hover {
@@ -1154,10 +1205,13 @@ body {
     border-radius: var(--radius-lg);
     box-shadow: 0 20px 40px -4px rgba(15, 23, 42, 0.3);
     width: 100%;
-    max-width: 320px;
-    padding: 16px;
+    max-width: min(340px, calc(100vw - 20px));
+    max-height: calc(100vh - 20px);
+    overflow-y: auto;
+    padding: clamp(12px, 3vw, 16px);
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .upgrade-modal-header {
@@ -1415,7 +1469,9 @@ body {
     color: var(--text-muted);
     border-top: var(--border-medium);
     padding-top: 8px;
-    white-space: nowrap;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
 }
 
 .footer-review-link {
@@ -1429,6 +1485,8 @@ body {
     background: rgba(245, 158, 11, 0.1);
     border-radius: var(--radius-xs);
     transition: transform var(--transition-fast);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .footer-review-link:hover {
@@ -1439,14 +1497,20 @@ body {
 .footer-quota-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 140px;
+    white-space: nowrap;
+    max-width: 130px;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 .footer-providers-text {
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 100px;
+    white-space: nowrap;
+    max-width: 105px;
     text-align: right;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* Accessibility */
@@ -1464,82 +1528,95 @@ body {
 }
 
 /* ==========================================================================
-   Mobile & Touch Viewports (Firefox Android, Kiwi, Orion, Small screens)
+   Mobile, Side Panel & Responsive Viewports
    ========================================================================== */
-@media (max-width: 480px) {
-    body {
-        width: 100%;
-        min-width: 280px;
-    }
-
+@media (max-width: 350px) {
     .container {
-        padding: 12px 14px max(16px, env(safe-area-inset-bottom, 16px));
-        gap: 12px;
+        padding: 8px 10px;
+        gap: 8px;
     }
 
-    /* WCAG AAA & Fitts's Law Touch Targets (>= 44px min-height) */
-    .btn,
-    .btn-primary {
-        min-height: 48px;
-        font-size: 14px;
-        padding: 12px 16px;
+    .footer {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 6px;
     }
 
-    .btn-secondary {
-        min-height: 44px;
-        font-size: 13px;
-        padding: 10px 14px;
+    .footer-quota-text,
+    .footer-providers-text {
+        max-width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 330px) {
+    .version-tag {
+        display: none; /* Hide version on narrow screens to guarantee connection pill fits */
+    }
+
+    .quota-badge {
+        padding: 2px 5px;
+        font-size: 10px;
+    }
+
+    .connection-pill {
+        padding: 2px 5.5px;
+        font-size: 10px;
     }
 
     .btn-google-auth {
-        min-height: 44px;
-        padding: 8px 14px;
-        font-size: 13px;
+        width: 100%;
+        justify-content: center;
     }
 
-    .btn-logout-icon {
-        width: 38px;
-        height: 38px;
+    .guest-quota-pill {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+@media (max-width: 295px) {
+    .header {
+        flex-wrap: wrap;
+        gap: 5px;
     }
 
-    .btn-upgrade-mini {
-        min-height: 30px;
-        padding: 5px 12px;
-        font-size: 11.5px;
+    .header-status {
+        width: 100%;
+        justify-content: flex-end;
     }
 
-    .site-exclusion-btn {
-        min-height: 34px;
-        padding: 6px 12px;
-        font-size: 11.5px;
+    .connection-pill .engine-word {
+        display: none; /* Show "4" + status dot on ultra-narrow viewports */
     }
 
-    .quick-link-btn {
-        min-height: 44px;
-        padding: 10px 12px;
-        font-size: 12.5px;
+    .pass-options-grid {
+        grid-template-columns: 1fr;
+        gap: 6px;
     }
 
-    .pacing-btn {
-        min-height: 36px;
-        padding: 6px 10px;
-        font-size: 12px;
-    }
-
-    .pass-option-btn {
-        min-height: 54px;
-        padding: 8px 6px;
-    }
-
-    .btn-pro-cta {
-        min-height: 50px;
-        font-size: 14.5px;
+    .activate-input-row {
+        flex-direction: column;
     }
 
     .btn-activate-license {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Touch target optimizations for mobile extension browsers (Kiwi, Firefox Android) */
+    .btn,
+    .btn-primary {
         min-height: 44px;
-        padding: 0 16px;
         font-size: 13.5px;
+        padding: 10px 14px;
+    }
+
+    .btn-secondary {
+        min-height: 42px;
+        font-size: 13px;
+        padding: 8px 12px;
     }
 
     /* Prevent mobile browser zoom on input focus (minimum 16px) */
@@ -1553,54 +1630,18 @@ body {
     }
 
     /* Touch-friendly upgrade modal */
-    .upgrade-modal {
+    .upgrade-modal-card {
         width: 100%;
-        max-width: calc(100vw - 24px);
-        max-height: calc(100vh - 36px);
-        margin: 12px;
-        padding: 20px 16px;
-        border-radius: var(--radius-lg);
-    }
-
-    .close-btn {
-        width: 38px;
-        height: 38px;
-        min-height: 38px;
-        font-size: 18px;
-    }
-
-    /* Switches easy touch */
-    .switch {
-        width: 48px;
-        height: 28px;
-    }
-
-    .slider:before {
-        height: 22px;
-        width: 22px;
-        left: 3px;
-        bottom: 3px;
-    }
-
-    input:checked + .slider:before {
-        transform: translateX(20px);
-    }
-
-    .toggle-group {
-        padding: 10px 12px;
-    }
-
-    .footer {
-        flex-wrap: wrap;
-        gap: 8px;
-        padding-top: 10px;
+        max-width: calc(100vw - 20px);
+        max-height: calc(100vh - 24px);
+        padding: 14px;
     }
 
     .footer-review-link {
-        min-height: 32px;
+        min-height: 28px;
         display: inline-flex;
         align-items: center;
-        padding: 4px 8px;
+        padding: 3px 8px;
     }
 }
 

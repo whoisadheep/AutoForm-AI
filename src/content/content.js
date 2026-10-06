@@ -719,8 +719,10 @@ function injectAutoFormStyles() {
             display: flex !important;
             align-items: center !important;
             justify-content: space-between !important;
-            gap: 8px !important;
+            gap: 6px !important;
             margin-top: 4px !important;
+            min-width: 0 !important;
+            flex-wrap: wrap !important;
         }
 
         .autoform-hud-status-subtext {
@@ -729,7 +731,8 @@ function injectAutoFormStyles() {
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
-            max-width: 220px !important;
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
         }
 
         .autoform-hud-provider-badge {
@@ -743,6 +746,7 @@ function injectAutoFormStyles() {
             color: #c4b5fd !important;
             border: 1px solid rgba(139, 92, 246, 0.3) !important;
             flex-shrink: 0 !important;
+            white-space: nowrap !important;
         }
 
         /* Thought Stream Console */
@@ -1656,6 +1660,13 @@ function injectAutoFormStyles() {
                 left: 12px !important;
                 width: auto !important;
                 max-width: 100% !important;
+            }
+
+            .autoform-hud-brand {
+                max-width: 130px !important;
+                overflow: hidden !important;
+                text-overflow: ellipsis !important;
+                white-space: nowrap !important;
             }
 
             /* Delight review card on mobile */

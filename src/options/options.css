@@ -397,11 +397,11 @@ body {
 
 .grid-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 14px 16px;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .grid-2 {
     grid-template-columns: 1fr;
   }
@@ -1199,15 +1199,18 @@ textarea {
 
 .server-status-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: 14px;
   margin-bottom: 16px;
+  width: 100%;
 }
 
 .server-stat {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .server-stat-label {
@@ -1216,15 +1219,21 @@ textarea {
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.3px;
+  white-space: normal;
+  word-break: break-word;
 }
 
 .server-stat-value {
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-primary);
-  display: inline-flex;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .server-url-display {
@@ -1232,6 +1241,7 @@ textarea {
   font-size: 12px;
   font-weight: 500;
   word-break: break-all;
+  overflow-wrap: anywhere;
   color: var(--text-secondary);
 }
 
@@ -1440,7 +1450,8 @@ textarea {
   align-items: center;
   gap: 14px;
   flex: 1;
-  min-width: 260px;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .file-badge-icon {
@@ -1479,6 +1490,8 @@ textarea {
   font-weight: 700;
   color: var(--text-primary);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  word-break: break-all;
+  overflow-wrap: anywhere;
 }
 
 .stored-resume-ready-badge {
@@ -1775,7 +1788,7 @@ textarea {
 
 .options-pass-selection-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
   width: 100%;
@@ -1906,6 +1919,13 @@ textarea {
 @media (max-width: 768px) {
   .plans-comparison-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .options-pass-selection-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 
