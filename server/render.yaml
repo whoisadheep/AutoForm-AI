@@ -32,3 +32,7 @@ services:
         sync: false
       - key: RAZORPAY_WEBHOOK_SECRET
         sync: false
+      # Keep checkout disabled until Razorpay keys and webhook are configured.
+      # Set this to true in the Render dashboard to accept live payments.
+      - key: PAYMENTS_ENABLED
+        sync: false

@@ -42,7 +42,7 @@ function createFileFromDataUrl(dataUrl, fileName = 'Resume.pdf', mimeType = 'app
 
     const parts = dataUrl.split(',');
     const header = parts[0] || '';
-    const base64Data = parts[1] || '';
+    const base64Data = (parts[1] || '').replace(/\s+/g, '');
 
     const detectedMime = (header.match(/:(.*?);/) || [])[1] || mimeType;
 
@@ -73,7 +73,7 @@ function createFileFromDataUrl(dataUrl, fileName = 'Resume.pdf', mimeType = 'app
 
 /**
  * Injects a stored resume into an HTML <input type="file"> using the DataTransfer API.
- * Dispatches native synthetic events to trigger React, Vue, Angular, and form handlers.
+ * Dispatches native synthetic events, prototype setters, and drop events to trigger React, Vue, Angular, and custom ATS dropzones.
  * @param {HTMLInputElement} fileInput 
  * @param {Object} storedResume 
  * @returns {boolean}
@@ -81,22 +81,54 @@ function createFileFromDataUrl(dataUrl, fileName = 'Resume.pdf', mimeType = 'app
 function attachResumeToFileInput(fileInput, storedResume) {
     if (!fileInput || !storedResume || !storedResume.dataUrl) return false;
     try {
+        const resolvedName = storedResume.fileName || storedResume.name || 'Resume.pdf';
+        const resolvedType = storedResume.fileType || storedResume.type || 'application/pdf';
         const file = createFileFromDataUrl(
             storedResume.dataUrl,
-            storedResume.fileName || 'Resume.pdf',
-            storedResume.fileType || 'application/pdf'
+            resolvedName,
+            resolvedType
         );
 
         if (typeof DataTransfer !== 'undefined') {
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
-            fileInput.files = dataTransfer.files;
+
+            // Bypass React / framework property descriptors
+            const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
+            if (descriptor && descriptor.set) {
+                descriptor.set.call(fileInput, dataTransfer.files);
+            } else {
+                fileInput.files = dataTransfer.files;
+            }
+
+            // Also dispatch DragEvent 'drop' to the file input and any parent dropzone container
+            const dropzone = (fileInput.closest && fileInput.closest('.dropzone, [class*="dropzone" i], [class*="uploader" i], [class*="upload-area" i], [class*="drop" i], label, div')) || fileInput;
+            try {
+                if (typeof DragEvent !== 'undefined') {
+                    const dropEvt = new DragEvent('drop', {
+                        bubbles: true,
+                        cancelable: true,
+                        composed: true,
+                        dataTransfer: dataTransfer
+                    });
+                    dropzone.dispatchEvent(dropEvt);
+                    if (dropzone !== fileInput) {
+                        fileInput.dispatchEvent(new DragEvent('drop', {
+                            bubbles: true,
+                            cancelable: true,
+                            composed: true,
+                            dataTransfer: dataTransfer
+                        }));
+                    }
+                }
+            } catch (_) {}
         }
 
         // Trigger native synthetic events for modern UI framework listeners
         try { fileInput.focus(); } catch (_) {}
         fileInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
         fileInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+        fileInput.dispatchEvent(new Event('blur', { bubbles: true, composed: true }));
         return true;
     } catch (err) {
         console.warn('[AutoForm] Failed to attach resume to file input:', err);

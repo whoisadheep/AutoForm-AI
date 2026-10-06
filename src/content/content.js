@@ -1999,6 +1999,10 @@ function isBlockFilled(block, q = null) {
         }
     }
     if (!block) return false;
+    const fileInputs = block.querySelectorAll ? block.querySelectorAll('input[type="file"]') : [];
+    for (const fi of fileInputs) {
+        if (fi.files && fi.files.length > 0) return true;
+    }
     const textInputs = block.querySelectorAll('input[type="text"], textarea, input[type="email"], input[type="number"], input[type="tel"], input[type="url"]');
     for (const input of textInputs) {
         if (input.value && input.value.trim().length > 0) return true;
@@ -2676,17 +2680,80 @@ async function injectAnswerIntoField(q, block, solution) {
 
     if (q.platform && q.platform !== 'google_forms' && globalThis.AutoFormEngine) {
         filled = await globalThis.AutoFormEngine.fillAnswer(q, solution.resume || solution.answers || solution.answer, document);
-    } else {
+    }
+    
+    // Fallback or Google Forms native handling
+    if (!filled) {
         if (q.type === 'file_upload') {
-            const fileInput = block.querySelector ? block.querySelector('input[type="file"]') : null;
-            if (fileInput) {
-                const attachFn = (typeof attachResumeToFileInput === 'function')
-                    ? attachResumeToFileInput
-                    : (globalThis.attachResumeToFileInput || globalThis.ResumeExtractor?.attachResumeToFileInput);
-                if (attachFn) {
-                    const resumeToAttach = solution.resume || await new Promise(r => chrome.storage.local.get(['storedResume'], res => r(res.storedResume || null)));
-                    if (resumeToAttach) {
-                        filled = attachFn(fileInput, resumeToAttach);
+            const attachFn = (typeof attachResumeToFileInput === 'function')
+                ? attachResumeToFileInput
+                : (globalThis.attachResumeToFileInput || globalThis.ResumeExtractor?.attachResumeToFileInput);
+
+            let fileInput = block.querySelector ? block.querySelector('input[type="file"]') : null;
+            if (!fileInput && q.element && q.element.querySelector) {
+                fileInput = q.element.querySelector('input[type="file"]');
+            }
+            if (!fileInput && Array.isArray(q.inputElements)) {
+                fileInput = q.inputElements.find(el => el && el.type === 'file');
+            }
+            if (!fileInput) {
+                fileInput = document.querySelector('input[type="file"][name*="resume" i], input[type="file"][id*="resume" i], input[type="file"][name*="cv" i], input[type="file"][id*="cv" i], input[type="file"]');
+            }
+
+            const resumeToAttach = solution.resume || await new Promise(r => {
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.get(['storedResume'], res => r(res.storedResume || null));
+                } else {
+                    r(null);
+                }
+            });
+
+            if (!resumeToAttach || !resumeToAttach.dataUrl) {
+                showGhostChip(block, 'No CV in Vault', 'warning');
+                addThought('⚠️', `[Q${(q.id ?? 0) + 1}] No resume uploaded in AutoForm Memory Vault. Upload in extension options.`, 'unsure');
+                return false;
+            }
+
+            if (fileInput && attachFn) {
+                filled = attachFn(fileInput, resumeToAttach);
+            } else if (!fileInput) {
+                // Check for Google Forms or custom upload modal trigger button ("Add file")
+                const addFileBtn = block.querySelector ? block.querySelector(
+                    'div[role="button"][aria-label*="Add file" i], div[role="button"][aria-label*="file" i], div[role="button"][aria-label*="Upload" i], .freebirdFormviewerComponentsQuestionFileuploadRoot [role="button"], [data-is-file-upload="true"] [role="button"], div[role="button"]'
+                ) : null;
+
+                if (addFileBtn) {
+                    try {
+                        if (typeof addFileBtn.scrollIntoView === 'function') {
+                            addFileBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        addFileBtn.click();
+                        // Wait for Google Forms picker / iframe to mount
+                        await new Promise(r => setTimeout(r, 600));
+
+                        let mountedInput = document.querySelector('input[type="file"]');
+                        if (!mountedInput) {
+                            const iframes = document.querySelectorAll('iframe');
+                            for (const iframe of iframes) {
+                                try {
+                                    if (iframe.contentDocument) {
+                                        mountedInput = iframe.contentDocument.querySelector('input[type="file"]');
+                                        if (mountedInput) break;
+                                    }
+                                } catch (_) {}
+                            }
+                        }
+
+                        if (mountedInput && attachFn) {
+                            filled = attachFn(mountedInput, resumeToAttach);
+                        } else {
+                            // Dialog opened - show helpful guidance instead of hard error
+                            filled = true;
+                            showGhostChip(block, 'Drive Picker opened — select CV', 'direct');
+                            addThought('📄', `[Q${(q.id ?? 0) + 1}] Clicked 'Add file' button. Google Drive Picker dialog opened.`, 'match');
+                        }
+                    } catch (e) {
+                        console.warn('[AutoForm] Error triggering Add file button:', e);
                     }
                 }
             }
@@ -3210,8 +3277,9 @@ function showPreviewModal(preparedList, formTitle = '') {
                 const fileDetails = document.createElement('div');
                 if (item.solution.resume) {
                     const r = item.solution.resume;
-                    const sizeStr = r.fileSize ? ` • ${Math.round(r.fileSize / 1024)} KB` : '';
-                    fileDetails.innerHTML = `<div style="font-weight:600;font-size:13.5px;color:#0f172a;">${r.fileName || 'Resume.pdf'}</div><div style="font-size:11.5px;color:#10b981;font-weight:500;">✓ Ready to auto-attach${sizeStr}</div>`;
+                    const resumeName = r.fileName || r.name || 'Resume.pdf';
+                    const sizeStr = (r.fileSize || r.size) ? ` • ${Math.round((r.fileSize || r.size) / 1024)} KB` : '';
+                    fileDetails.innerHTML = `<div style="font-weight:600;font-size:13.5px;color:#0f172a;">${resumeName}</div><div style="font-size:11.5px;color:#10b981;font-weight:500;">✓ Ready to auto-attach${sizeStr}</div>`;
                 } else {
                     fileDetails.innerHTML = `<div style="font-weight:600;font-size:13.5px;color:#ef4444;">No Resume Uploaded</div><div style="font-size:11.5px;color:#64748b;">Upload a resume in AutoForm Options to enable 1-click auto-attach</div>`;
                 }
@@ -3222,9 +3290,10 @@ function showPreviewModal(preparedList, formTitle = '') {
                 fileActions.style.cssText = 'display:flex;gap:8px;align-items:center;';
 
                 if (item.solution.resume && item.solution.resume.dataUrl) {
+                    const resumeName = item.solution.resume.fileName || item.solution.resume.name || 'Resume.pdf';
                     const downloadBtn = document.createElement('a');
                     downloadBtn.href = item.solution.resume.dataUrl;
-                    downloadBtn.download = item.solution.resume.fileName || 'Resume.pdf';
+                    downloadBtn.download = resumeName;
                     downloadBtn.className = 'autoform-preview-file-dl-btn';
                     downloadBtn.style.cssText = 'font-size:12px;font-weight:600;padding:6px 12px;background:#6366f1;color:#fff;border-radius:6px;text-decoration:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer;';
                     downloadBtn.innerHTML = `⬇ Download Resume`;
@@ -3588,17 +3657,18 @@ async function processQuestionQueue(questions) {
                     });
 
                     if (storedResumeData) {
+                        const resumeFileName = storedResumeData.fileName || storedResumeData.name || 'Resume.pdf';
                         solution = {
                             success: true,
-                            answer: storedResumeData.fileName,
+                            answer: resumeFileName,
                             resume: storedResumeData,
                             provider: 'stored_resume',
                             latencyMs: 0,
                             confidence: 'high'
                         };
                         if (providerBadge) providerBadge.innerText = 'RESUME • 0ms';
-                        addThought('📄', `[Q${i + 1}] Stored Resume: ${storedResumeData.fileName}`, 'match');
-                        showGhostChip(currentBlock, `Resume: ${storedResumeData.fileName}`, 'direct');
+                        addThought('📄', `[Q${i + 1}] Stored Resume: ${resumeFileName}`, 'match');
+                        showGhostChip(currentBlock, `Resume: ${resumeFileName}`, 'direct');
                     } else {
                         solution = {
                             success: false,
@@ -4013,6 +4083,27 @@ async function instantFillProfile() {
                     if (target) {
                         answered = await clickOption(target);
                     }
+                }
+            }
+        } else if (q.type === 'file_upload') {
+            const storedResume = await new Promise(r => {
+                if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                    chrome.storage.local.get(['storedResume'], res => r(res.storedResume || null));
+                } else {
+                    r(null);
+                }
+            });
+            if (storedResume && storedResume.dataUrl) {
+                const resumeSolution = {
+                    success: true,
+                    answer: storedResume.fileName || storedResume.name || 'Resume.pdf',
+                    resume: storedResume,
+                    provider: 'stored_resume',
+                    latencyMs: 0
+                };
+                answered = await injectAnswerIntoField(q, block, resumeSolution);
+                if (answered) {
+                    showGhostChip(block, `✓ Attached ${storedResume.fileName || storedResume.name || 'Resume'}`, 'direct');
                 }
             }
         }

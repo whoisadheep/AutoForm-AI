@@ -140,6 +140,10 @@ RAZORPAY_KEY_ID=rzp_test_your_test_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_secret_here
 RAZORPAY_WEBHOOK_SECRET=your_webhook_secret_here
 
+# Enable the hosted Razorpay checkout after the three Razorpay values above
+# are real credentials (not placeholders).
+PAYMENTS_ENABLED=true
+
 # AI Model API Keys
 GROQ_API_KEYS=gsk_...
 GEMINI_API_KEYS=AIzaSy_...

@@ -10,7 +10,8 @@ const assert = require('node:assert');
 const {
     createFileFromDataUrl,
     cleanExtractedText,
-    parseResumeStructure
+    parseResumeStructure,
+    attachResumeToFileInput
 } = require('../../src/services/resumeExtractor');
 
 const {
@@ -211,5 +212,74 @@ describe('Form Adapters — Resume & File Upload Question Detection', () => {
         const filledFileInput = createMockElement('input', { type: 'file' });
         filledFileInput.files = [{ name: 'resume.pdf', size: 1024 }];
         assert.strictEqual(GenericJobFormAdapter.isFieldFilled({ inputElements: [filledFileInput] }), true);
+    });
+
+    it('GreenhouseAdapter and LeverAdapter isFieldFilled check file inputs accurately', () => {
+        const emptyFileInput = createMockElement('input', { type: 'file' });
+        emptyFileInput.files = [];
+        assert.strictEqual(GreenhouseAdapter.isFieldFilled({ inputElements: [emptyFileInput] }), false);
+        assert.strictEqual(LeverAdapter.isFieldFilled({ inputElements: [emptyFileInput] }), false);
+
+        const filledFileInput = createMockElement('input', { type: 'file' });
+        filledFileInput.files = [{ name: 'cv.pdf', size: 2048 }];
+        assert.strictEqual(GreenhouseAdapter.isFieldFilled({ inputElements: [filledFileInput] }), true);
+        assert.strictEqual(LeverAdapter.isFieldFilled({ inputElements: [filledFileInput] }), true);
+    });
+
+    it('attachResumeToFileInput attaches resume with name/type fallbacks and whitespace base64', () => {
+        const eventsDispatched = [];
+        const mockInput = createMockElement('input', { type: 'file' });
+        mockInput.dispatchEvent = (evt) => {
+            eventsDispatched.push(evt.type);
+            return true;
+        };
+
+        const storedResumeWithName = {
+            name: 'Candidate_CV.pdf',
+            type: 'application/pdf',
+            dataUrl: 'data:application/pdf;base64,\r\n JVBERi0xLjQKJcTl8uXrCg== \n'
+        };
+
+        const attached = attachResumeToFileInput(mockInput, storedResumeWithName);
+        assert.strictEqual(attached, true);
+        assert.ok(eventsDispatched.includes('input'));
+        assert.ok(eventsDispatched.includes('change'));
+    });
+
+    it('FormEngine.fillAnswer finds child file input inside container element', async () => {
+        const eventsDispatched = [];
+        const childFileInput = createMockElement('input', { type: 'file', id: 'resume_input' });
+        childFileInput.dispatchEvent = (evt) => {
+            eventsDispatched.push(evt.type);
+            return true;
+        };
+
+        const containerDiv = createMockElement('div', { class: 'field-upload' });
+        containerDiv.querySelector = (sel) => {
+            if (sel.includes('input[type="file"]')) return childFileInput;
+            return null;
+        };
+
+        const question = {
+            id: 1,
+            question: 'Resume / CV',
+            type: 'file_upload',
+            element: containerDiv,
+            inputElements: []
+        };
+
+        const storedResume = {
+            fileName: 'Alex_Rivera_CV.pdf',
+            fileType: 'application/pdf',
+            dataUrl: 'data:application/pdf;base64,JVBERi0xLjQKJcTl8uXrCg=='
+        };
+
+        // Attach global mock for attachResumeToFileInput if needed
+        globalThis.attachResumeToFileInput = attachResumeToFileInput;
+
+        const filled = await FormEngine.fillAnswer(question, { resume: storedResume });
+        assert.strictEqual(filled, true);
+        assert.ok(eventsDispatched.includes('input'));
+        assert.ok(eventsDispatched.includes('change'));
     });
 });

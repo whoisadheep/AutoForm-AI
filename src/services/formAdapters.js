@@ -489,6 +489,9 @@ const GreenhouseAdapter = {
     isFieldFilled(q) {
         if (!q || !q.inputElements || q.inputElements.length === 0) return false;
         const el = q.inputElements[0];
+        if (el.type === 'file') {
+            return !!(el.files && el.files.length > 0);
+        }
         if (el.type === 'radio' || el.type === 'checkbox') {
             return q.inputElements.some(i => i.checked);
         }
@@ -642,6 +645,9 @@ const LeverAdapter = {
     isFieldFilled(q) {
         if (!q || !q.inputElements || q.inputElements.length === 0) return false;
         const el = q.inputElements[0];
+        if (el.type === 'file') {
+            return !!(el.files && el.files.length > 0);
+        }
         if (el.type === 'radio' || el.type === 'checkbox') {
             return q.inputElements.some(i => i.checked);
         }
@@ -1195,12 +1201,22 @@ const FormEngine = {
             return await globalThis.fillGoogleFormAnswer(question.element, answer, question.type);
         }
 
-        const inputs = question.inputElements || (question.element ? [question.element] : []);
-        if (inputs.length === 0) return false;
+        const inputs = (question.inputElements && question.inputElements.length > 0)
+            ? question.inputElements
+            : (question.element ? [question.element] : []);
 
         // File Upload (Resume / CV / Document)
         if (question.type === 'file_upload') {
-            const fileInput = inputs.find(i => i.tagName && i.tagName.toLowerCase() === 'input' && i.type === 'file') || inputs[0];
+            let fileInput = null;
+            if (Array.isArray(inputs)) {
+                fileInput = inputs.find(i => i && i.tagName && i.tagName.toLowerCase() === 'input' && i.type === 'file');
+            }
+            if (!fileInput && question.element && question.element.querySelector) {
+                fileInput = question.element.querySelector('input[type="file"]');
+            }
+            if (!fileInput && doc && doc.querySelector) {
+                fileInput = doc.querySelector('input[type="file"][id*="resume" i], input[type="file"][name*="resume" i], input[type="file"][id*="cv" i], input[type="file"][name*="cv" i], input[type="file"]');
+            }
             if (!fileInput || fileInput.type !== 'file') return false;
 
             const attachFn = (typeof attachResumeToFileInput === 'function')
@@ -1208,18 +1224,27 @@ const FormEngine = {
                 : (globalThis.attachResumeToFileInput || globalThis.ResumeExtractor?.attachResumeToFileInput);
 
             if (attachFn) {
-                // If answer is already a storedResume object
-                if (typeof answer === 'object' && answer !== null && answer.dataUrl) {
-                    return attachFn(fileInput, answer);
+                // If answer is already a storedResume object or has .resume property
+                const resumeObj = (typeof answer === 'object' && answer !== null)
+                    ? (answer.dataUrl ? answer : (answer.resume && answer.resume.dataUrl ? answer.resume : null))
+                    : null;
+                if (resumeObj) {
+                    return attachFn(fileInput, resumeObj);
                 }
                 // If answer passed is a File or Blob
                 if (typeof File !== 'undefined' && answer instanceof File) {
                     if (typeof DataTransfer !== 'undefined') {
                         const dt = new DataTransfer();
                         dt.items.add(answer);
-                        fileInput.files = dt.files;
+                        const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'files');
+                        if (descriptor && descriptor.set) {
+                            descriptor.set.call(fileInput, dt.files);
+                        } else {
+                            fileInput.files = dt.files;
+                        }
                         fileInput.dispatchEvent(new Event('input', { bubbles: true, composed: true }));
                         fileInput.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                        fileInput.dispatchEvent(new Event('blur', { bubbles: true, composed: true }));
                         return true;
                     }
                 }
@@ -1238,6 +1263,8 @@ const FormEngine = {
             }
             return false;
         }
+
+        if (inputs.length === 0) return false;
 
         const targetAnswer = Array.isArray(answer) ? answer : [String(answer)];
         const normalizedAnswers = targetAnswer.map(a => a.trim().toLowerCase());
