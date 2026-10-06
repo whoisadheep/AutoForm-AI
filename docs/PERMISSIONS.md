@@ -21,8 +21,8 @@ This document provides concise, one-sentence justifications for every permission
 | Host Pattern | One-Sentence Reviewer Justification |
 | :--- | :--- |
 | `https://docs.google.com/*` | Required to inspect question elements, radio groups, checkboxes, and text inputs on Google Forms to provide automated AI form filling. |
-| `https://*/*` | Required to detect form fields and inject native input bindings across supported applicant tracking systems (Greenhouse, Lever, Workday) and universal HTTPS job application forms. |
 | `https://autoform-ai.onrender.com/*` | Required to securely communicate with the official production AutoForm AI backend proxy for API health checks, quota synchronization, and encrypted AI inference. |
+| `https://raw.githubusercontent.com/*` | Required to fetch dynamic remote configuration, model status updates, and service announcements without requiring extension store updates. |
 
 ---
 

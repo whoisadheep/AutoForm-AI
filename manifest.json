@@ -33,8 +33,8 @@
   ],
   "host_permissions": [
     "https://docs.google.com/*",
-    "https://*/*",
-    "https://autoform-ai.onrender.com/*"
+    "https://autoform-ai.onrender.com/*",
+    "https://raw.githubusercontent.com/*"
   ],
   "options_page": "src/options/options.html",
   "background": {
