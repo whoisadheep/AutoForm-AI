@@ -89,6 +89,9 @@ try {
                         "technicalAndInteraction"
                     ]
                 }
+            },
+            gecko_android: {
+                strict_min_version: baseManifest.browser_specific_settings?.gecko_android?.strict_min_version || "140.0"
             }
         }
     };

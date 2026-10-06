@@ -71,8 +71,8 @@ html {
 
 body {
     width: 360px;
-    min-width: 360px;
-    margin: 0;
+    max-width: 100vw;
+    margin: 0 auto;
     padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-base);
@@ -1462,3 +1462,145 @@ body {
         transition-duration: 0.01ms !important;
     }
 }
+
+/* ==========================================================================
+   Mobile & Touch Viewports (Firefox Android, Kiwi, Orion, Small screens)
+   ========================================================================== */
+@media (max-width: 480px) {
+    body {
+        width: 100%;
+        min-width: 280px;
+    }
+
+    .container {
+        padding: 12px 14px max(16px, env(safe-area-inset-bottom, 16px));
+        gap: 12px;
+    }
+
+    /* WCAG AAA & Fitts's Law Touch Targets (>= 44px min-height) */
+    .btn,
+    .btn-primary {
+        min-height: 48px;
+        font-size: 14px;
+        padding: 12px 16px;
+    }
+
+    .btn-secondary {
+        min-height: 44px;
+        font-size: 13px;
+        padding: 10px 14px;
+    }
+
+    .btn-google-auth {
+        min-height: 44px;
+        padding: 8px 14px;
+        font-size: 13px;
+    }
+
+    .btn-logout-icon {
+        width: 38px;
+        height: 38px;
+    }
+
+    .btn-upgrade-mini {
+        min-height: 30px;
+        padding: 5px 12px;
+        font-size: 11.5px;
+    }
+
+    .site-exclusion-btn {
+        min-height: 34px;
+        padding: 6px 12px;
+        font-size: 11.5px;
+    }
+
+    .quick-link-btn {
+        min-height: 44px;
+        padding: 10px 12px;
+        font-size: 12.5px;
+    }
+
+    .pacing-btn {
+        min-height: 36px;
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .pass-option-btn {
+        min-height: 54px;
+        padding: 8px 6px;
+    }
+
+    .btn-pro-cta {
+        min-height: 50px;
+        font-size: 14.5px;
+    }
+
+    .btn-activate-license {
+        min-height: 44px;
+        padding: 0 16px;
+        font-size: 13.5px;
+    }
+
+    /* Prevent mobile browser zoom on input focus (minimum 16px) */
+    input[type="text"],
+    input[type="url"],
+    input[type="email"],
+    .activate-input {
+        font-size: 16px !important;
+        min-height: 44px !important;
+        padding: 10px 14px !important;
+    }
+
+    /* Touch-friendly upgrade modal */
+    .upgrade-modal {
+        width: 100%;
+        max-width: calc(100vw - 24px);
+        max-height: calc(100vh - 36px);
+        margin: 12px;
+        padding: 20px 16px;
+        border-radius: var(--radius-lg);
+    }
+
+    .close-btn {
+        width: 38px;
+        height: 38px;
+        min-height: 38px;
+        font-size: 18px;
+    }
+
+    /* Switches easy touch */
+    .switch {
+        width: 48px;
+        height: 28px;
+    }
+
+    .slider:before {
+        height: 22px;
+        width: 22px;
+        left: 3px;
+        bottom: 3px;
+    }
+
+    input:checked + .slider:before {
+        transform: translateX(20px);
+    }
+
+    .toggle-group {
+        padding: 10px 12px;
+    }
+
+    .footer {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding-top: 10px;
+    }
+
+    .footer-review-link {
+        min-height: 32px;
+        display: inline-flex;
+        align-items: center;
+        padding: 4px 8px;
+    }
+}
+

@@ -1536,6 +1536,137 @@ function injectAutoFormStyles() {
             cursor: pointer !important;
         }
 
+        /* ============================================================
+           Mobile & Touch Viewport Rules (Firefox Android & Mobile Screens)
+           ============================================================ */
+        @media (max-width: 600px) {
+            .autoform-preview-backdrop {
+                padding: 10px !important;
+            }
+
+            .autoform-preview-modal {
+                max-width: 100% !important;
+                max-height: calc(100vh - 20px) !important;
+                border-radius: 12px !important;
+            }
+
+            .autoform-preview-header {
+                padding: 12px 14px 10px !important;
+                flex-wrap: wrap !important;
+                gap: 8px !important;
+            }
+
+            .autoform-preview-title {
+                font-size: 15px !important;
+            }
+
+            .autoform-preview-subtitle {
+                font-size: 11.5px !important;
+            }
+
+            .autoform-preview-pills {
+                gap: 4px !important;
+            }
+
+            .autoform-preview-pill {
+                font-size: 10.5px !important;
+                padding: 2px 7px !important;
+            }
+
+            .autoform-preview-close-btn {
+                width: 34px !important;
+                height: 34px !important;
+                font-size: 16px !important;
+            }
+
+            .autoform-preview-tabs {
+                padding: 3px 12px !important;
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+            }
+
+            .autoform-preview-tab {
+                padding: 7px 11px !important;
+                font-size: 12px !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }
+
+            .autoform-preview-body {
+                padding: 10px 12px !important;
+                gap: 10px !important;
+            }
+
+            .autoform-preview-card {
+                padding: 11px 12px !important;
+            }
+
+            /* Inputs: minimum 16px to prevent auto-zooming on mobile */
+            .autoform-preview-input {
+                font-size: 16px !important;
+                padding: 10px 12px !important;
+                min-height: 44px !important;
+            }
+
+            .autoform-preview-choice-label {
+                padding: 10px 12px !important;
+                min-height: 44px !important;
+                font-size: 13.5px !important;
+            }
+
+            .autoform-preview-footer {
+                padding: 12px 14px !important;
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 10px !important;
+            }
+
+            .autoform-preview-footer-hint {
+                text-align: center !important;
+                font-size: 11.5px !important;
+            }
+
+            .autoform-preview-footer-actions {
+                width: 100% !important;
+                display: flex !important;
+                gap: 8px !important;
+            }
+
+            .autoform-preview-btn-cancel {
+                flex: 1 !important;
+                min-height: 44px !important;
+                padding: 10px 12px !important;
+                text-align: center !important;
+                justify-content: center !important;
+            }
+
+            .autoform-preview-btn-apply {
+                flex: 1.5 !important;
+                min-height: 44px !important;
+                padding: 10px 14px !important;
+                text-align: center !important;
+                justify-content: center !important;
+                font-size: 13.5px !important;
+            }
+
+            /* Floating HUD container on mobile */
+            .autoform-hud-container {
+                bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+                right: 12px !important;
+                left: 12px !important;
+                width: auto !important;
+                max-width: 100% !important;
+            }
+
+            /* Delight review card on mobile */
+            .autoform-delight-review-card {
+                bottom: max(12px, env(safe-area-inset-bottom, 12px)) !important;
+                right: 12px !important;
+                left: 12px !important;
+                width: auto !important;
+            }
+        }
+
         @media (prefers-reduced-motion: reduce) {
             .autoform-fab-idle,
             .autoform-shimmer-bar,
@@ -4072,9 +4203,9 @@ function createFloatingButton() {
     btn.style.cssText = `
         position: fixed; bottom: max(20px, env(safe-area-inset-bottom, 20px)); right: max(20px, env(safe-area-inset-right, 20px)); z-index: 99999;
         background-color: #7241ff;
-        color: #ffffff; border: none; padding: 10px 16px;
-        min-height: 40px;
-        border-radius: 9999px; cursor: grab; font-weight: 600; font-size: 13px;
+        color: #ffffff; border: none; padding: 11px 18px;
+        min-height: 44px;
+        border-radius: 9999px; cursor: grab; font-weight: 600; font-size: 13.5px;
         box-shadow: 0 4px 14px rgba(114, 65, 255, 0.35);
         transition: transform 0.2s cubic-bezier(0.34, 1.4, 0.64, 1), background-color 0.15s, box-shadow 0.2s;
         font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', Roboto, sans-serif;
