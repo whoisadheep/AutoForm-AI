@@ -1300,6 +1300,12 @@ function loadAccountStatus() {
             if (btnSignOut) btnSignOut.style.display = 'inline-flex';
         }
 
+        const btnGen = document.getElementById('optionsBtnGenCode');
+        if (btnGen) {
+            btnGen.disabled = isGuest;
+            btnGen.title = isGuest ? 'Sign in on laptop first to generate sync code' : 'Generate 6-digit sync code';
+        }
+
         // Plan Badge
         if (planBadgeEl) {
             planBadgeEl.textContent = isPro ? 'PRO' : 'FREE';
@@ -1433,6 +1439,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     if (!res || !res.success) {
+                        if (res?.code === 'IDENTITY_API_UNSUPPORTED') {
+                            showSaveStatus(res.error);
+                            const syncInput = document.getElementById('optionsSyncCodeInput');
+                            if (syncInput) {
+                                syncInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                syncInput.focus();
+                            }
+                            return;
+                        }
                         showSaveStatus(`Sign-in failed: ${res?.error || 'Cancelled or window closed'}`);
                         return;
                     }
@@ -1541,6 +1556,124 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 handleOptionsPaymentVerification();
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------------------
+    // Mobile Device Sync (Cross-Device Account Linking)
+    // ---------------------------------------------------------------------------
+
+    const btnGenCode = document.getElementById('optionsBtnGenCode');
+    const pairCodeBox = document.getElementById('optionsPairCodeBox');
+    const pairCodeDigits = document.getElementById('optionsPairCodeDigits');
+    const btnCopyPairCode = document.getElementById('optionsBtnCopyPairCode');
+    const btnCopyToken = document.getElementById('optionsBtnCopyToken');
+    let activeOptionsPairCode = '';
+    let activeOptionsPairToken = '';
+
+    if (btnGenCode) {
+        btnGenCode.addEventListener('click', () => {
+            btnGenCode.disabled = true;
+            btnGenCode.textContent = 'Generating...';
+
+            chrome.runtime.sendMessage({ action: "CREATE_DEVICE_PAIR_CODE" }, (res) => {
+                btnGenCode.disabled = false;
+                btnGenCode.innerHTML = '<span>Generate 6-Digit Sync Code</span>';
+
+                if (res && res.success) {
+                    if (pairCodeBox) pairCodeBox.style.display = 'block';
+                    if (res.code) {
+                        activeOptionsPairCode = res.code;
+                        activeOptionsPairToken = res.token || '';
+                        const formatted = `${res.code.slice(0, 3)} ${res.code.slice(3)}`;
+                        if (pairCodeDigits) pairCodeDigits.textContent = formatted;
+                    } else if (res.token) {
+                        activeOptionsPairCode = res.token;
+                        activeOptionsPairToken = res.token;
+                        if (pairCodeDigits) pairCodeDigits.textContent = 'TOKEN READY';
+                    }
+                    showSaveStatus('Sync code generated ✓');
+                } else {
+                    showSaveStatus(res?.error || 'Could not generate sync code');
+                }
+            });
+        });
+    }
+
+    if (btnCopyPairCode) {
+        btnCopyPairCode.addEventListener('click', () => {
+            if (!activeOptionsPairCode) return;
+            navigator.clipboard.writeText(activeOptionsPairCode).then(() => {
+                btnCopyPairCode.textContent = 'Copied!';
+                setTimeout(() => { btnCopyPairCode.textContent = 'Copy Code'; }, 2000);
+            }).catch(() => {
+                showSaveStatus('Failed to copy to clipboard');
+            });
+        });
+    }
+
+    if (btnCopyToken) {
+        btnCopyToken.addEventListener('click', () => {
+            if (!activeOptionsPairToken) return;
+            navigator.clipboard.writeText(activeOptionsPairToken).then(() => {
+                btnCopyToken.textContent = 'Copied!';
+                setTimeout(() => { btnCopyToken.textContent = 'Copy Full Token'; }, 2000);
+            }).catch(() => {
+                showSaveStatus('Failed to copy to clipboard');
+            });
+        });
+    }
+
+    const btnLinkDevice = document.getElementById('optionsBtnLinkDevice');
+    const syncInput = document.getElementById('optionsSyncCodeInput');
+    const syncStatus = document.getElementById('optionsSyncStatus');
+
+    if (btnLinkDevice) {
+        btnLinkDevice.addEventListener('click', () => {
+            const code = syncInput?.value?.trim();
+            if (!code) {
+                if (syncStatus) {
+                    syncStatus.textContent = 'Please enter a 6-digit sync code or session token.';
+                    syncStatus.className = 'payment-verify-status error';
+                    syncStatus.style.display = 'block';
+                }
+                return;
+            }
+
+            btnLinkDevice.disabled = true;
+            btnLinkDevice.textContent = 'Linking...';
+            if (syncStatus) syncStatus.style.display = 'none';
+
+            chrome.runtime.sendMessage({ action: "LINK_ACCOUNT_TOKEN", code }, (res) => {
+                btnLinkDevice.disabled = false;
+                btnLinkDevice.textContent = 'Link Device';
+
+                if (chrome.runtime.lastError || !res || !res.success) {
+                    if (syncStatus) {
+                        syncStatus.textContent = res?.error || 'Failed to link account. Please check the code.';
+                        syncStatus.className = 'payment-verify-status error';
+                        syncStatus.style.display = 'block';
+                    }
+                    return;
+                }
+
+                if (syncStatus) {
+                    syncStatus.textContent = `✓ Account linked! Welcome, ${res.user?.name || res.user?.email || 'User'}!`;
+                    syncStatus.className = 'payment-verify-status success';
+                    syncStatus.style.display = 'block';
+                }
+                showSaveStatus('Account linked successfully ✓');
+                loadAccountStatus();
+            });
+        });
+    }
+
+    if (syncInput) {
+        syncInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                btnLinkDevice?.click();
             }
         });
     }

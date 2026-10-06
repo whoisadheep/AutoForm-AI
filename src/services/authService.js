@@ -653,7 +653,24 @@ async function signInWithGoogle(options = {}) {
     // Mock tokens are only for tests. A production extension must never turn an
     // OAuth failure into a fake "Demo User" sign-in.
     if (!options.mockIdToken) {
-        return { success: false, error: 'Google sign-in is not configured. Set GOOGLE_CLIENT_ID on the server and register this extension redirect URL in Google Cloud.' };
+        if (!identityApi) {
+            const isFf = isFirefoxRuntime();
+            return {
+                success: false,
+                code: 'IDENTITY_API_UNSUPPORTED',
+                error: isFf
+                    ? 'Google Sign-In popup is not supported by Firefox for Android. Please use "Device Sync Code" from your laptop to link your account.'
+                    : 'Web authentication flow is not supported by this browser. Please link your account using a Device Sync Code from your desktop browser.'
+            };
+        }
+        if (!googleClientId) {
+            return {
+                success: false,
+                code: 'CLIENT_ID_MISSING',
+                error: 'Google sign-in is not configured. Set GOOGLE_CLIENT_ID on the server and register this extension redirect URL in Google Cloud.'
+            };
+        }
+        return { success: false, error: 'Google sign-in could not be initiated.' };
     }
 
     // 2. Test-only mock flow
@@ -725,6 +742,156 @@ async function signOut() {
     });
 }
 
+/**
+ * Links an account on mobile/secondary devices using a 6-digit sync code or JWT token.
+ * Works seamlessly on Firefox Android where identity.launchWebAuthFlow is absent.
+ * @param {string} codeOrToken 6-digit pairing code or JWT session token
+ * @param {Object} [options={}]
+ * @returns {Promise<{ success: boolean, token?: string, user?: Object, quota?: Object, error?: string }>}
+ */
+async function linkAccountWithToken(codeOrToken, options = {}) {
+    if (!codeOrToken || typeof codeOrToken !== 'string') {
+        return { success: false, error: 'Please enter a valid Sync Code or session token.' };
+    }
+    const cleanInput = codeOrToken.trim();
+    if (!cleanInput) {
+        return { success: false, error: 'Sync code cannot be empty.' };
+    }
+
+    const serverUrl = options.serverUrl || 'https://autoform-ai.onrender.com';
+
+    try {
+        let token = cleanInput;
+        let user = null;
+        let quota = null;
+
+        // If it's a 6-digit numeric pairing code (e.g. "582914" or "582-914" or "582 914")
+        const isPairCode = /^\d{3}[\s-]?\d{3}$/.test(cleanInput) || /^\d{6}$/.test(cleanInput);
+        if (isPairCode) {
+            const normalizedCode = cleanInput.replace(/[\s-]/g, '');
+            const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/device-link`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code: normalizedCode })
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                return {
+                    success: false,
+                    error: data.error || 'Invalid or expired sync code. Please generate a fresh code on your laptop.'
+                };
+            }
+            token = data.token;
+            user = data.user;
+            quota = data.quota;
+        } else {
+            // Direct JWT session token
+            const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/me`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${cleanInput}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                return { success: false, error: data.error || 'Invalid or expired session token.' };
+            }
+            token = cleanInput;
+            user = data.user;
+            quota = data.quota;
+        }
+
+        // Preserve Pro status if upgraded
+        const prior = await new Promise(r => {
+            if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+                chrome.storage.local.get(['authUser', 'quota', '_lastActivatedPaymentId'], r);
+            } else {
+                r({});
+            }
+        });
+
+        let finalUser = { ...user };
+        let finalQuota = { ...quota };
+
+        const priorIsPro = prior.authUser?.plan === 'pro' || prior.quota?.isPro === true;
+        const priorPaymentId = prior.authUser?.razorpayPaymentId || prior._lastActivatedPaymentId;
+
+        if (priorIsPro && finalUser.plan !== 'pro') {
+            finalUser.plan = 'pro';
+            if (priorPaymentId) finalUser.razorpayPaymentId = priorPaymentId;
+            finalQuota = { ...finalQuota, isPro: true, plan: 'pro', limit: 300, remaining: 300 };
+        }
+
+        // Save session credentials
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+            await new Promise((resolve) => {
+                chrome.storage.local.set({
+                    sessionToken: token,
+                    authUser: finalUser,
+                    quota: finalQuota
+                }, resolve);
+            });
+        }
+
+        return {
+            success: true,
+            token,
+            user: finalUser,
+            quota: finalQuota
+        };
+    } catch (err) {
+        return { success: false, error: err.message || 'Failed to connect to authentication server.' };
+    }
+}
+
+/**
+ * Requests a 6-digit device pairing code from the server for the current authenticated session.
+ * Used on laptop to generate a short code for Firefox Android.
+ * @param {Object} [options={}]
+ * @returns {Promise<{ success: boolean, code?: string, expiresIn?: number, token?: string, directToken?: boolean, error?: string }>}
+ */
+async function createDevicePairCode(options = {}) {
+    const serverUrl = options.serverUrl || 'https://autoform-ai.onrender.com';
+    const token = options.token || await getStoredSessionToken();
+
+    if (!token) {
+        return { success: false, error: 'You must be signed in to generate a device sync code.' };
+    }
+
+    try {
+        const res = await fetch(`${serverUrl.replace(/\/+$/, '')}/api/v1/auth/device-code`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+            return {
+                success: true,
+                code: null,
+                token: token,
+                directToken: true
+            };
+        }
+        return {
+            success: true,
+            code: data.code,
+            expiresIn: data.expiresIn || 600,
+            token: token
+        };
+    } catch (_) {
+        return {
+            success: true,
+            code: null,
+            token: token,
+            directToken: true
+        };
+    }
+}
+
 // ---------------------------------------------------------------------------
 // 6. Universal Module Exports (Node.js + Browser + Service Worker)
 // ---------------------------------------------------------------------------
@@ -752,6 +919,8 @@ if (typeof module !== 'undefined' && module.exports) {
         verifyAndActivateRazorpayPayment,
         signInWithGoogle,
         signOut,
+        linkAccountWithToken,
+        createDevicePairCode,
         requestOptionalDataConsent,
         PAYMENT_VERIFICATION_ROUTE
     };
@@ -780,6 +949,8 @@ if (typeof globalThis !== 'undefined') {
         verifyAndActivateRazorpayPayment,
         signInWithGoogle,
         signOut,
+        linkAccountWithToken,
+        createDevicePairCode,
         requestOptionalDataConsent,
         PAYMENT_VERIFICATION_ROUTE
     };

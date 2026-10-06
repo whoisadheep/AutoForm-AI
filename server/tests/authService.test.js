@@ -443,4 +443,130 @@ describe('Firefox Optional Data Consent & Permission Guarding', () => {
     });
 });
 
+describe('Firefox Android & Cross-Device Account Linking', () => {
+    let server;
+    let baseUrl;
+    let testUser;
+    let testToken;
+    const { signUserToken } = require('../src/services/auth');
+
+    before(async () => {
+        await new Promise((resolve) => {
+            server = app.listen(0, '127.0.0.1', () => {
+                const port = server.address().port;
+                baseUrl = `http://127.0.0.1:${port}`;
+                resolve();
+            });
+        });
+
+        testUser = await db.createUser({
+            googleSub: 'mobile_sync_user_' + Date.now(),
+            email: 'mobilesync@example.com'
+        });
+        testToken = signUserToken(testUser);
+    });
+
+    after(async () => {
+        if (server) await new Promise(r => server.close(r));
+    });
+
+    it('returns IDENTITY_API_UNSUPPORTED when identity.launchWebAuthFlow is not available (Firefox Android)', async () => {
+        const origBrowser = global.browser;
+        const origChrome = global.chrome;
+        try {
+            // Emulate Firefox Android environment where browser.identity exists but launchWebAuthFlow does not exist
+            global.browser = { identity: {} };
+            delete global.chrome;
+
+            const res = await authService.signInWithGoogle({
+                serverUrl: baseUrl
+            });
+
+            assert.strictEqual(res.success, false);
+            assert.strictEqual(res.code, 'IDENTITY_API_UNSUPPORTED');
+            assert.match(res.error, /Firefox for Android|Device Sync Code/i);
+        } finally {
+            global.browser = origBrowser;
+            global.chrome = origChrome;
+        }
+    });
+
+    it('generates 6-digit device pairing code on server via POST /api/v1/auth/device-code', async () => {
+        const res = await fetch(`${baseUrl}/api/v1/auth/device-code`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${testToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        assert.strictEqual(res.ok, true);
+        const data = await res.json();
+        assert.strictEqual(data.success, true);
+        assert.match(data.code, /^\d{6}$/);
+        assert.strictEqual(data.expiresIn, 600);
+    });
+
+    it('links device with 6-digit pairing code via POST /api/v1/auth/device-link', async () => {
+        // 1. Generate code
+        const codeRes = await fetch(`${baseUrl}/api/v1/auth/device-code`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${testToken}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        const { code } = await codeRes.json();
+
+        // 2. Link with code
+        const linkRes = await fetch(`${baseUrl}/api/v1/auth/device-link`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+
+        assert.strictEqual(linkRes.ok, true);
+        const linkData = await linkRes.json();
+        assert.strictEqual(linkData.success, true);
+        assert.strictEqual(linkData.user.email, 'mobilesync@example.com');
+        assert.strictEqual(linkData.token, testToken);
+
+        // 3. One-time code cannot be reused
+        const reuseRes = await fetch(`${baseUrl}/api/v1/auth/device-link`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code })
+        });
+        assert.strictEqual(reuseRes.ok, false);
+    });
+
+    it('linkAccountWithToken links device via 6-digit sync code', async () => {
+        // 1. Generate code
+        const pairRes = await authService.createDevicePairCode({
+            serverUrl: baseUrl,
+            token: testToken
+        });
+        assert.strictEqual(pairRes.success, true);
+        assert.ok(pairRes.code);
+
+        // 2. Link using pair code
+        const linkResult = await authService.linkAccountWithToken(pairRes.code, {
+            serverUrl: baseUrl
+        });
+        assert.strictEqual(linkResult.success, true);
+        assert.strictEqual(linkResult.user.email, 'mobilesync@example.com');
+        assert.strictEqual(linkResult.token, testToken);
+    });
+
+    it('linkAccountWithToken links device via direct JWT session token', async () => {
+        const linkResult = await authService.linkAccountWithToken(testToken, {
+            serverUrl: baseUrl
+        });
+        assert.strictEqual(linkResult.success, true);
+        assert.strictEqual(linkResult.user.email, 'mobilesync@example.com');
+        assert.strictEqual(linkResult.token, testToken);
+    });
+});
+
+
 

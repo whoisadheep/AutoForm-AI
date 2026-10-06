@@ -776,12 +776,140 @@ if (btnGoogleSignIn) {
                     return;
                 }
                 if (!res || !res.success) {
+                    if (res?.code === 'IDENTITY_API_UNSUPPORTED') {
+                        const syncBox = document.getElementById('deviceSyncBox');
+                        if (syncBox) syncBox.style.display = 'block';
+                        const syncMsg = document.getElementById('popupSyncMsg');
+                        if (syncMsg) {
+                            syncMsg.textContent = res.error;
+                            syncMsg.className = 'device-sync-msg error';
+                            syncMsg.style.display = 'block';
+                        }
+                    }
                     showStatus(res?.error || 'Sign-in cancelled or window closed', 'error');
                     return;
                 }
                 renderAuthUI(res.user, res.stats, res.quota);
                 showStatus(`Welcome, ${res.user?.name || 'User'}!`, 'success');
             });
+        });
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Mobile Device Sync Handlers (Firefox Android & Cross-Device)
+// ---------------------------------------------------------------------------
+
+const btnToggleSyncPopup = document.getElementById('btnToggleSyncPopup');
+const deviceSyncBox = document.getElementById('deviceSyncBox');
+const btnCloseDeviceSync = document.getElementById('btnCloseDeviceSync');
+const btnApplySyncCode = document.getElementById('btnApplySyncCode');
+const popupSyncCodeInput = document.getElementById('popupSyncCodeInput');
+const popupSyncMsg = document.getElementById('popupSyncMsg');
+
+if (btnToggleSyncPopup && deviceSyncBox) {
+    btnToggleSyncPopup.addEventListener('click', () => {
+        const isShown = deviceSyncBox.style.display === 'block';
+        deviceSyncBox.style.display = isShown ? 'none' : 'block';
+        if (!isShown && popupSyncCodeInput) {
+            popupSyncCodeInput.focus();
+        }
+    });
+}
+
+if (btnCloseDeviceSync && deviceSyncBox) {
+    btnCloseDeviceSync.addEventListener('click', () => {
+        deviceSyncBox.style.display = 'none';
+        if (popupSyncMsg) popupSyncMsg.style.display = 'none';
+    });
+}
+
+if (btnApplySyncCode && popupSyncCodeInput) {
+    btnApplySyncCode.addEventListener('click', () => {
+        const code = popupSyncCodeInput.value.trim();
+        if (!code) {
+            if (popupSyncMsg) {
+                popupSyncMsg.textContent = 'Please enter a 6-digit sync code or token.';
+                popupSyncMsg.className = 'device-sync-msg error';
+                popupSyncMsg.style.display = 'block';
+            }
+            return;
+        }
+
+        btnApplySyncCode.disabled = true;
+        btnApplySyncCode.textContent = 'Linking...';
+
+        chrome.runtime.sendMessage({ action: "LINK_ACCOUNT_TOKEN", code }, (res) => {
+            btnApplySyncCode.disabled = false;
+            btnApplySyncCode.textContent = 'Link';
+
+            if (chrome.runtime.lastError || !res || !res.success) {
+                if (popupSyncMsg) {
+                    popupSyncMsg.textContent = res?.error || 'Failed to link account. Please check the code.';
+                    popupSyncMsg.className = 'device-sync-msg error';
+                    popupSyncMsg.style.display = 'block';
+                }
+                return;
+            }
+
+            if (deviceSyncBox) deviceSyncBox.style.display = 'none';
+            renderAuthUI(res.user, {}, res.quota);
+            showStatus(`Account linked successfully! Welcome, ${res.user?.name || res.user?.email || 'User'}!`, 'success');
+        });
+    });
+}
+
+// Laptop / Desktop: Share pairing code with mobile
+const btnShareSyncCode = document.getElementById('btnShareSyncCode');
+const deviceSyncShareBox = document.getElementById('deviceSyncShareBox');
+const btnCloseShareSync = document.getElementById('btnCloseShareSync');
+const popupShareCodeDigits = document.getElementById('popupShareCodeDigits');
+const btnCopyShareCode = document.getElementById('btnCopyShareCode');
+let activeShareCode = '';
+
+if (btnShareSyncCode && deviceSyncShareBox) {
+    btnShareSyncCode.addEventListener('click', () => {
+        const isShown = deviceSyncShareBox.style.display === 'block';
+        if (isShown) {
+            deviceSyncShareBox.style.display = 'none';
+            return;
+        }
+
+        deviceSyncShareBox.style.display = 'block';
+        if (popupShareCodeDigits) popupShareCodeDigits.textContent = 'Generating...';
+
+        chrome.runtime.sendMessage({ action: "CREATE_DEVICE_PAIR_CODE" }, (res) => {
+            if (res && res.success) {
+                if (res.code) {
+                    const formatted = `${res.code.slice(0, 3)} ${res.code.slice(3)}`;
+                    activeShareCode = res.code;
+                    if (popupShareCodeDigits) popupShareCodeDigits.textContent = formatted;
+                } else if (res.token) {
+                    activeShareCode = res.token;
+                    if (popupShareCodeDigits) popupShareCodeDigits.textContent = 'TOKEN READY';
+                }
+            } else {
+                if (popupShareCodeDigits) popupShareCodeDigits.textContent = 'ERR';
+                showStatus(res?.error || 'Could not generate sync code', 'error');
+            }
+        });
+    });
+}
+
+if (btnCloseShareSync && deviceSyncShareBox) {
+    btnCloseShareSync.addEventListener('click', () => {
+        deviceSyncShareBox.style.display = 'none';
+    });
+}
+
+if (btnCopyShareCode) {
+    btnCopyShareCode.addEventListener('click', () => {
+        if (!activeShareCode) return;
+        navigator.clipboard.writeText(activeShareCode).then(() => {
+            btnCopyShareCode.textContent = 'Copied!';
+            setTimeout(() => { btnCopyShareCode.textContent = 'Copy'; }, 2000);
+        }).catch(() => {
+            showStatus('Failed to copy to clipboard', 'error');
         });
     });
 }

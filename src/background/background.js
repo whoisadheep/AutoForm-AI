@@ -995,6 +995,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         return true;
     }
 
+    if (request.action === "LINK_ACCOUNT_TOKEN") {
+        (async () => {
+            try {
+                const serverUrl = await getEffectiveServerUrl();
+                const linkFn = (typeof linkAccountWithToken === 'function')
+                    ? linkAccountWithToken
+                    : (typeof globalThis.AutoFormAuth !== 'undefined' && typeof globalThis.AutoFormAuth.linkAccountWithToken === 'function')
+                        ? globalThis.AutoFormAuth.linkAccountWithToken
+                        : null;
+                if (!linkFn) {
+                    return sendResponse({ success: false, error: 'Link function not available' });
+                }
+                const result = await linkFn(request.code || request.token, { serverUrl });
+                sendResponse(result);
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
+    if (request.action === "CREATE_DEVICE_PAIR_CODE") {
+        (async () => {
+            try {
+                const serverUrl = await getEffectiveServerUrl();
+                const pairFn = (typeof createDevicePairCode === 'function')
+                    ? createDevicePairCode
+                    : (typeof globalThis.AutoFormAuth !== 'undefined' && typeof globalThis.AutoFormAuth.createDevicePairCode === 'function')
+                        ? globalThis.AutoFormAuth.createDevicePairCode
+                        : null;
+                if (!pairFn) {
+                    return sendResponse({ success: false, error: 'Pairing function not available' });
+                }
+                const result = await pairFn({ serverUrl });
+                sendResponse(result);
+            } catch (e) {
+                sendResponse({ success: false, error: e.message });
+            }
+        })();
+        return true;
+    }
+
     if (request.action === "UPGRADE_TO_PRO") {
         (async () => {
             try {

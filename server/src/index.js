@@ -184,6 +184,93 @@ app.get('/api/v1/auth/me', requireAuth, async (req, res) => {
     }
 });
 
+// In-memory registry of temporary 6-digit device pairing codes (TTL: 10 minutes)
+const devicePairingCodes = new Map();
+function cleanupExpiredDeviceCodes() {
+    const now = Date.now();
+    for (const [code, entry] of devicePairingCodes.entries()) {
+        if (entry.expiresAt < now) {
+            devicePairingCodes.delete(code);
+        }
+    }
+}
+setInterval(cleanupExpiredDeviceCodes, 60 * 1000).unref?.();
+
+// Generate 6-Digit Device Pairing Code (Called from authenticated laptop/desktop)
+app.post('/api/v1/auth/device-code', requireAuth, (req, res) => {
+    try {
+        cleanupExpiredDeviceCodes();
+        const crypto = require('crypto');
+        const code = crypto.randomInt(100000, 999999).toString();
+        const authHeader = req.headers.authorization || '';
+        const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+
+        devicePairingCodes.set(code, {
+            userId: req.user.userId,
+            token,
+            expiresAt: Date.now() + 10 * 60 * 1000 // 10 minutes
+        });
+
+        res.json({
+            success: true,
+            code,
+            expiresIn: 600
+        });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// Link Device via 6-Digit Code or Direct Token (Called from mobile e.g. Firefox Android)
+app.post('/api/v1/auth/device-link', rateLimiter, async (req, res) => {
+    try {
+        cleanupExpiredDeviceCodes();
+        const { code, token: directToken } = req.body || {};
+        let tokenToUse = directToken;
+
+        if (code) {
+            const cleanCode = code.toString().replace(/[\s-]/g, '');
+            const entry = devicePairingCodes.get(cleanCode);
+            if (!entry || entry.expiresAt < Date.now()) {
+                devicePairingCodes.delete(cleanCode);
+                return res.status(400).json({
+                    success: false,
+                    error: 'Invalid or expired sync code. Please generate a fresh code on your laptop.'
+                });
+            }
+            tokenToUse = entry.token;
+            devicePairingCodes.delete(cleanCode); // Single-use consumption
+        }
+
+        if (!tokenToUse) {
+            return res.status(400).json({
+                success: false,
+                error: 'Sync code or session token is required.'
+            });
+        }
+
+        const decoded = verifyUserToken(tokenToUse);
+        const user = await db.findUserById(decoded.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, error: 'User not found.' });
+        }
+
+        const quota = await formSessionManager.getUserQuotaStatus(user.id);
+        res.json({
+            success: true,
+            token: tokenToUse,
+            user: {
+                id: user.id,
+                email: user.email,
+                plan: quota.plan
+            },
+            quota
+        });
+    } catch (err) {
+        res.status(401).json({ success: false, error: err.message || 'Invalid sync credentials.' });
+    }
+});
+
 // Form Session Start Endpoint
 // Enforces monthly quotas, reserves a form usage slot, and issues a 30-minute session token.
 app.post('/api/v1/form/start', requireAuth, async (req, res) => {

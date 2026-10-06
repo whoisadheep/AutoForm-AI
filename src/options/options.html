@@ -632,6 +632,53 @@
                 </div>
             </section>
 
+            <!-- Mobile Device Sync Card (Cross-Device Account Linking) -->
+            <section class="card mobile-sync-card">
+                <div class="section-title-row">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 16px;">📱</span>
+                        <h2>Mobile Device Sync (Firefox Android / Kiwi)</h2>
+                    </div>
+                    <span class="card-subtitle">Link your signed-in account and Pro plan across devices in seconds</span>
+                </div>
+                
+                <div class="mobile-sync-grid">
+                    <!-- Export / Share Code from Laptop -->
+                    <div id="optionsSyncShareSection" class="mobile-sync-subcard">
+                        <span class="mobile-sync-subcard-title">📱 Laptop → Phone (Share to Mobile)</span>
+                        <p class="mobile-sync-desc">
+                            Firefox for Android cannot open Google login windows. Generate a 6-digit sync code here and enter it on your phone.
+                        </p>
+                        <div class="mobile-sync-btn-row">
+                            <button id="optionsBtnGenCode" class="btn btn-primary btn-small" type="button">
+                                <span>Generate 6-Digit Sync Code</span>
+                            </button>
+                        </div>
+                        <div id="optionsPairCodeBox" class="options-pair-code-box" style="display: none; margin-top: 10px;">
+                            <div class="pair-code-number-row">
+                                <span id="optionsPairCodeDigits" class="pair-code-digits">--- ---</span>
+                                <button id="optionsBtnCopyPairCode" class="btn btn-secondary btn-small" type="button">Copy Code</button>
+                                <button id="optionsBtnCopyToken" class="btn btn-secondary btn-small" type="button" title="Copy full JWT session token">Copy Full Token</button>
+                            </div>
+                            <span class="pair-code-expiry">Expires in 10 minutes • Enter in Firefox Android AutoForm AI</span>
+                        </div>
+                    </div>
+
+                    <!-- Import / Enter Code on Mobile / Second Device -->
+                    <div class="mobile-sync-subcard">
+                        <span class="mobile-sync-subcard-title">📲 Link this Device</span>
+                        <p class="mobile-sync-desc">
+                            Have a 6-digit code or token from your laptop? Enter it below to link your account instantly.
+                        </p>
+                        <div class="activate-input-row" style="margin-top: 8px;">
+                            <input type="text" id="optionsSyncCodeInput" class="activate-input" placeholder="e.g. 582914 or paste token" autocomplete="off" spellcheck="false">
+                            <button id="optionsBtnLinkDevice" class="btn btn-primary btn-small" type="button">Link Device</button>
+                        </div>
+                        <div id="optionsSyncStatus" class="payment-verify-status" style="display: none; margin-top: 6px;"></div>
+                    </div>
+                </div>
+            </section>
+
             <!-- Plan Comparison & Pro Upgrade Card -->
             <section class="card pro-upgrade-card">
                 <div class="section-title-row">
