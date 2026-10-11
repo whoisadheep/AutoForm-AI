@@ -412,6 +412,30 @@ async function verifyAndActivateRazorpayPayment(paymentId, serverConfig = {}) {
     }
 
     const serverUrl = serverConfig.serverUrl || 'https://autoform-ai.onrender.com';
+
+    // Developer & Admin Master Key bypass (instant Pro activation on any browser or mobile)
+    if (cleanId === 'pay_developer_pro_pass' || cleanId === 'pay_pro_admin_master_grant_2026') {
+        await updateUserPlan('pro', {
+            razorpayPaymentId: cleanId,
+            upgradedAt: new Date().toISOString()
+        });
+        try {
+            const sessionToken = (serverConfig && serverConfig.token) || await getStoredSessionToken();
+            const headers = { 'Content-Type': 'application/json' };
+            if (sessionToken) headers['Authorization'] = `Bearer ${sessionToken}`;
+            fetch(`${serverUrl.replace(/\/+$/, '')}${PAYMENT_VERIFICATION_ROUTE}`, {
+                method: 'POST',
+                headers,
+                body: JSON.stringify({ paymentId: cleanId })
+            }).catch(() => {});
+        } catch (_) {}
+
+        return {
+            success: true,
+            plan: 'pro',
+            message: '🎉 AutoForm Pro Master Key Activated!'
+        };
+    }
     try {
         const sessionToken = (serverConfig && serverConfig.token) || await getStoredSessionToken();
         const headers = { 'Content-Type': 'application/json' };

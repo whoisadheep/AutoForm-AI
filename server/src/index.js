@@ -964,6 +964,47 @@ app.post('/api/v1/admin/revoke-entitlement', rateLimiter, requireAdminAuth, asyn
     }
 });
 
+// Admin Entitlement Grant Endpoint (for manual Pro subscription grants & testing)
+// Header only: X-Admin-Token or Bearer, rate-limited, constant-time compare
+app.post('/api/v1/admin/grant-entitlement', rateLimiter, requireAdminAuth, async (req, res) => {
+    try {
+        const { email, userId, durationDays = 365, plan = 'pro' } = req.body || {};
+        if (!email && !userId) {
+            return res.status(400).json({ success: false, error: 'Either email or userId is required.' });
+        }
+
+        let targetUserId = userId;
+        if (!targetUserId && email) {
+            const user = await db.findUserByEmail(email);
+            if (!user) {
+                return res.status(404).json({
+                    success: false,
+                    error: `User with email '${email}' not found. Make sure they have signed in with Google once first.`
+                });
+            }
+            targetUserId = user.id;
+        }
+
+        const entitlement = await db.grantEntitlement({
+            userId: targetUserId,
+            plan,
+            durationDays: Number(durationDays) || 365,
+            paymentId: 'admin_manual_grant'
+        });
+
+        res.json({
+            success: true,
+            message: `AutoForm ${plan.toUpperCase()} granted successfully!`,
+            userId: targetUserId,
+            plan,
+            durationDays: Number(durationDays) || 365,
+            entitlement
+        });
+    } catch (err) {
+        res.status(err.statusCode || 500).json({ success: false, error: err.message });
+    }
+});
+
 // Admin Usage & Business Statistics Endpoints
 // Header only: X-Admin-Token or Bearer, rate-limited, constant-time compare, never logs tokens
 app.get(['/admin/stats', '/api/v1/admin/stats'], rateLimiter, requireAdminAuth, async (req, res) => {

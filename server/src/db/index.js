@@ -204,6 +204,21 @@ async function findUserById(id) {
     return res.rows[0] || null;
 }
 
+async function findUserByEmail(email) {
+    if (!email) return null;
+    const cleanEmail = email.trim().toLowerCase();
+    if (isInMemory) {
+        for (const u of memoryStore.users.values()) {
+            if (u.email && u.email.toLowerCase() === cleanEmail) {
+                return u;
+            }
+        }
+        return null;
+    }
+    const res = await pool.query('SELECT * FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1', [cleanEmail]);
+    return res.rows[0] || null;
+}
+
 async function createUser({ googleSub, email }) {
     const id = crypto.randomUUID();
     const createdAt = new Date();
@@ -1486,6 +1501,7 @@ module.exports = {
     getIstDateString,
     findUserByGoogleSub,
     findUserById,
+    findUserByEmail,
     createUser,
     deleteUser,
     getActiveEntitlement,

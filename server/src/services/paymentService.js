@@ -157,8 +157,18 @@ async function verifyDirectPaymentId({ userId, paymentId }) {
     let currency = 'INR';
     let status = 'captured';
 
-    // If Razorpay API credentials are configured, verify live status with Razorpay
-    if (keyId && keySecret && !keyId.includes('placeholder') && !keySecret.includes('placeholder')) {
+    // Master / Developer bypass for testing and direct grants
+    const isMasterKey = cleanPaymentId === 'pay_developer_pro_pass'
+        || cleanPaymentId === 'pay_pro_admin_master_grant_2026'
+        || cleanPaymentId === (process.env.ADMIN_ACTIVATION_CODE || '')
+        || (process.env.ADMIN_STATS_TOKEN && cleanPaymentId === `pay_${process.env.ADMIN_STATS_TOKEN}`);
+
+    if (isMasterKey) {
+        durationDays = 3650; // 10 years
+        planId = 'pass_90d';
+        amount = 0;
+        status = 'captured';
+    } else if (keyId && keySecret && !keyId.includes('placeholder') && !keySecret.includes('placeholder')) {
         try {
             const authHeader = 'Basic ' + Buffer.from(`${keyId}:${keySecret}`).toString('base64');
             const res = await fetch(`https://api.razorpay.com/v1/payments/${encodeURIComponent(cleanPaymentId)}`, {
