@@ -2,6 +2,14 @@
 
 > Fill job applications and forms faster with multi-provider AI, local memory, and smart resume auto-attach across Chrome, Firefox, Edge, and mobile extension browsers.
 
+<div align="center">
+
+[![Microsoft Edge](https://img.shields.io/badge/Microsoft_Edge_Add--ons-AutoForm_AI-0078D7?style=for-the-badge&logo=microsoftedge&logoColor=white)](https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope)
+[![Chrome Web Store](https://img.shields.io/badge/Chrome_Web_Store-AutoForm_AI-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white)](https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn?hl=en)
+[![Firefox Add-ons](https://img.shields.io/badge/Firefox_AMO-AutoForm_AI-FF7139?style=for-the-badge&logo=firefox&logoColor=white)](https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/)
+
+</div>
+
 AutoForm AI is a cross-browser extension backed by a high-throughput proxy server that intelligently coordinates **Groq (Llama 3.3)**, **Google Gemini**, **OpenRouter**, and **NVIDIA NIM** with automatic failover, sub-second latency, and a privacy-first **Local Memory Vault** that remembers your personal profile and experiences without sending personal databases to the cloud.
 
 ---
