@@ -18,6 +18,7 @@ const { requireAuth, optionalAuth, requireAdminAuth } = require('./middleware/au
 const formSessionManager = require('./services/formSessionManager');
 const paymentService = require('./services/paymentService');
 const statsService = require('./services/statsService');
+const { parseUserAgent } = require('./utils/userAgentParser');
 
 const guestTrialCleanupTimer = setInterval(() => {
     db.cleanupGuestTrialForms().catch((err) => {
@@ -1017,6 +1018,25 @@ app.get(['/admin/stats', '/api/v1/admin/stats'], rateLimiter, requireAdminAuth, 
     }
 });
 
+// Admin Detailed Extension & Solve Analytics Endpoint
+// Returns browser, OS, device, provider latency, question types, and trends.
+// Header only: X-Admin-Token or Bearer, rate-limited, constant-time compare, never logs tokens
+app.get(['/admin/analytics', '/api/v1/admin/analytics'], rateLimiter, requireAdminAuth, async (req, res) => {
+    try {
+        const days = parseInt(req.query.days, 10) || 14;
+        const analytics = await db.getSolveAnalyticsSummary(days);
+        res.json({
+            success: true,
+            generatedAt: new Date().toISOString(),
+            timeZone: 'Asia/Kolkata (IST)',
+            ...analytics
+        });
+    } catch (err) {
+        console.error('[Admin Analytics Error]:', err.message);
+        res.status(500).json({ success: false, error: 'Failed to retrieve solve analytics.' });
+    }
+});
+
 // Diagnostic Debug IP Route
 // Shows resolved req.ip, socket remoteAddress, raw X-Forwarded-For, and trust proxy hop count.
 // Gated by process.env.DEBUG_IP_ENDPOINT === 'true' or ADMIN_STATS_TOKEN header. Disabled by default.
@@ -1797,6 +1817,37 @@ app.post('/api/v1/solve', solveAuthMiddleware, rateLimiter, validateSolveRequest
             modelTier: result.modelTier || (isPro ? '70b-flagship-reasoning' : 'standard'),
             requestId: req.id
         });
+
+        // Asynchronously record non-sensitive solve analytics (browser, OS, device, latency, provider)
+        // Zero Data Leak: Strictly never records question text, answer text, choices, or form URLs
+        try {
+            const uaInfo = parseUserAgent(req.headers['user-agent'] || '');
+            let userType = 'registered';
+            let analyticsUserId = req.user?.userId || null;
+            if (req.isGuestTrial) {
+                userType = 'guest';
+                analyticsUserId = req.guestTrialSessionToken || null;
+            } else if (req.isLegacyAnon) {
+                userType = 'legacy_ip';
+                analyticsUserId = null;
+            }
+
+            db.recordSolveAnalytics({
+                dayKey: db.getTodayDateKeyIST(),
+                userId: analyticsUserId,
+                userType,
+                browser: uaInfo.browser,
+                os: uaInfo.os,
+                device: uaInfo.device,
+                questionType: type || 'text',
+                provider: result.provider || null,
+                latencyMs: result.latencyMs || null,
+                confidence: result.confidence || 'high',
+                isPro
+            }).catch(() => {});
+        } catch (e) {
+            // Non-fatal fire-and-forget
+        }
 
     } catch (err) {
         console.error(`[API /solve Error] [req:${req.id}]:`, err.message);

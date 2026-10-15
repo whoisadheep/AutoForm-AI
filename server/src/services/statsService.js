@@ -16,6 +16,7 @@ const db = require('../db');
 async function buildAdminStats({ routerStatus = null } = {}) {
     const todayIst = db.getTodayDateKeyIST();
     const dbStats = await db.getAdminStats(todayIst);
+    const analyticsSummary = await db.getSolveAnalyticsSummary(14).catch(() => null);
 
     // Format provider performance metrics with explicit "since last server restart" label
     const rawMetrics = routerStatus?.metrics || {};
@@ -71,7 +72,8 @@ async function buildAdminStats({ routerStatus = null } = {}) {
             label: "since last server restart",
             activeProviders: routerStatus?.activeProviders || [],
             performance: formattedProviders
-        }
+        },
+        solveAnalytics: analyticsSummary
     };
 }
 

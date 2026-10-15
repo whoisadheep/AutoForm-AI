@@ -22,7 +22,8 @@ const memoryStore = {
     instant_fill_summaries: new Map(), // "userId:YYYY-MM-DD" -> { id, user_id, day_key, count, created_at, updated_at }
     limit_hit_events: new Map(), // "userId:YYYY-MM-DD" -> { id, user_id, day_key, created_at }
     legacy_ip_solve_counts: new Map(), // "ip:YYYY-MM-DD" -> count
-    guest_trial_forms: new Map() // sessionId -> { ip_hash, status, created_at }
+    guest_trial_forms: new Map(), // sessionId -> { ip_hash, status, created_at }
+    solve_analytics: new Map() // id -> analytics object
 };
 
 /**
@@ -140,6 +141,25 @@ async function initDb(connectionString) {
                 CREATE INDEX IF NOT EXISTS idx_users_google_sub ON users(google_sub);
                 CREATE INDEX IF NOT EXISTS idx_usage_events_user_created ON usage_events(user_id, created_at);
                 CREATE INDEX IF NOT EXISTS idx_entitlements_user_expires ON entitlements(user_id, expires_at);
+
+                CREATE TABLE IF NOT EXISTS solve_analytics (
+                    id TEXT PRIMARY KEY,
+                    day_key VARCHAR(10) NOT NULL,
+                    user_id TEXT,
+                    user_type VARCHAR(15) NOT NULL,
+                    browser VARCHAR(20) NOT NULL,
+                    os VARCHAR(20) NOT NULL,
+                    device VARCHAR(10) NOT NULL,
+                    question_type VARCHAR(20),
+                    provider VARCHAR(20),
+                    latency_ms INT,
+                    confidence VARCHAR(15),
+                    is_pro BOOLEAN DEFAULT FALSE,
+                    created_at TIMESTAMPTZ DEFAULT NOW()
+                );
+                CREATE INDEX IF NOT EXISTS idx_solve_analytics_day ON solve_analytics(day_key);
+                CREATE INDEX IF NOT EXISTS idx_solve_analytics_browser ON solve_analytics(browser);
+                CREATE INDEX IF NOT EXISTS idx_solve_analytics_created ON solve_analytics(created_at);
             `);
             console.log('[Database] PostgreSQL connection established and schema initialized.');
             isInMemory = false;
@@ -1449,6 +1469,320 @@ async function getAdminStats(todayIst = getTodayDateKeyIST()) {
 }
 
 /**
+ * Records anonymous solve metadata for browser/OS/engine/latency analytics.
+ * Strictly guarantees ZERO question text, answers, or URLs are stored.
+ */
+async function recordSolveAnalytics({
+    dayKey,
+    userId = null,
+    userType = 'guest',
+    browser = 'Unknown',
+    os = 'Unknown',
+    device = 'desktop',
+    questionType = null,
+    provider = null,
+    latencyMs = null,
+    confidence = 'high',
+    isPro = false
+}) {
+    const id = crypto.randomUUID();
+    const resolvedDayKey = dayKey || getTodayDateKeyIST();
+    const createdAt = new Date();
+
+    if (isInMemory) {
+        const record = {
+            id,
+            day_key: resolvedDayKey,
+            user_id: userId,
+            user_type: userType,
+            browser,
+            os,
+            device,
+            question_type: questionType,
+            provider,
+            latency_ms: latencyMs !== null && latencyMs !== undefined ? Number(latencyMs) : null,
+            confidence,
+            is_pro: Boolean(isPro),
+            created_at: createdAt
+        };
+        memoryStore.solve_analytics.set(id, record);
+        return record;
+    }
+
+    if (!pool) return null;
+
+    const res = await pool.query(
+        `INSERT INTO solve_analytics 
+         (id, day_key, user_id, user_type, browser, os, device, question_type, provider, latency_ms, confidence, is_pro, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+         RETURNING *`,
+        [id, resolvedDayKey, userId, userType, browser, os, device, questionType, provider, latencyMs, confidence, isPro, createdAt]
+    );
+    return res.rows[0];
+}
+
+/**
+ * Returns aggregated solve analytics over a given number of days (default 14).
+ * @param {number} [days=14]
+ * @returns {Promise<Object>}
+ */
+async function getSolveAnalyticsSummary(days = 14) {
+    const safeDays = Math.max(1, Math.min(Number(days) || 14, 90));
+
+    if (isInMemory) {
+        const cutoff = new Date(Date.now() - safeDays * 24 * 60 * 60 * 1000);
+        const records = Array.from(memoryStore.solve_analytics.values())
+            .filter(r => new Date(r.created_at) >= cutoff);
+
+        const totalSolves = records.length;
+        const browserCounts = {};
+        const osCounts = {};
+        const deviceCounts = {};
+        const userTypeCounts = {};
+        const providerStats = {};
+        const questionTypeCounts = {};
+        const confidenceCounts = {};
+        const dailyTrends = {};
+
+        for (const r of records) {
+            browserCounts[r.browser] = (browserCounts[r.browser] || 0) + 1;
+            osCounts[r.os] = (osCounts[r.os] || 0) + 1;
+            deviceCounts[r.device] = (deviceCounts[r.device] || 0) + 1;
+            userTypeCounts[r.user_type] = (userTypeCounts[r.user_type] || 0) + 1;
+
+            if (r.provider) {
+                if (!providerStats[r.provider]) {
+                    providerStats[r.provider] = { count: 0, totalLatency: 0, latencies: [] };
+                }
+                providerStats[r.provider].count += 1;
+                if (r.latency_ms !== null && r.latency_ms !== undefined) {
+                    providerStats[r.provider].totalLatency += r.latency_ms;
+                    providerStats[r.provider].latencies.push(r.latency_ms);
+                }
+            }
+
+            if (r.question_type) {
+                questionTypeCounts[r.question_type] = (questionTypeCounts[r.question_type] || 0) + 1;
+            }
+
+            if (r.confidence) {
+                confidenceCounts[r.confidence] = (confidenceCounts[r.confidence] || 0) + 1;
+            }
+
+            const day = r.day_key;
+            if (!dailyTrends[day]) {
+                dailyTrends[day] = { dayKey: day, total: 0, registered: 0, guest: 0, legacy_ip: 0, latencies: [] };
+            }
+            dailyTrends[day].total += 1;
+            if (r.user_type === 'registered') dailyTrends[day].registered += 1;
+            else if (r.user_type === 'guest') dailyTrends[day].guest += 1;
+            else if (r.user_type === 'legacy_ip') dailyTrends[day].legacy_ip += 1;
+            if (r.latency_ms !== null && r.latency_ms !== undefined) {
+                dailyTrends[day].latencies.push(r.latency_ms);
+            }
+        }
+
+        const formatPercent = (count) => totalSolves > 0 ? +((count / totalSolves) * 100).toFixed(1) : 0;
+
+        const byBrowser = Object.entries(browserCounts)
+            .map(([browser, count]) => ({ browser, count, percentage: formatPercent(count) }))
+            .sort((a, b) => b.count - a.count);
+
+        const byOs = Object.entries(osCounts)
+            .map(([os, count]) => ({ os, count, percentage: formatPercent(count) }))
+            .sort((a, b) => b.count - a.count);
+
+        const byDevice = Object.entries(deviceCounts)
+            .map(([device, count]) => ({ device, count, percentage: formatPercent(count) }))
+            .sort((a, b) => b.count - a.count);
+
+        const byUserType = Object.entries(userTypeCounts)
+            .map(([userType, count]) => ({ userType, count, percentage: formatPercent(count) }))
+            .sort((a, b) => b.count - a.count);
+
+        const byProvider = Object.entries(providerStats)
+            .map(([provider, s]) => {
+                const avgLatencyMs = s.latencies.length > 0 ? Math.round(s.totalLatency / s.latencies.length) : null;
+                const minLatencyMs = s.latencies.length > 0 ? Math.min(...s.latencies) : null;
+                const maxLatencyMs = s.latencies.length > 0 ? Math.max(...s.latencies) : null;
+                return { provider, count: s.count, avgLatencyMs, minLatencyMs, maxLatencyMs };
+            })
+            .sort((a, b) => b.count - a.count);
+
+        const byQuestionType = Object.entries(questionTypeCounts)
+            .map(([questionType, count]) => ({ questionType, count }))
+            .sort((a, b) => b.count - a.count);
+
+        const byConfidence = Object.entries(confidenceCounts)
+            .map(([confidence, count]) => ({ confidence, count }))
+            .sort((a, b) => b.count - a.count);
+
+        const dailyTrend = Object.values(dailyTrends)
+            .map(d => ({
+                dayKey: d.dayKey,
+                total: d.total,
+                registered: d.registered,
+                guest: d.guest,
+                legacyIp: d.legacy_ip,
+                avgLatencyMs: d.latencies.length > 0 ? Math.round(d.latencies.reduce((a, b) => a + b, 0) / d.latencies.length) : null
+            }))
+            .sort((a, b) => b.dayKey.localeCompare(a.dayKey));
+
+        return {
+            windowDays: safeDays,
+            totalSolves,
+            byBrowser,
+            byOs,
+            byDevice,
+            byUserType,
+            byProvider,
+            byQuestionType,
+            byConfidence,
+            dailyTrend
+        };
+    }
+
+    // Real PostgreSQL implementation
+    const client = await pool.connect();
+    try {
+        const intervalStr = `${safeDays} days`;
+
+        // 1. Total solves
+        const totalRes = await client.query(
+            `SELECT COUNT(*)::int AS total FROM solve_analytics WHERE created_at >= NOW() - $1::interval`,
+            [intervalStr]
+        );
+        const totalSolves = totalRes.rows[0]?.total || 0;
+        const formatPercent = (count) => totalSolves > 0 ? +((count / totalSolves) * 100).toFixed(1) : 0;
+
+        // 2. By Browser
+        const browserRes = await client.query(
+            `SELECT browser, COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval 
+             GROUP BY browser 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+        const byBrowser = browserRes.rows.map(r => ({
+            browser: r.browser,
+            count: r.count,
+            percentage: formatPercent(r.count)
+        }));
+
+        // 3. By OS
+        const osRes = await client.query(
+            `SELECT os, COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval 
+             GROUP BY os 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+        const byOs = osRes.rows.map(r => ({
+            os: r.os,
+            count: r.count,
+            percentage: formatPercent(r.count)
+        }));
+
+        // 4. By Device
+        const deviceRes = await client.query(
+            `SELECT device, COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval 
+             GROUP BY device 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+        const byDevice = deviceRes.rows.map(r => ({
+            device: r.device,
+            count: r.count,
+            percentage: formatPercent(r.count)
+        }));
+
+        // 5. By User Type
+        const userTypeRes = await client.query(
+            `SELECT user_type AS "userType", COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval 
+             GROUP BY user_type 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+        const byUserType = userTypeRes.rows.map(r => ({
+            userType: r.userType,
+            count: r.count,
+            percentage: formatPercent(r.count)
+        }));
+
+        // 6. By Provider with latency stats
+        const providerRes = await client.query(
+            `SELECT provider, 
+                    COUNT(*)::int AS count, 
+                    ROUND(AVG(latency_ms))::int AS "avgLatencyMs", 
+                    MIN(latency_ms)::int AS "minLatencyMs", 
+                    MAX(latency_ms)::int AS "maxLatencyMs" 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval AND provider IS NOT NULL 
+             GROUP BY provider 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+
+        // 7. By Question Type
+        const questionTypeRes = await client.query(
+            `SELECT question_type AS "questionType", COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval AND question_type IS NOT NULL 
+             GROUP BY question_type 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+
+        // 8. By Confidence
+        const confidenceRes = await client.query(
+            `SELECT confidence, COUNT(*)::int AS count 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval AND confidence IS NOT NULL 
+             GROUP BY confidence 
+             ORDER BY count DESC`,
+            [intervalStr]
+        );
+
+        // 9. Daily Trend
+        const trendRes = await client.query(
+            `SELECT day_key AS "dayKey", 
+                    COUNT(*)::int AS total, 
+                    COUNT(*) FILTER (WHERE user_type = 'registered')::int AS registered, 
+                    COUNT(*) FILTER (WHERE user_type = 'guest')::int AS guest, 
+                    COUNT(*) FILTER (WHERE user_type = 'legacy_ip')::int AS "legacyIp", 
+                    ROUND(AVG(latency_ms))::int AS "avgLatencyMs" 
+             FROM solve_analytics 
+             WHERE created_at >= NOW() - $1::interval 
+             GROUP BY day_key 
+             ORDER BY day_key DESC 
+             LIMIT 30`,
+            [intervalStr]
+        );
+
+        return {
+            windowDays: safeDays,
+            totalSolves,
+            byBrowser,
+            byOs,
+            byDevice,
+            byUserType,
+            byProvider: providerRes.rows,
+            byQuestionType: questionTypeRes.rows,
+            byConfidence: confidenceRes.rows,
+            dailyTrend: trendRes.rows
+        };
+    } finally {
+        client.release();
+    }
+}
+
+/**
  * Resets the test database (in-memory or real PostgreSQL).
  */
 async function resetTestDb() {
@@ -1456,8 +1790,8 @@ async function resetTestDb() {
         resetInMemoryDb();
         return;
     }
-    if (pool) {
-        await pool.query('TRUNCATE users, entitlements, payments, usage_events, daily_solve_counts, instant_fill_summaries, limit_hit_events, legacy_ip_solve_counts, guest_trial_forms CASCADE');
+    if (pool && process.env.DATABASE_URL_TEST) {
+        await pool.query('TRUNCATE users, entitlements, payments, usage_events, daily_solve_counts, instant_fill_summaries, limit_hit_events, legacy_ip_solve_counts, guest_trial_forms, solve_analytics CASCADE');
     }
 }
 
@@ -1476,6 +1810,7 @@ function resetInMemoryDb() {
     memoryStore.limit_hit_events.clear();
     memoryStore.legacy_ip_solve_counts.clear();
     memoryStore.guest_trial_forms.clear();
+    memoryStore.solve_analytics.clear();
     inMemoryUserLocks.clear();
 }
 
@@ -1531,5 +1866,7 @@ module.exports = {
     beginGuestTrialSolve,
     cleanupGuestTrialForms,
     cleanupOldLegacyIpCounts,
-    getAdminStats
+    getAdminStats,
+    recordSolveAnalytics,
+    getSolveAnalyticsSummary
 };
