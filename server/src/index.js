@@ -100,6 +100,19 @@ app.get('/terms', (req, res) => res.sendFile(path.resolve(__dirname, '../../site
 app.get('/refund', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/refund.html')));
 app.get('/contact', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/contact.html')));
 
+// Smart Store Review / Rating Redirect Endpoint
+// Detects browser (Edge, Firefox, Chrome) and routes user directly to official store reviews tab
+app.get(['/rate', '/review', '/api/v1/rate', '/api/v1/review'], (req, res) => {
+    const uaInfo = parseUserAgent(req.headers['user-agent'] || '');
+    if (uaInfo.browser === 'Edge') {
+        return res.redirect(302, 'https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope');
+    }
+    if (uaInfo.browser === 'Firefox') {
+        return res.redirect(302, 'https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/reviews/');
+    }
+    return res.redirect(302, 'https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews');
+});
+
 // Root info
 app.get('/', (req, res) => {
     res.json({

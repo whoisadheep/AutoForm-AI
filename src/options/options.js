@@ -1713,6 +1713,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Store Review Link Initialization
+    const btnRev = document.getElementById('btnOptionsReview');
+    const textRev = document.getElementById('btnOptionsReviewText');
+    if (btnRev) {
+        const ua = navigator.userAgent;
+        if (ua.includes('Edg/')) {
+            btnRev.href = 'https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope';
+            if (textRev) textRev.textContent = '⭐ Rate 5 Stars on Edge Add-ons';
+        } else if (ua.includes('Firefox/')) {
+            btnRev.href = 'https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/reviews/';
+            if (textRev) textRev.textContent = '⭐ Rate 5 Stars on Firefox Add-ons';
+        } else {
+            btnRev.href = 'https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews';
+            if (textRev) textRev.textContent = '⭐ Rate 5 Stars on Chrome Web Store';
+        }
+    }
+
     // Auto-refresh account status when options page gains focus or storage changes
     window.addEventListener('focus', () => {
         loadAccountStatus();

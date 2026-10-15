@@ -4,7 +4,12 @@
   "fallbackServerUrls": [],
   "googleClientId": "124825767907-8i59japp45ibhclluloh8bs5ididjmkp.apps.googleusercontent.com",
   "paymentUrl": "https://rzp.io/rzp/5qbZBgFs",
-  "reviewUrl": "https://chromewebstore.google.com/detail/autoform-ai/reviews",
+  "reviewUrl": "https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews",
+  "reviewUrls": {
+    "chrome": "https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews",
+    "edge": "https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope",
+    "firefox": "https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/reviews/"
+  },
   "maintenanceMode": false,
   "maintenanceMessage": "",
   "announcement": "",

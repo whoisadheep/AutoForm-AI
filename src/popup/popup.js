@@ -1081,3 +1081,22 @@ if (razorpayPaymentIdInput) {
         }
     });
 }
+
+// Store Review Link Initialization (Edge / Firefox / Chrome)
+function initStoreReviewLink() {
+    const btn = document.getElementById('btnFooterReview');
+    if (!btn) return;
+    const ua = navigator.userAgent;
+    if (ua.includes('Edg/')) {
+        btn.href = 'https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope';
+        btn.title = 'Leave a 5-star review on Microsoft Edge Add-ons';
+    } else if (ua.includes('Firefox/')) {
+        btn.href = 'https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/reviews/';
+        btn.title = 'Leave a 5-star review on Firefox Add-ons';
+    } else {
+        btn.href = 'https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews';
+        btn.title = 'Leave a 5-star review on Chrome Web Store';
+    }
+}
+initStoreReviewLink();
+

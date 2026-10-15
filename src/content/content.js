@@ -2813,8 +2813,24 @@ async function injectAnswerIntoField(q, block, solution) {
  * Displays the 5-star review delight prompt in the bottom-right of the page.
  * Triggers after 2 completed forms or 15+ questions solved.
  */
+function getStoreReviewUrl() {
+    const ua = navigator.userAgent;
+    if (ua.includes('Edg/')) {
+        return 'https://microsoftedge.microsoft.com/addons/detail/autoform-ai/bdhkaifhmenacpjfjjfofcplamfjoope';
+    }
+    if (ua.includes('Firefox/')) {
+        return 'https://addons.mozilla.org/en-US/firefox/addon/autoform-ai/reviews/';
+    }
+    return 'https://chromewebstore.google.com/detail/autoform-ai/gokfekdcnlgihkimglpfilnahbpambfn/reviews';
+}
+
 function showDelightReviewPrompt() {
     if (document.getElementById('autoform-delight-review-card')) return;
+
+    const storeReviewUrl = getStoreReviewUrl();
+    const isEdge = navigator.userAgent.includes('Edg/');
+    const isFirefox = navigator.userAgent.includes('Firefox/');
+    const storeLabel = isEdge ? 'Edge Add-ons' : (isFirefox ? 'Firefox Add-ons' : 'Chrome Web Store');
 
     const card = document.createElement('div');
     card.id = 'autoform-delight-review-card';
@@ -2824,7 +2840,7 @@ function showDelightReviewPrompt() {
         <button class="autoform-review-close" id="btnDismissReview" type="button" title="Close" aria-label="Close">✕</button>
         <div class="autoform-review-content">
             <div class="autoform-review-title">Loving AutoForm AI?</div>
-            <div class="autoform-review-desc">You just saved time completing this form! A quick 5-star review on the Chrome Web Store helps us keep improving and adding free features.</div>
+            <div class="autoform-review-desc">You just saved time completing this form! A quick 5-star review on the ${storeLabel} helps us keep improving and adding free features.</div>
             <div class="autoform-review-stars">
                 <span class="review-star" data-rating="1">★</span>
                 <span class="review-star" data-rating="2">★</span>
@@ -2833,8 +2849,8 @@ function showDelightReviewPrompt() {
                 <span class="review-star" data-rating="5">★</span>
             </div>
             <div class="autoform-review-actions">
-                <a class="autoform-review-btn-primary" id="btnOpenReviewStore" href="https://chromewebstore.google.com/detail/autoform-ai/reviews" target="_blank" rel="noopener">
-                    ⭐ Rate on Web Store
+                <a class="autoform-review-btn-primary" id="btnOpenReviewStore" href="${storeReviewUrl}" target="_blank" rel="noopener">
+                    ⭐ Rate on ${storeLabel}
                 </a>
                 <button class="autoform-review-btn-secondary" id="btnRemindLaterReview" type="button">Remind Later</button>
             </div>
@@ -2856,7 +2872,7 @@ function showDelightReviewPrompt() {
 
     card.querySelectorAll('.review-star').forEach(star => {
         star.addEventListener('click', () => {
-            window.open('https://chromewebstore.google.com/detail/autoform-ai/reviews', '_blank');
+            window.open(storeReviewUrl, '_blank');
             openStoreAndDone();
         });
     });

@@ -218,4 +218,38 @@ describe('Solve Analytics & User-Agent Parsing Suite', () => {
             assert.strictEqual(data.success, true);
         });
     });
+
+    describe('4. Smart Store Review Redirects', () => {
+        it('should redirect Edge browsers to Microsoft Edge Add-ons', async () => {
+            const edgeUa = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36 Edg/128.0.0.0';
+            const res = await fetch(`${baseUrl}/rate`, {
+                headers: { 'User-Agent': edgeUa },
+                redirect: 'manual'
+            });
+            assert.strictEqual(res.status, 302);
+            assert.ok(res.headers.get('location').includes('microsoftedge.microsoft.com'));
+        });
+
+        it('should redirect Firefox browsers to Mozilla Firefox Add-ons', async () => {
+            const firefoxUa = 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:129.0) Gecko/20100101 Firefox/129.0';
+            const res = await fetch(`${baseUrl}/review`, {
+                headers: { 'User-Agent': firefoxUa },
+                redirect: 'manual'
+            });
+            assert.strictEqual(res.status, 302);
+            assert.ok(res.headers.get('location').includes('addons.mozilla.org'));
+        });
+
+        it('should redirect Chrome and other browsers to Chrome Web Store with valid extension ID', async () => {
+            const chromeUa = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36';
+            const res = await fetch(`${baseUrl}/rate`, {
+                headers: { 'User-Agent': chromeUa },
+                redirect: 'manual'
+            });
+            assert.strictEqual(res.status, 302);
+            const loc = res.headers.get('location');
+            assert.ok(loc.includes('chromewebstore.google.com'));
+            assert.ok(loc.includes('gokfekdcnlgihkimglpfilnahbpambfn'));
+        });
+    });
 });
