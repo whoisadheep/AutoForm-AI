@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy — AutoForm AI</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <div class="nav-container">
+      <a href="index.html" class="brand">⚡ AutoForm AI</a>
+      <nav>
+        <a href="index.html">Overview</a>
+        <a href="terms.html">Terms</a>
+        <a href="privacy.html" class="active">Privacy</a>
+        <a href="refund.html">Refund Policy</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <article class="content-card">
+      <h1>Privacy Policy</h1>
+      <div class="meta-date">Last updated: <span class="placeholder-badge">[LAST UPDATED DATE]</span></div>
+
+      <p>This Privacy Policy explains how AutoForm AI ("we", "us", or "our"), operated by <span class="placeholder-badge">[YOUR FULL NAME]</span> in <span class="placeholder-badge">[YOUR CITY, STATE, COUNTRY]</span>, handles your data. We believe in strict data minimization and honest privacy communication.</p>
+
+      <h2>1. Local-First Profile & Resume Storage</h2>
+      <p>Your sensitive personal documents and profiles remain on your device:</p>
+      <ul>
+        <li><strong>Memory Vault:</strong> Your personal details (full name, phone, links, education history) and career memory cards are stored exclusively in your browser's local storage (<code>chrome.storage.local</code>).</li>
+        <li><strong>Resumes:</strong> Resume files (PDF, Word, or plain text) are encoded locally and stored as binary data URLs on your machine. They are never stored on our servers.</li>
+      </ul>
+
+      <h2>2. Account Information (Google Sign-In)</h2>
+      <p>When you sign in to AutoForm AI using Google OAuth:</p>
+      <ul>
+        <li>We collect and store your <strong>Google email address</strong> and unique Google subject identifier (<code>sub</code>).</li>
+        <li>Your email is used solely to identify your account, verify your active Pro passes, and calculate your monthly form quota.</li>
+        <li>We do not request access to, nor read, your Google Drive, Gmail, Contacts, or Calendar.</li>
+      </ul>
+
+      <h2>3. Form Questions, Personal Context & Ephemeral AI Processing</h2>
+      <p>When you use AI assistance to answer a question on a form:</p>
+      <ul>
+        <li><strong>Transmitted Data Categories:</strong> Each AI request transmits two categories of data:
+          <ol style="margin-top: 6px; padding-left: 20px;">
+            <li><strong>Website content:</strong> The form question text, input type, and available multiple-choice options.</li>
+            <li><strong>Personally identifiable information (PII):</strong> Only the specific memory snippets from your local profile relevant to the question (such as your name, contact email, phone number, location, university/degree, or matching project and work experience anecdotes). AutoForm AI never transmits your entire profile at once; only minimal question-matched context is injected.</li>
+          </ol>
+        </li>
+        <li><strong>Zero Server Logging:</strong> This context is transmitted securely over TLS 1.3 to our backend proxy and forwarded to AI providers. <strong>We do not log or store question text, form answers, form URLs, or profile snippets in our database.</strong> All server-side inference is strictly ephemeral.</li>
+        <li><strong>Third-Party AI Inference Providers & Training Terms:</strong>
+          <ul>
+            <li><strong>Groq Inc. (<a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener">api.groq.com</a>):</strong> Primary provider. Groq does not retain inference data by default, may keep reliability/abuse logs for up to 30 days unless Zero Data Retention is enabled in Data Controls, and does not train on API data. See <a href="https://console.groq.com/docs/data-controls" target="_blank" rel="noopener">Groq Data Controls</a>.</li>
+            <li><strong>Google Gemini API (<a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">generativelanguage.googleapis.com</a>):</strong> When configured with a paid Google Cloud billing account, Google does not train models on customer API requests. On free/unpaid Google AI Studio trial tiers, Google's terms specify that prompts and responses may be reviewed by human annotators and used to train Google models.</li>
+            <li><strong>OpenRouter (<a href="https://openrouter.ai/privacy" target="_blank" rel="noopener">openrouter.ai</a>):</strong> Secondary fallback provider for general non-personal questions. OpenRouter does not train on inputs, but certain free upstream model hosts have independent retention policies.</li>
+            <li><strong>NVIDIA NIM (<a href="https://www.nvidia.com/en-us/agreements/enterprise-software/api-trial-terms/" target="_blank" rel="noopener">integrate.api.nvidia.com</a>):</strong> Trial catalog terms note that prompts may be retained to improve NVIDIA products. Used exclusively as an optional fallback for non-personal questions.</li>
+          </ul>
+        </li>
+        <li><strong>Data-Sensitivity Routing Rule:</strong> Any request containing user profile or memory context (PII) may only be sent to providers on an allow-list of zero-retention / no-training routes (Groq with Zero Data Retention; or paid Gemini with billing enabled). If no zero-retention provider is available, AutoForm AI halts and returns a retryable error rather than routing personal context to non-zero-retention providers.</li>
+      </ul>
+
+      <h2>4. Form Counting, Usage Telemetry & Abuse Prevention</h2>
+      <ul>
+        <li><strong>Per-Account Monthly Quota:</strong> To enforce the 10 free forms per month limit and Pro fair-use caps, our database records usage events linked directly to your authenticated user account. Each event logs only your user ID, the broad form category (e.g. <code>google_forms</code>, <code>greenhouse</code>, <code>lever</code>, <code>generic</code>), timestamp, and whether the fill was successful. Question text, answers, and URLs are never recorded. Form counting is required for quota enforcement.</li>
+        <li><strong>Limit-Hit Events:</strong> When an account attempts an AI fill after reaching its monthly 10-form free quota or daily solve cap, a lightweight limit-hit event (user ID, day) is recorded to log quota exhaustion.</li>
+        <li><strong>Instant Profile Fill:</strong> The instant profile fill feature executes entirely on-device and is free and unlimited.</li>
+        <li><strong>Optional Daily Instant-Fill Summary:</strong> A switch in the extension Options page ("Share daily instant-fill counts") controls whether a daily aggregate count of on-device instant fills is sent and linked to your account to help us monitor form compatibility across websites. You can turn this off anytime in Options.</li>
+        <li><strong>Temporary Legacy IP Abuse Counters (Deleted within 7 Days):</strong> For backward-compatibility requests from older extension versions without Google authentication, temporary IP-based abuse counters are tracked by storing a one-way HMAC-SHA256 cryptographic hash of the client IP (salted with a private server secret). Raw IP addresses are never stored in the database, and all IP counter records are automatically deleted within 7 days.</li>
+      </ul>
+
+      <h2>5. Payment Data</h2>
+      <p>Payments for Pro passes are processed by <strong>Razorpay</strong>. We never view, collect, or store your payment card numbers, CVVs, netbanking credentials, or UPI PINs. We store only the Razorpay Order ID, Razorpay Payment ID, payment status, amount paid, currency, and the pass expiration date linked to your account.</p>
+
+      <h2>6. Data Rights & Permanent Account Deletion</h2>
+      <p>You have full control over your data at all times:</p>
+      <ul>
+        <li><strong>Delete Local Data:</strong> Click "Clear All Memory" in the extension Options page to wipe all local data.</li>
+        <li><strong>Delete Account & Cloud Records:</strong> Click the "Delete Account" button in the extension Options page, or send an authenticated request to <code>DELETE /api/v1/auth/me</code>. This permanently deletes your user record, email, and all linked usage events from our database.</li>
+      </ul>
+
+      <h2>7. Contact Us</h2>
+      <p>For any questions or privacy inquiries, contact:</p>
+      <ul>
+        <li><strong>Name:</strong> <span class="placeholder-badge">[YOUR FULL NAME]</span></li>
+        <li><strong>Email:</strong> <span class="placeholder-badge">[YOUR CONTACT EMAIL]</span></li>
+        <li><strong>Location:</strong> <span class="placeholder-badge">[YOUR CITY, STATE, COUNTRY]</span></li>
+      </ul>
+    </article>
+  </main>
+
+  <footer>
+    <p>&copy; [LAST UPDATED DATE] AutoForm AI &bull; Maintained by [YOUR FULL NAME] &bull; <a href="contact.html">Support</a></p>
+  </footer>
+</body>
+</html>

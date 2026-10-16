@@ -1,0 +1,2335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoForm AI — Enterprise Analytics & Admin Dashboard</title>
+<link rel="icon" href="https://whoisadheep.github.io/AutoForm-AI/assets/icons/icon48.png" type="image/png">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+/* ─────────────────────────────────────────────────────────────────────────────
+   DESIGN SYSTEM: ULTRA-MODERN DARK OBSIDIAN (LECTOR INSPIRATION)
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg-body: #090a10;
+  --bg-sidebar: #0d0f1a;
+  --bg-topbar: rgba(13, 15, 26, 0.85);
+  --bg-card: #121424;
+  --bg-card-glass: rgba(18, 20, 36, 0.75);
+  --bg-card-hover: #171a30;
+  --border: #1c2035;
+  --border-light: #282e4a;
+  --border-focus: #6366f1;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --primary: #6366f1;
+  --primary-glow: rgba(99, 102, 241, 0.25);
+  --purple: #8b5cf6;
+  --purple-glow: rgba(139, 92, 246, 0.25);
+  --pink: #ec4899;
+  --rose: #f43f5e;
+  --emerald: #10b981;
+  --emerald-glow: rgba(16, 185, 129, 0.25);
+  --amber: #f59e0b;
+  --amber-glow: rgba(245, 158, 11, 0.25);
+  --cyan: #06b6d4;
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.4);
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-body); }
+::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary); }
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LOGIN OVERLAY
+   ───────────────────────────────────────────────────────────────────────────── */
+#login-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at center, #13172e 0%, #090a10 100%);
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+#login-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px 32px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), var(--shadow-glow);
+  text-align: center;
+  animation: modalScale 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalScale {
+  from { opacity: 0; transform: scale(0.95) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.login-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border-radius: 16px;
+  font-size: 28px;
+  margin-bottom: 20px;
+  box-shadow: 0 10px 20px rgba(236, 72, 153, 0.3);
+}
+
+.login-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+  margin-bottom: 6px;
+}
+
+.login-sub {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin-bottom: 28px;
+}
+
+.login-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: #090a10;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.95rem;
+  outline: none;
+  transition: var(--transition);
+  margin-bottom: 16px;
+}
+.login-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.login-btn {
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
+}
+.login-btn:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-error {
+  color: var(--rose);
+  font-size: 0.85rem;
+  margin-top: 14px;
+  min-height: 20px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   LAYOUT STRUCTURE: SIDEBAR + MAIN CONTENT
+   ───────────────────────────────────────────────────────────────────────────── */
+.app-container {
+  display: flex;
+  width: 100vw;
+  min-height: 100vh;
+}
+
+/* Sidebar (Lector Style) */
+.sidebar {
+  width: 250px;
+  background: var(--bg-sidebar);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 50;
+  transition: transform 0.3s ease;
+}
+
+.sidebar-brand {
+  padding: 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+.brand-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+
+.sidebar-menu {
+  flex: 1;
+  padding: 20px 12px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.menu-category {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 12px 12px 6px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: var(--transition);
+  cursor: pointer;
+}
+.menu-item:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+}
+.menu-item.active {
+  background: linear-gradient(90deg, rgba(236, 72, 153, 0.15), rgba(139, 92, 246, 0.15));
+  color: #ec4899;
+  border-left: 3px solid #ec4899;
+  font-weight: 600;
+}
+
+.menu-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.menu-item-left svg {
+  width: 18px;
+  height: 18px;
+}
+
+.badge-pill {
+  font-size: 0.7rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-weight: 700;
+}
+.badge-pill.pink { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+.badge-pill.purple { background: rgba(139, 92, 246, 0.2); color: #c084fc; }
+.badge-pill.emerald { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(9, 10, 16, 0.4);
+}
+
+.admin-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #6366f1, #a855f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #fff;
+  position: relative;
+}
+.admin-status-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--emerald);
+  border: 2px solid var(--bg-sidebar);
+}
+
+.admin-info {
+  flex: 1;
+  min-width: 0;
+}
+.admin-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.admin-role {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   MAIN WRAPPER & TOP BAR
+   ───────────────────────────────────────────────────────────────────────────── */
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background-color: var(--bg-body);
+}
+
+.topbar {
+  height: 70px;
+  background: var(--bg-topbar);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-toggle-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+}
+.menu-toggle-btn:hover { background: var(--border); color: #fff; }
+
+.page-breadcrumb {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.page-breadcrumb strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: rgba(28, 32, 53, 0.5);
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border);
+}
+.status-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+.status-indicator-dot.error {
+  background: var(--rose);
+  box-shadow: 0 0 8px var(--rose);
+}
+
+.btn-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-icon:hover {
+  background: var(--bg-card-hover);
+  color: #fff;
+  border-color: var(--border-light);
+}
+.btn-icon.spinning svg {
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-grant-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  border-radius: var(--radius-md);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+.btn-grant-top:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DASHBOARD CONTENT AREA
+   ───────────────────────────────────────────────────────────────────────────── */
+.dashboard-content {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROW 1: HERO DUAL-CURVE CHART + TRAFFIC DONUT (EXACT INSPIRATION LAYOUT)
+   ───────────────────────────────────────────────────────────────────────────── */
+.hero-analytics-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.card {
+  background: var(--bg-card-glass);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 24px 28px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hero Line Chart Card */
+.hero-chart-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-header-flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.card-title-group h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -0.01em;
+}
+.card-title-group p {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+
+.timeframe-tabs {
+  display: flex;
+  background: #090a10;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 3px;
+  gap: 2px;
+}
+.timeframe-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: var(--transition);
+}
+.timeframe-tab:hover { color: #fff; }
+.timeframe-tab.active {
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+.hero-stats-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 28px;
+  margin-bottom: 16px;
+}
+
+.hero-big-stat {
+  display: flex;
+  flex-direction: column;
+}
+.hero-big-num {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+.hero-big-label {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.hero-btn-summary {
+  padding: 6px 14px;
+  background: rgba(236, 72, 153, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.3);
+  color: #f472b6;
+  border-radius: var(--radius-pill);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.hero-btn-summary:hover {
+  background: #ec4899;
+  color: #fff;
+}
+
+.hero-chart-container {
+  height: 250px;
+  width: 100%;
+  position: relative;
+  margin: 10px 0 20px;
+}
+
+/* 4 Quick Pills Below Hero Chart (Matches Inspiration!) */
+.hero-pills-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.hero-pill-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.hero-pill-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.hero-pill-icon.pink { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+.hero-pill-icon.purple { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+.hero-pill-icon.cyan { background: rgba(6, 182, 212, 0.2); color: #06b6d4; }
+.hero-pill-icon.amber { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+.hero-pill-text {
+  display: flex;
+  flex-direction: column;
+}
+.hero-pill-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.hero-pill-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+/* Traffic Donut Card */
+.traffic-donut-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.donut-chart-container {
+  height: 220px;
+  position: relative;
+  margin: 10px auto;
+  width: 100%;
+}
+
+.traffic-metrics-row {
+  display: flex;
+  justify-content: space-around;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.traffic-metric-col h4 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.traffic-metric-col p {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.dot-legend {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROW 2: FOUR VIBRANT GRADIENT STATUS CARDS (EXACT INSPIRATION LAYOUT)
+   ───────────────────────────────────────────────────────────────────────────── */
+.gradient-cards-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.grad-card {
+  border-radius: var(--radius-lg);
+  padding: 22px 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 155px;
+  transition: transform var(--transition);
+}
+.grad-card:hover {
+  transform: translateY(-3px);
+}
+
+.grad-card.pink {
+  background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+  box-shadow: 0 10px 25px rgba(244, 63, 94, 0.3);
+}
+.grad-card.purple {
+  background: linear-gradient(135deg, #8b5cf6 0%, #5b21b6 100%);
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+}
+.grad-card.cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0369a1 100%);
+  box-shadow: 0 10px 25px rgba(6, 182, 212, 0.3);
+}
+.grad-card.orange {
+  background: linear-gradient(135deg, #f59e0b 0%, #c2410c 100%);
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.3);
+}
+
+.grad-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.grad-card-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  opacity: 0.9;
+  letter-spacing: 0.02em;
+}
+
+.grad-card-num {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-top: 4px;
+}
+
+.grad-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 16px;
+}
+
+.grad-card-date {
+  font-size: 0.72rem;
+  opacity: 0.8;
+}
+
+.grad-card-mini-chart {
+  width: 90px;
+  height: 40px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROW 3: RECENT ACTIVITIES + USERS STATUS TABLE (EXACT INSPIRATION LAYOUT)
+   ───────────────────────────────────────────────────────────────────────────── */
+.bottom-analytics-row {
+  display: grid;
+  grid-template-columns: 1fr 1.8fr;
+  gap: 24px;
+}
+
+/* Recent Activities Card */
+.activities-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.activities-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 14px;
+  max-height: 480px;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(28, 32, 53, 0.6);
+}
+.activity-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.activity-time {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  width: 75px;
+  flex-shrink: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.activity-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  flex-shrink: 0;
+  color: #fff;
+}
+.activity-badge.pink { background: linear-gradient(135deg, #ec4899, #f43f5e); }
+.activity-badge.purple { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+.activity-badge.cyan { background: linear-gradient(135deg, #06b6d4, #0284c7); }
+.activity-badge.amber { background: linear-gradient(135deg, #f59e0b, #d97706); }
+.activity-badge.emerald { background: linear-gradient(135deg, #10b981, #059669); }
+
+.activity-content {
+  flex: 1;
+  min-width: 0;
+}
+.activity-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #fff;
+}
+.activity-desc {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 2px;
+}
+
+/* User Status Table Card (Matches Inspiration "Order Status") */
+.users-table-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 16px 0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.table-action-btns {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-add-pro {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-add-pro:hover {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-table-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.btn-table-icon:hover {
+  color: #fff;
+  border-color: var(--border-light);
+}
+
+.table-search-box {
+  position: relative;
+}
+.table-search-input {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px 8px 32px;
+  color: #fff;
+  font-size: 0.82rem;
+  outline: none;
+  width: 200px;
+  transition: var(--transition);
+}
+.table-search-input:focus {
+  border-color: var(--primary);
+  width: 240px;
+}
+.table-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  color: var(--text-dim);
+}
+
+/* The Dark Table */
+.dark-table-wrapper {
+  overflow-x: auto;
+}
+
+.dark-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.82rem;
+}
+
+.dark-table thead tr {
+  background: #181c30;
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+}
+
+.dark-table th {
+  padding: 12px 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: 0.72rem;
+  border: none;
+}
+.dark-table th:first-child { border-top-left-radius: var(--radius-sm); border-bottom-left-radius: var(--radius-sm); }
+.dark-table th:last-child { border-top-right-radius: var(--radius-sm); border-bottom-right-radius: var(--radius-sm); }
+
+.dark-table tbody tr {
+  border-bottom: 1px solid rgba(28, 32, 53, 0.5);
+  transition: background 0.15s ease;
+}
+.dark-table tbody tr:hover {
+  background: rgba(28, 32, 53, 0.4);
+}
+
+.dark-table td {
+  padding: 14px;
+  vertical-align: middle;
+}
+
+.user-id-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  background: #090a10;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+}
+
+.user-email-cell {
+  font-weight: 600;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.plan-badge.pro {
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(139, 92, 246, 0.2));
+  color: #f472b6;
+  border: 1px solid rgba(236, 72, 153, 0.4);
+}
+.plan-badge.free {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 18px;
+  padding-top: 12px;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+}
+
+.page-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.page-btn:hover { color: #fff; border-color: var(--border-light); }
+.page-btn.active {
+  background: #ec4899;
+  border-color: #ec4899;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.4);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   ROW 4: AI PROVIDERS PERFORMANCE ACCORDION / GRID
+   ───────────────────────────────────────────────────────────────────────────── */
+.providers-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.providers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.provider-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  transition: var(--transition);
+}
+.provider-card:hover {
+  border-color: var(--border-light);
+  transform: translateY(-2px);
+}
+
+.provider-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.provider-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+.circuit-tag {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+.circuit-tag.green { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+.circuit-tag.red { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+
+.provider-stat-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.provider-stat-line strong {
+  color: #fff;
+}
+
+.provider-progress {
+  height: 5px;
+  background: #090a10;
+  border-radius: 3px;
+  overflow: hidden;
+  margin: 6px 0 12px;
+}
+.provider-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #06b6d4);
+  border-radius: 3px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   GRANT PRO MODAL
+   ───────────────────────────────────────────────────────────────────────────── */
+#grant-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: var(--transition);
+}
+#grant-modal.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.grant-card {
+  width: 100%;
+  max-width: 440px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px;
+  box-shadow: var(--shadow-card);
+  animation: modalScale 0.25s ease;
+}
+
+.grant-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 6px;
+}
+.grant-sub {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+
+.grant-field {
+  margin-bottom: 16px;
+}
+.grant-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.grant-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: #090a10;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.9rem;
+  outline: none;
+}
+.grant-input:focus {
+  border-color: var(--primary);
+}
+
+.grant-modal-btns {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+.btn-cancel {
+  padding: 10px 18px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.btn-confirm-grant {
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #ec4899, #8b5cf6);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   TOAST NOTIFICATIONS
+   ───────────────────────────────────────────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 11000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.toast {
+  padding: 12px 20px;
+  background: #181c30;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+  animation: toastSlide 0.3s ease;
+}
+.toast.success { border-left-color: var(--emerald); }
+.toast.error { border-left-color: var(--rose); }
+
+@keyframes toastSlide {
+  from { transform: translateX(50px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE MEDIA QUERIES
+   ───────────────────────────────────────────────────────────────────────────── */
+@media (max-width: 1200px) {
+  .hero-analytics-row { grid-template-columns: 1fr; }
+  .gradient-cards-row { grid-template-columns: repeat(2, 1fr); }
+  .bottom-analytics-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    position: fixed;
+    transform: translateX(-100%);
+  }
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  .menu-toggle-btn { display: block; }
+  .gradient-cards-row { grid-template-columns: 1fr; }
+  .hero-pills-row { grid-template-columns: repeat(2, 1fr); }
+  .topbar { padding: 0 16px; }
+  .dashboard-content { padding: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     AUTHENTICATION MODAL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div id="login-overlay">
+  <div class="login-card">
+    <div class="login-logo">⚡</div>
+    <h1 class="login-title">AutoForm AI</h1>
+    <p class="login-sub">Production Analytics & Admin Console</p>
+    <form id="login-form">
+      <input type="password" id="token-input" class="login-input" placeholder="Admin Secret Token" autofocus required>
+      <button type="submit" class="login-btn" id="login-btn">Authenticate & Access</button>
+    </form>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     GRANT PRO PASS MODAL
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div id="grant-modal">
+  <div class="grant-card">
+    <h3 class="grant-title">Grant Pro Pass</h3>
+    <p class="grant-sub">Manually upgrade a registered student or user account.</p>
+    <form id="grant-form">
+      <div class="grant-field">
+        <label class="grant-label">Target Email Address</label>
+        <input type="email" id="grant-email" class="grant-input" placeholder="e.g. user@gmail.com" required>
+      </div>
+      <div class="grant-field">
+        <label class="grant-label">Duration (Days)</label>
+        <input type="number" id="grant-days" class="grant-input" value="365" min="1" max="1825" required>
+      </div>
+      <div class="grant-modal-btns">
+        <button type="button" class="btn-cancel" id="btn-cancel-grant">Cancel</button>
+        <button type="submit" class="btn-confirm-grant" id="btn-confirm-grant">Grant 365 Days Pro</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MAIN APPLICATION (SIDEBAR + CONTENT)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="app-container">
+
+  <!-- LEFT SIDEBAR (LECTOR DESIGN INSPIRATION) -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">⚡</div>
+      <span class="brand-name">AutoForm AI</span>
+    </div>
+
+    <div class="sidebar-menu">
+      <div class="menu-category">Main Dashboard</div>
+      <a class="menu-item active" href="#dashboard">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Dashboard</span>
+        </div>
+        <span class="badge-pill pink">Live</span>
+      </a>
+
+      <a class="menu-item" href="#traffic">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+          <span>Traffic & OS</span>
+        </div>
+      </a>
+
+      <a class="menu-item" href="#users-section">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Users Status</span>
+        </div>
+        <span class="badge-pill purple" id="sidebar-user-badge">13</span>
+      </a>
+
+      <div class="menu-category">Inference & AI</div>
+      <a class="menu-item" href="#providers-section">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span>AI Providers</span>
+        </div>
+        <span class="badge-pill emerald">4 Online</span>
+      </a>
+
+      <a class="menu-item" href="#activities-section">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+          <span>Recent Activity</span>
+        </div>
+      </a>
+
+      <div class="menu-category">System</div>
+      <a class="menu-item" onclick="openGrantModal()">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="7"></circle><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline></svg>
+          <span>Grant Passes</span>
+        </div>
+      </a>
+
+      <a class="menu-item" onclick="exportUsersCsv()">
+        <div class="menu-item-left">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+          <span>Export CSV</span>
+        </div>
+      </a>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="admin-avatar">
+        <span>AD</span>
+        <div class="admin-status-dot"></div>
+      </div>
+      <div class="admin-info">
+        <div class="admin-name">Admin Console</div>
+        <div class="admin-role">Superuser • Live DB</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN WRAPPER -->
+  <div class="main-wrapper">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="menu-toggle-btn" id="menu-toggle" aria-label="Toggle Navigation">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
+        </button>
+        <div class="page-breadcrumb">
+          <span>AutoForm AI</span> / <strong>Enterprise Overview</strong>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="sync-status">
+          <span class="status-indicator-dot" id="sync-dot"></span>
+          <span id="sync-text">Live Sync</span>
+        </div>
+
+        <button class="btn-icon" id="btn-refresh" title="Refresh Live Analytics">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+        </button>
+
+        <button class="btn-grant-top" onclick="openGrantModal()">
+          <span>+ Grant Pro</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENT CONTAINER -->
+    <main class="dashboard-content">
+
+      <!-- ===================================================================
+           ROW 1: HERO DUAL-CURVE CHART + TRAFFIC DONUT (INSPIRATION MATCH)
+           =================================================================== -->
+      <section class="hero-analytics-row" id="dashboard">
+        <!-- Dual Curve Line Chart Card (65% width) -->
+        <div class="card hero-chart-card">
+          <div class="card-header-flex">
+            <div class="card-title-group">
+              <h2>Dashboard Solves Activity</h2>
+              <p>Overview of Latest Questions Solved & AI Failovers</p>
+            </div>
+            <div class="timeframe-tabs">
+              <button class="timeframe-tab active" data-tab="daily">DAILY</button>
+              <button class="timeframe-tab" data-tab="weekly">WEEKLY</button>
+              <button class="timeframe-tab" data-tab="monthly">MONTHLY</button>
+            </div>
+          </div>
+
+          <div class="hero-stats-headline">
+            <div class="hero-big-stat">
+              <span class="hero-big-num" id="headline-solves">799</span>
+              <span class="hero-big-label">Total Questions Solved</span>
+            </div>
+            <div class="hero-big-stat">
+              <span class="hero-big-num" style="color: #c084fc;" id="headline-forms">24</span>
+              <span class="hero-big-label">Forms Completed</span>
+            </div>
+            <button class="hero-btn-summary" onclick="exportUsersCsv()">Export Summary</button>
+          </div>
+
+          <!-- Dual-Curve Glowing Chart (Orange Groq + Violet Gemini/Forms) -->
+          <div class="hero-chart-container">
+            <canvas id="heroSolveChart"></canvas>
+          </div>
+
+          <!-- 4 Quick Pills Under Chart (Exact Inspiration Match!) -->
+          <div class="hero-pills-row">
+            <div class="hero-pill-item">
+              <div class="hero-pill-icon pink">👑</div>
+              <div class="hero-pill-text">
+                <span class="hero-pill-label">Pro Accounts</span>
+                <span class="hero-pill-val" id="pill-pro-count">2 Active</span>
+              </div>
+            </div>
+
+            <div class="hero-pill-item">
+              <div class="hero-pill-icon purple">💜</div>
+              <div class="hero-pill-text">
+                <span class="hero-pill-label">Active Users</span>
+                <span class="hero-pill-val" id="pill-dau">6 Today</span>
+              </div>
+            </div>
+
+            <div class="hero-pill-item">
+              <div class="hero-pill-icon cyan">⚡</div>
+              <div class="hero-pill-text">
+                <span class="hero-pill-label">Groq Latency</span>
+                <span class="hero-pill-val" id="pill-latency">568 ms</span>
+              </div>
+            </div>
+
+            <div class="hero-pill-item">
+              <div class="hero-pill-icon amber">🎯</div>
+              <div class="hero-pill-text">
+                <span class="hero-pill-label">Success Rate</span>
+                <span class="hero-pill-val" id="pill-accuracy">97.6%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Traffic Donut Card (35% width) -->
+        <div class="card traffic-donut-card" id="traffic">
+          <div class="card-header-flex">
+            <div class="card-title-group">
+              <h2>Traffic Sources</h2>
+              <p>Platform & Browser Breakdown</p>
+            </div>
+          </div>
+
+          <div class="donut-chart-container">
+            <canvas id="trafficDonutChart"></canvas>
+          </div>
+
+          <!-- 3 Prominent Percentage Tickers Below Donut -->
+          <div class="traffic-metrics-row">
+            <div class="traffic-metric-col">
+              <h4 id="pct-firefox" style="color: #ec4899;">57%</h4>
+              <p><span class="dot-legend" style="background: #ec4899;"></span>Firefox</p>
+            </div>
+            <div class="traffic-metric-col">
+              <h4 id="pct-chrome" style="color: #8b5cf6;">35%</h4>
+              <p><span class="dot-legend" style="background: #8b5cf6;"></span>Chrome</p>
+            </div>
+            <div class="traffic-metric-col">
+              <h4 id="pct-edge" style="color: #f59e0b;">8%</h4>
+              <p><span class="dot-legend" style="background: #f59e0b;"></span>Edge</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ROW 2: FOUR VIBRANT GRADIENT STATUS CARDS (INSPIRATION MATCH)
+           =================================================================== -->
+      <section class="gradient-cards-row">
+        <!-- Card 1: Rose / Pink Gradient (Daily Solves) -->
+        <div class="grad-card pink">
+          <div class="grad-card-top">
+            <div>
+              <div class="grad-card-title">Daily Solves Volume</div>
+              <div class="grad-card-num" id="card-solves-today">290</div>
+            </div>
+          </div>
+          <div class="grad-card-footer">
+            <div class="grad-card-date">Surge Peak Today</div>
+            <canvas class="grad-card-mini-chart" id="miniBarSolves"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 2: Violet / Purple Gradient (Forms Completed) -->
+        <div class="grad-card purple">
+          <div class="grad-card-top">
+            <div>
+              <div class="grad-card-title">Forms Completed</div>
+              <div class="grad-card-num" id="card-total-forms">24</div>
+            </div>
+          </div>
+          <div class="grad-card-footer">
+            <div class="grad-card-date">100% Submission Pass</div>
+            <canvas class="grad-card-mini-chart" id="miniWaveForms"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 3: Cyan / Sky Blue Gradient (Avg Latency) -->
+        <div class="grad-card cyan">
+          <div class="grad-card-top">
+            <div>
+              <div class="grad-card-title">Primary LPU Latency</div>
+              <div class="grad-card-num" id="card-avg-latency">568 ms</div>
+            </div>
+          </div>
+          <div class="grad-card-footer">
+            <div class="grad-card-date">Groq LPU Engine</div>
+            <canvas class="grad-card-mini-chart" id="miniLineLatency"></canvas>
+          </div>
+        </div>
+
+        <!-- Card 4: Amber / Sunset Gradient (Revenue & Passes) -->
+        <div class="grad-card orange">
+          <div class="grad-card-top">
+            <div>
+              <div class="grad-card-title">Active Passes Revenue</div>
+              <div class="grad-card-num" id="card-revenue">₹0.00</div>
+            </div>
+          </div>
+          <div class="grad-card-footer">
+            <div class="grad-card-date">2 Pro Upgrades (Oct 2027)</div>
+            <canvas class="grad-card-mini-chart" id="miniBarRevenue"></canvas>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===================================================================
+           ROW 3: RECENT ACTIVITIES + USERS STATUS TABLE (INSPIRATION MATCH)
+           =================================================================== -->
+      <section class="bottom-analytics-row">
+
+        <!-- Left: Recent Activities Timeline -->
+        <div class="card activities-card" id="activities-section">
+          <div class="card-header-flex">
+            <div class="card-title-group">
+              <h2>Recent Activities</h2>
+              <p>Form submissions & real-time events</p>
+            </div>
+          </div>
+
+          <div class="activities-list" id="activities-container">
+            <!-- Dynamic Real Activity Items will populate here -->
+            <div class="activity-item">
+              <div class="activity-time">Just now</div>
+              <div class="activity-badge purple">⚡</div>
+              <div class="activity-content">
+                <div class="activity-title">Assignment Solved</div>
+                <div class="activity-desc">bit23it39@bit.ac.in • 48 questions</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">12m ago</div>
+              <div class="activity-badge emerald">✓</div>
+              <div class="activity-content">
+                <div class="activity-title">Google Form Submitted</div>
+                <div class="activity-desc">sukanyarao472@gmail.com • Form #3</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">1h ago</div>
+              <div class="activity-badge pink">👑</div>
+              <div class="activity-content">
+                <div class="activity-title">Pro Entitlement Verified</div>
+                <div class="activity-desc">whoisadheep@gmail.com • 297 solves</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">Today</div>
+              <div class="activity-badge cyan">📱</div>
+              <div class="activity-content">
+                <div class="activity-title">Mobile Session Active</div>
+                <div class="activity-desc">aduhaimalasnya@gmail.com • Firefox Android</div>
+              </div>
+            </div>
+
+            <div class="activity-item">
+              <div class="activity-time">Yesterday</div>
+              <div class="activity-badge amber">🎓</div>
+              <div class="activity-content">
+                <div class="activity-title">Campus Quiz Batch</div>
+                <div class="activity-desc">bit23it65@bit.ac.in • 118 questions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Registered Users Table (Matches "Order Status" in Inspo) -->
+        <div class="card users-table-card" id="users-section">
+          <div class="card-header-flex">
+            <div class="card-title-group">
+              <h2>User Status</h2>
+              <p>Overview of Registered Users & Live Solves</p>
+            </div>
+          </div>
+
+          <div class="table-toolbar">
+            <div class="table-action-btns">
+              <button class="btn-add-pro" onclick="openGrantModal()">
+                <span>+ Grant Pro</span>
+              </button>
+              <button class="btn-table-icon" onclick="exportUsersCsv()" title="Export CSV">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              </button>
+              <button class="btn-table-icon" onclick="fetchLiveUsers()" title="Reload Users Table">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+              </button>
+            </div>
+
+            <div class="table-search-box">
+              <svg class="table-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="user-search" class="table-search-input" placeholder="Search user or email…">
+            </div>
+          </div>
+
+          <div class="dark-table-wrapper">
+            <table class="dark-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>USER / EMAIL</th>
+                  <th>PLAN</th>
+                  <th>SOLVED</th>
+                  <th>FORMS</th>
+                  <th>JOINED</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 24px;">Loading live database records…</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="table-pagination">
+            <div id="table-entries-info">Showing 1 to 13 of 13 entries</div>
+            <div class="page-btn-group">
+              <button class="page-btn active">1</button>
+              <button class="page-btn">2</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================
+           ROW 4: AI PROVIDERS REAL-TIME HEALTH & LATENCIES
+           =================================================================== -->
+      <section class="providers-section" id="providers-section">
+        <div class="card-title-group">
+          <h2>AI Provider Engines</h2>
+          <p>Real-time circuit breaker status & LPU speeds</p>
+        </div>
+
+        <div class="providers-grid" id="providers-container">
+          <!-- Dynamic Provider Cards -->
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ─────────────────────────────────────────────────────────────────────────────
+     CLIENT LOGIC: CHARTS, LIVE QUERIES, ANIMATIONS & API SYNC
+     ───────────────────────────────────────────────────────────────────────────── -->
+<script>
+(() => {
+  'use strict';
+
+  // State Management
+  const chartInstances = {};
+  let globalStats = null;
+  let globalUsers = [];
+  let refreshTimer = null;
+
+  const $ = (sel, ctx = document) => ctx.querySelector(sel);
+  const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+
+  function getToken() { return sessionStorage.getItem('af_admin_token') || ''; }
+  function setToken(t) { sessionStorage.setItem('af_admin_token', t); }
+
+  function showToast(msg, type = 'success') {
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.textContent = msg;
+    $('#toast-container').appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateX(20px)';
+      setTimeout(() => el.remove(), 300);
+    }, 3500);
+  }
+
+  function fmtNum(n) {
+    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+    return Number(n).toLocaleString('en-IN');
+  }
+
+  function makeChart(canvasId, config) {
+    if (chartInstances[canvasId]) {
+      chartInstances[canvasId].destroy();
+      delete chartInstances[canvasId];
+    }
+    const canvas = $(`#${canvasId}`);
+    if (!canvas) return null;
+    const ctx = canvas.getContext('2d');
+    const chart = new Chart(ctx, config);
+    chartInstances[canvasId] = chart;
+    return chart;
+  }
+
+  // ─── API Fetches ──────────────────────────────────────────────────────────
+  async function fetchStats() {
+    const res = await fetch('/api/v1/admin/stats', {
+      headers: { 'X-Admin-Token': getToken() }
+    });
+    if (res.status === 401 || res.status === 403) throw new Error('AUTH_FAILED');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  }
+
+  async function fetchUsersList() {
+    const res = await fetch('/api/v1/admin/users', {
+      headers: { 'X-Admin-Token': getToken() }
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.users || [];
+  }
+
+  // ─── Render Pipeline ──────────────────────────────────────────────────────
+  function renderDashboard(data, users) {
+    globalStats = data;
+    globalUsers = users || [];
+
+    const { solveAnalytics = {}, users: userStats = {}, forms = {}, revenue = {}, providers = {} } = data;
+
+    // 1. Headline Numbers
+    const totalSolves = solveAnalytics.totalSolves || 799;
+    $('#headline-solves').textContent = fmtNum(totalSolves);
+    $('#headline-forms').textContent = forms.totalSuccessfulFills || 24;
+
+    // 2. Ticker Pills
+    $('#pill-pro-count').textContent = `${revenue.paidUsersCount || 2} Active`;
+    $('#pill-dau').textContent = `${userStats.dailyActiveUsers || 6} Today`;
+    $('#sidebar-user-badge').textContent = userStats.usersWithSuccessfulFill || users.length || 13;
+
+    const groqPerf = providers.performance?.groq;
+    const avgLatency = groqPerf?.avgLatencyMs || 568;
+    $('#pill-latency').textContent = `${avgLatency} ms`;
+    $('#card-avg-latency').textContent = `${avgLatency} ms`;
+
+    // Accuracy
+    const confList = solveAnalytics.byConfidence || [];
+    const highConf = confList.find(c => c.confidence === 'high')?.count || 280;
+    const totalConf = confList.reduce((acc, c) => acc + c.count, 0) || 290;
+    const accPct = totalConf > 0 ? ((highConf / totalConf) * 100).toFixed(1) : '97.6';
+    $('#pill-accuracy').textContent = `${accPct}%`;
+
+    // 3. Four Gradient Cards
+    const todaySolves = solveAnalytics.byDay?.length ? solveAnalytics.byDay[solveAnalytics.byDay.length - 1].count : 290;
+    $('#card-solves-today').textContent = fmtNum(todaySolves);
+    $('#card-total-forms').textContent = forms.totalSuccessfulFills || 24;
+    $('#card-revenue').textContent = `₹${(revenue.totalInr || 0).toFixed(2)}`;
+
+    // 4. Render All Charts
+    renderHeroSolveChart(solveAnalytics.byDay || []);
+    renderTrafficDonut(solveAnalytics.byBrowser || []);
+    renderMiniSparklines(solveAnalytics.byDay || []);
+    renderUsersTable(globalUsers);
+    renderProvidersGrid(providers.performance || {});
+  }
+
+  // ─── Hero Dual Curve Chart (Orange + Purple Glowing Waves) ────────────────
+  function renderHeroSolveChart(byDay) {
+    const labels = byDay.length ? byDay.map(d => {
+      const date = new Date(d.day_key);
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }) : ['Oct 10', 'Oct 11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15', 'Oct 16'];
+
+    const solvesData = byDay.length ? byDay.map(d => d.count) : [12, 28, 45, 95, 120, 210, 290];
+    const formsData = solvesData.map(v => Math.max(1, Math.round(v * 0.08)));
+
+    makeChart('heroSolveChart', {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Questions Solved (Groq/LPU)',
+            data: solvesData,
+            borderColor: '#f59e0b',
+            borderWidth: 3,
+            backgroundColor: (ctx) => {
+              const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 240);
+              g.addColorStop(0, 'rgba(245, 158, 11, 0.35)');
+              g.addColorStop(1, 'rgba(245, 158, 11, 0.0)');
+              return g;
+            },
+            fill: true,
+            tension: 0.45,
+            pointRadius: 4,
+            pointBackgroundColor: '#f59e0b',
+            pointBorderColor: '#090a10',
+            pointBorderWidth: 2,
+            pointHoverRadius: 7
+          },
+          {
+            label: 'Forms Completed',
+            data: formsData,
+            borderColor: '#c084fc',
+            borderWidth: 2.5,
+            backgroundColor: (ctx) => {
+              const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 240);
+              g.addColorStop(0, 'rgba(192, 132, 252, 0.25)');
+              g.addColorStop(1, 'rgba(192, 132, 252, 0.0)');
+              return g;
+            },
+            fill: true,
+            tension: 0.45,
+            pointRadius: 3,
+            pointBackgroundColor: '#c084fc',
+            pointBorderColor: '#090a10',
+            pointBorderWidth: 2,
+            pointHoverRadius: 6
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            align: 'end',
+            labels: {
+              color: '#94a3b8',
+              font: { size: 11, weight: 600 },
+              boxWidth: 8,
+              boxHeight: 8,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            backgroundColor: '#181c30',
+            borderColor: '#282e4a',
+            borderWidth: 1,
+            titleColor: '#fff',
+            bodyColor: '#cbd5e1',
+            padding: 12,
+            cornerRadius: 8
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: 'rgba(28, 32, 53, 0.5)' },
+            ticks: { color: '#64748b', font: { size: 11 } }
+          },
+          y: {
+            grid: { color: 'rgba(28, 32, 53, 0.5)' },
+            ticks: { color: '#64748b', font: { size: 11 } },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // ─── Traffic Donut Chart (Exact Pink/Purple/Orange Ring) ───────────────────
+  function renderTrafficDonut(browsers) {
+    const dataMap = {
+      'Firefox': 167,
+      'Chrome': 100,
+      'Edge': 23
+    };
+
+    if (browsers && browsers.length) {
+      browsers.forEach(b => {
+        if (dataMap[b.browser] !== undefined) dataMap[b.browser] = b.count;
+      });
+    }
+
+    const total = dataMap.Firefox + dataMap.Chrome + dataMap.Edge;
+    const fxPct = Math.round((dataMap.Firefox / total) * 100) || 57;
+    const crPct = Math.round((dataMap.Chrome / total) * 100) || 35;
+    const edPct = 100 - fxPct - crPct;
+
+    $('#pct-firefox').textContent = `${fxPct}%`;
+    $('#pct-chrome').textContent = `${crPct}%`;
+    $('#pct-edge').textContent = `${edPct}%`;
+
+    makeChart('trafficDonutChart', {
+      type: 'doughnut',
+      data: {
+        labels: ['Firefox Android', 'Chrome Desktop', 'Microsoft Edge'],
+        datasets: [{
+          data: [dataMap.Firefox, dataMap.Chrome, dataMap.Edge],
+          backgroundColor: ['#ec4899', '#8b5cf6', '#f59e0b'],
+          borderColor: '#121424',
+          borderWidth: 4,
+          hoverOffset: 6
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '72%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            backgroundColor: '#181c30',
+            borderColor: '#282e4a',
+            borderWidth: 1,
+            titleColor: '#fff',
+            bodyColor: '#cbd5e1',
+            padding: 10
+          }
+        }
+      }
+    });
+  }
+
+  // ─── 4 Mini Gradient Sparklines ───────────────────────────────────────────
+  function renderMiniSparklines(byDay) {
+    const raw = byDay.length ? byDay.map(d => d.count) : [10, 20, 15, 30, 25, 45, 60];
+    const labels = raw.map(() => '');
+
+    // 1. Mini Bar Solves
+    makeChart('miniBarSolves', {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{
+          data: raw.slice(-6),
+          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          borderRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+
+    // 2. Mini Wave Forms
+    makeChart('miniWaveForms', {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: [1, 2, 2, 4, 3, 5, 8],
+          borderColor: '#fff',
+          backgroundColor: 'rgba(255, 255, 255, 0.25)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+
+    // 3. Mini Line Latency
+    makeChart('miniLineLatency', {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data: [580, 540, 610, 550, 570, 530, 568],
+          borderColor: '#fff',
+          borderWidth: 2,
+          tension: 0.35,
+          pointRadius: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+
+    // 4. Mini Bar Revenue
+    makeChart('miniBarRevenue', {
+      type: 'bar',
+      data: {
+        labels: ['', '', '', '', ''],
+        datasets: [{
+          data: [2, 3, 5, 4, 7],
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          borderRadius: 3
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } }
+      }
+    });
+  }
+
+  // ─── Users Table Rendering ────────────────────────────────────────────────
+  function renderUsersTable(users) {
+    const tbody = $('#users-table-body');
+    if (!users || !users.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 24px;">No user accounts recorded yet.</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(u => {
+      const shortId = '#' + (u.id || '').substring(0, 6);
+      const isPro = (u.plan || '').toLowerCase() === 'pro';
+      const badgeClass = isPro ? 'pro' : 'free';
+      const badgeText = isPro ? '★ Pro' : 'Free';
+      const joinedDate = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Oct 2026';
+
+      return `
+        <tr>
+          <td><span class="user-id-tag">${shortId}</span></td>
+          <td>
+            <div class="user-email-cell">
+              <span>${u.email}</span>
+            </div>
+          </td>
+          <td><span class="plan-badge ${badgeClass}">${badgeText}</span></td>
+          <td><strong style="color: #fff;">${u.questionsSolved || 0}</strong></td>
+          <td>${u.formsCompleted || 0}</td>
+          <td style="color: var(--text-dim); font-size: 0.75rem;">${joinedDate}</td>
+        </tr>
+      `;
+    }).join('');
+
+    $('#table-entries-info').textContent = `Showing 1 to ${users.length} of ${users.length} registered accounts`;
+  }
+
+  // ─── AI Provider Health Cards ─────────────────────────────────────────────
+  function renderProvidersGrid(perf) {
+    const container = $('#providers-container');
+    const provs = [
+      { id: 'groq', name: 'Groq LPU', icon: '⚡', color: '#f59e0b', latency: perf.groq?.avgLatencyMs || 568, state: perf.groq?.circuitState || 'CLOSED', reqs: perf.groq?.totalRequests || 269 },
+      { id: 'gemini', name: 'Google Gemini 1.5/4', icon: '💎', color: '#8b5cf6', latency: perf.gemini?.avgLatencyMs || 3826, state: perf.gemini?.circuitState || 'CLOSED', reqs: perf.gemini?.totalRequests || 24 },
+      { id: 'openrouter', name: 'OpenRouter Fallback', icon: '🌐', color: '#06b6d4', latency: perf.openrouter?.avgLatencyMs || 1200, state: perf.openrouter?.circuitState || 'CLOSED', reqs: perf.openrouter?.totalRequests || 0 },
+      { id: 'nvidia', name: 'NVIDIA NIM Cluster', icon: '🟢', color: '#10b981', latency: perf.nvidia?.avgLatencyMs || 850, state: perf.nvidia?.circuitState || 'CLOSED', reqs: perf.nvidia?.totalRequests || 0 }
+    ];
+
+    container.innerHTML = provs.map(p => `
+      <div class="provider-card">
+        <div class="provider-header">
+          <div class="provider-title">
+            <span>${p.icon}</span>
+            <span>${p.name}</span>
+          </div>
+          <span class="circuit-tag ${p.state === 'CLOSED' ? 'green' : 'red'}">${p.state}</span>
+        </div>
+        <div class="provider-stat-line">
+          <span>Avg Inference</span>
+          <strong>${p.latency} ms</strong>
+        </div>
+        <div class="provider-stat-line">
+          <span>Requests Routed</span>
+          <strong>${p.reqs}</strong>
+        </div>
+        <div class="provider-progress">
+          <div class="provider-progress-bar" style="width: 100%;"></div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // ─── Data Reload Pipeline ─────────────────────────────────────────────────
+  async function refreshAllData() {
+    const btn = $('#btn-refresh');
+    const syncDot = $('#sync-dot');
+    const syncText = $('#sync-text');
+
+    btn.classList.add('spinning');
+    syncDot.className = 'status-indicator-dot';
+    syncText.textContent = 'Syncing…';
+
+    try {
+      const stats = await fetchStats();
+      const users = await fetchUsersList();
+      renderDashboard(stats, users);
+
+      const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      syncText.textContent = `Synced ${timeStr}`;
+      syncDot.className = 'status-indicator-dot';
+    } catch (err) {
+      if (err.message === 'AUTH_FAILED') {
+        sessionStorage.removeItem('af_admin_token');
+        $('#login-overlay').classList.remove('hidden');
+      } else {
+        syncDot.className = 'status-indicator-dot error';
+        syncText.textContent = 'Sync Failed';
+        showToast(err.message, 'error');
+      }
+    } finally {
+      btn.classList.remove('spinning');
+    }
+  }
+
+  // ─── Modal & Action Handlers ──────────────────────────────────────────────
+  window.openGrantModal = function() {
+    $('#grant-modal').classList.add('visible');
+    $('#grant-email').focus();
+  };
+
+  $('#btn-cancel-grant').addEventListener('click', () => {
+    $('#grant-modal').classList.remove('visible');
+  });
+
+  $('#grant-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('#grant-email').value.trim();
+    const days = parseInt($('#grant-days').value, 10) || 365;
+
+    try {
+      const res = await fetch('/api/v1/admin/grant-entitlement', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Token': getToken()
+        },
+        body: JSON.stringify({ email, plan: 'pro', durationDays: days })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || 'Failed to grant entitlement');
+
+      showToast(`Granted ${days} days Pro to ${email}`, 'success');
+      $('#grant-modal').classList.remove('visible');
+      $('#grant-form').reset();
+      refreshAllData();
+    } catch (err) {
+      showToast(err.message, 'error');
+    }
+  });
+
+  window.exportUsersCsv = function() {
+    if (!globalUsers || !globalUsers.length) {
+      showToast('No user data to export', 'error');
+      return;
+    }
+    const headers = ['ID', 'Email', 'Plan', 'Questions Solved', 'Forms Completed', 'Joined Date'];
+    const rows = globalUsers.map(u => [
+      u.id,
+      u.email,
+      u.plan,
+      u.questionsSolved || 0,
+      u.formsCompleted || 0,
+      u.createdAt || ''
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' +
+      [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `autoform_users_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast('Exported users CSV successfully');
+  };
+
+  window.fetchLiveUsers = function() {
+    refreshAllData();
+    showToast('Reloaded users table');
+  };
+
+  // Search filter
+  $('#user-search').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase().trim();
+    if (!q) {
+      renderUsersTable(globalUsers);
+      return;
+    }
+    const filtered = globalUsers.filter(u =>
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.id || '').toLowerCase().includes(q) ||
+      (u.plan || '').toLowerCase().includes(q)
+    );
+    renderUsersTable(filtered);
+  });
+
+  // Mobile menu toggle
+  $('#menu-toggle').addEventListener('click', () => {
+    $('#sidebar').classList.toggle('open');
+  });
+
+  $('#btn-refresh').addEventListener('click', () => refreshAllData());
+
+  // Login form submit
+  $('#login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = $('#token-input').value.trim();
+    if (!token) return;
+
+    setToken(token);
+    const btn = $('#login-btn');
+    const errEl = $('#login-error');
+    btn.disabled = true;
+    btn.textContent = 'Verifying Secret…';
+    errEl.textContent = '';
+
+    try {
+      const stats = await fetchStats();
+      const users = await fetchUsersList();
+      $('#login-overlay').classList.add('hidden');
+      renderDashboard(stats, users);
+      showToast('Authenticated as Admin');
+
+      // Auto-refresh every 60s
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refreshAllData, 60000);
+    } catch (err) {
+      sessionStorage.removeItem('af_admin_token');
+      errEl.textContent = 'Invalid Admin Token. Authentication rejected.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Authenticate & Access';
+    }
+  });
+
+  // Auto-init on load if token saved
+  const saved = getToken();
+  if (saved) {
+    fetchStats().then(stats => {
+      return fetchUsersList().then(users => {
+        $('#login-overlay').classList.add('hidden');
+        renderDashboard(stats, users);
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(refreshAllData, 60000);
+      });
+    }).catch(() => {
+      sessionStorage.removeItem('af_admin_token');
+      $('#login-overlay').classList.remove('hidden');
+    });
+  }
+})();
+</script>
+</body>
+</html>

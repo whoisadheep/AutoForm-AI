@@ -5,9 +5,42 @@
  */
 
 const crypto = require('crypto');
+const fs = require('fs');
 const path = require('path');
 const express = require('express');
 const cors = require('cors');
+
+/**
+ * Resolves static site assets across different hosting setups:
+ * - Local monorepo: AutoForm-AI/site/...
+ * - Server subfolder / Docker container: server/site/...
+ */
+function resolveSiteFile(relPath) {
+    const candidates = [
+        path.resolve(__dirname, '../site', relPath),
+        path.resolve(__dirname, '../../site', relPath),
+        path.resolve(__dirname, 'site', relPath),
+        path.resolve(process.cwd(), 'site', relPath),
+        path.resolve(process.cwd(), '../site', relPath)
+    ];
+    for (const c of candidates) {
+        if (fs.existsSync(c)) return c;
+    }
+    return candidates[0];
+}
+
+const siteStaticDir = (() => {
+    const candidates = [
+        path.resolve(__dirname, '../site'),
+        path.resolve(__dirname, '../../site'),
+        path.resolve(__dirname, 'site'),
+        path.resolve(process.cwd(), 'site')
+    ];
+    for (const c of candidates) {
+        if (fs.existsSync(c)) return c;
+    }
+    return candidates[0];
+})();
 const config = require('./config');
 const router = require('./services/router');
 const { rateLimiter, getQuotaStatus } = require('./middleware/rateLimiter');
@@ -94,11 +127,11 @@ app.post('/api/v1/payments/webhook', express.raw({ type: 'application/json' }), 
 app.use(express.json({ limit: '1mb' }));
 
 // Static documentation, terms, privacy, and refund pages
-app.use('/site', express.static(path.resolve(__dirname, '../../site')));
-app.get('/privacy', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/privacy.html')));
-app.get('/terms', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/terms.html')));
-app.get('/refund', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/refund.html')));
-app.get('/contact', (req, res) => res.sendFile(path.resolve(__dirname, '../../site/contact.html')));
+app.use('/site', express.static(siteStaticDir));
+app.get('/privacy', (req, res) => res.sendFile(resolveSiteFile('privacy.html')));
+app.get('/terms', (req, res) => res.sendFile(resolveSiteFile('terms.html')));
+app.get('/refund', (req, res) => res.sendFile(resolveSiteFile('refund.html')));
+app.get('/contact', (req, res) => res.sendFile(resolveSiteFile('contact.html')));
 
 // Smart Store Review / Rating Redirect Endpoint
 // Detects browser (Edge, Firefox, Chrome) and routes user directly to official store reviews tab
@@ -1053,7 +1086,7 @@ app.get(['/admin/analytics', '/api/v1/admin/analytics'], rateLimiter, requireAdm
 // Admin Dashboard (Hosted UI)
 // Serves the analytics dashboard HTML page. Auth is handled client-side via token prompt.
 app.get(['/admin/dashboard', '/admin', '/dashboard'], (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../../site/admin/dashboard.html'));
+    res.sendFile(resolveSiteFile('admin/dashboard.html'));
 });
 
 // Admin Users List Endpoint
