@@ -1050,6 +1050,82 @@ app.get(['/admin/analytics', '/api/v1/admin/analytics'], rateLimiter, requireAdm
     }
 });
 
+// Admin Dashboard (Hosted UI)
+// Serves the analytics dashboard HTML page. Auth is handled client-side via token prompt.
+app.get(['/admin/dashboard', '/admin', '/dashboard'], (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../../site/admin/dashboard.html'));
+});
+
+// Admin Users List Endpoint
+// Returns all registered users with entitlements and usage stats for the admin dashboard.
+app.get(['/admin/users', '/api/v1/admin/users'], rateLimiter, requireAdminAuth, async (req, res) => {
+    try {
+        const { Pool } = require('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+            return res.status(500).json({ success: false, error: 'DATABASE_URL not configured.' });
+        }
+
+        const pool = new Pool({
+            connectionString: dbUrl,
+            ssl: dbUrl.includes('render.com') ? { rejectUnauthorized: false } : undefined
+        });
+
+        try {
+            const result = await pool.query(`
+                SELECT 
+                    u.id,
+                    u.email,
+                    u.created_at,
+                    COALESCE(e.plan, 'free') AS plan,
+                    e.expires_at AS plan_expires_at,
+                    COALESCE(forms.forms_completed, 0) AS forms_completed,
+                    COALESCE(solves.total_solves, 0) AS questions_solved,
+                    forms.last_form_at
+                FROM users u
+                LEFT JOIN (
+                    SELECT DISTINCT ON (user_id) user_id, plan, expires_at
+                    FROM entitlements
+                    WHERE expires_at > NOW() OR expires_at IS NULL
+                    ORDER BY user_id, starts_at DESC
+                ) e ON e.user_id = u.id
+                LEFT JOIN (
+                    SELECT user_id, COUNT(*) AS forms_completed, MAX(created_at) AS last_form_at
+                    FROM usage_events
+                    WHERE success = true
+                    GROUP BY user_id
+                ) forms ON forms.user_id = u.id
+                LEFT JOIN (
+                    SELECT user_id, SUM(solve_count) AS total_solves
+                    FROM daily_solve_counts
+                    GROUP BY user_id
+                ) solves ON solves.user_id = u.id
+                ORDER BY questions_solved DESC, forms_completed DESC, u.created_at DESC;
+            `);
+
+            res.json({
+                success: true,
+                totalUsers: result.rows.length,
+                users: result.rows.map(r => ({
+                    id: r.id,
+                    email: r.email,
+                    plan: r.plan,
+                    planExpiresAt: r.plan_expires_at,
+                    questionsSolved: Number(r.questions_solved),
+                    formsCompleted: Number(r.forms_completed),
+                    lastActiveAt: r.last_form_at,
+                    createdAt: r.created_at
+                }))
+            });
+        } finally {
+            await pool.end();
+        }
+    } catch (err) {
+        console.error('[Admin Users Error]:', err.message);
+        res.status(500).json({ success: false, error: 'Failed to retrieve users list.' });
+    }
+});
+
 // Diagnostic Debug IP Route
 // Shows resolved req.ip, socket remoteAddress, raw X-Forwarded-For, and trust proxy hop count.
 // Gated by process.env.DEBUG_IP_ENDPOINT === 'true' or ADMIN_STATS_TOKEN header. Disabled by default.
