@@ -1388,27 +1388,346 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   RESPONSIVE MEDIA QUERIES
+   SIDEBAR BACKDROP & DRAWER CONTROLS
    ───────────────────────────────────────────────────────────────────────────── */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+  pointer-events: none;
+}
+.sidebar-backdrop.visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.sidebar-close-btn {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  margin-left: auto;
+  transition: var(--transition);
+}
+.sidebar-close-btn:hover {
+  background: var(--bg-card-hover);
+  color: #fff;
+  border-color: var(--border-light);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   RESPONSIVE MEDIA QUERIES (DESKTOP, TABLET, MOBILE)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* Large Tablets & Small Laptops (max-width: 1200px) */
 @media (max-width: 1200px) {
   .hero-analytics-row { grid-template-columns: 1fr; }
   .gradient-cards-row { grid-template-columns: repeat(2, 1fr); }
   .bottom-analytics-row { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 768px) {
+/* Tablet Portrait & iPad Mode (max-width: 1024px) */
+@media (max-width: 1024px) {
   .sidebar {
     position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 60;
     transform: translateX(-100%);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.85);
+    transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   }
   .sidebar.open {
     transform: translateX(0);
   }
-  .menu-toggle-btn { display: block; }
-  .gradient-cards-row { grid-template-columns: 1fr; }
-  .hero-pills-row { grid-template-columns: repeat(2, 1fr); }
-  .topbar { padding: 0 16px; }
-  .dashboard-content { padding: 16px; }
+  .sidebar-close-btn {
+    display: flex;
+  }
+  .menu-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  .topbar {
+    padding: 0 20px;
+  }
+  .dashboard-content {
+    padding: 20px;
+    gap: 20px;
+  }
+  .hero-analytics-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+  .gradient-cards-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+  .bottom-analytics-row {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+}
+
+/* Standard Mobile & Phablets (max-width: 768px) */
+@media (max-width: 768px) {
+  body {
+    overflow-x: hidden;
+  }
+
+  .topbar {
+    padding: 0 14px;
+    height: 58px;
+  }
+  .breadcrumb-brand,
+  .breadcrumb-sep {
+    display: none;
+  }
+  .breadcrumb-page {
+    font-size: 0.95rem;
+  }
+
+  .btn-icon {
+    min-width: 40px;
+    min-height: 40px;
+  }
+  .btn-grant-top {
+    min-height: 38px;
+    padding: 6px 12px;
+  }
+
+  .dashboard-content {
+    padding: 14px;
+    gap: 16px;
+  }
+
+  .card {
+    padding: 18px 16px;
+  }
+
+  /* Hero Section Mobile */
+  .hero-stats-headline {
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .hero-big-stat {
+    flex: 1 1 120px;
+  }
+  .hero-big-num {
+    font-size: 1.95rem;
+  }
+  .hero-btn-summary {
+    width: 100%;
+    text-align: center;
+    padding: 9px 14px;
+    min-height: 38px;
+  }
+
+  .hero-chart-container {
+    height: 220px;
+  }
+  .donut-chart-container {
+    height: 200px;
+  }
+
+  .hero-pills-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .traffic-metrics-row {
+    padding-top: 12px;
+  }
+  .traffic-metric-col h4 {
+    font-size: 1.25rem;
+  }
+
+  /* Table Controls Mobile */
+  .table-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  .table-action-btns {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+  .btn-add-pro {
+    min-height: 38px;
+    padding: 8px 14px;
+  }
+  .btn-table-icon {
+    min-width: 38px;
+    min-height: 38px;
+  }
+  .table-search-box {
+    width: 100%;
+  }
+  .table-search-input {
+    width: 100% !important;
+    min-height: 40px;
+    padding: 8px 12px 8px 34px;
+  }
+
+  .dark-table-wrapper {
+    -webkit-overflow-scrolling: touch;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+  }
+  .dark-table {
+    min-width: 580px;
+  }
+
+  .table-pagination {
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+  }
+  .page-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
+}
+
+/* Small Mobile & iOS Safari Form Standards (max-width: 600px) */
+@media (max-width: 600px) {
+  /* Enforce font-size >= 16px to prevent iOS Safari auto-zooming */
+  input[type="text"],
+  input[type="password"],
+  input[type="email"],
+  input[type="number"],
+  input[type="search"],
+  .login-input,
+  .grant-input,
+  .table-search-input {
+    font-size: 16px !important;
+  }
+
+  /* Touch-friendly login modal */
+  .login-card {
+    padding: 28px 18px;
+    width: calc(100% - 24px);
+    margin: 12px auto;
+  }
+  .login-input {
+    min-height: 48px;
+    padding: 12px 14px;
+  }
+  .login-btn {
+    min-height: 48px;
+    padding: 13px;
+    font-size: 0.95rem;
+  }
+
+  /* Touch-friendly grant modal */
+  .grant-card {
+    padding: 24px 18px;
+    width: calc(100% - 24px);
+    margin: 12px auto;
+  }
+  .grant-input {
+    min-height: 44px;
+  }
+  .btn-confirm-grant,
+  .btn-cancel {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  /* KPI cards single column on phones */
+  .gradient-cards-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .grad-card {
+    min-height: 135px;
+    padding: 16px 18px;
+  }
+
+  .hero-chart-container {
+    height: 195px;
+  }
+  .donut-chart-container {
+    height: 185px;
+  }
+
+  /* Compact Topbar */
+  .sync-status {
+    padding: 4px 8px;
+  }
+  .sync-status span:not(.status-indicator-dot) {
+    display: none;
+  }
+  .btn-grant-top .btn-grant-text {
+    display: none;
+  }
+  .btn-grant-top {
+    min-width: 36px;
+    padding: 0 10px;
+    justify-content: center;
+  }
+  .btn-grant-top::after {
+    content: '+';
+    font-size: 1.15rem;
+    font-weight: 700;
+  }
+
+  .timeframe-tabs {
+    padding: 2px;
+  }
+  .timeframe-tab {
+    padding: 5px 8px;
+    font-size: 0.65rem;
+  }
+
+  .providers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-item {
+    gap: 10px;
+  }
+  .activity-time {
+    font-size: 0.68rem;
+    width: 60px;
+  }
+}
+
+/* Ultra-Narrow Screens (max-width: 380px) */
+@media (max-width: 380px) {
+  .hero-pills-row {
+    grid-template-columns: 1fr;
+  }
+  .hero-stats-headline {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .topbar {
+    padding: 0 8px;
+  }
+  .dashboard-content {
+    padding: 10px;
+  }
 }
 </style>
 </head>
@@ -1486,6 +1805,9 @@ body {
         </svg>
       </div>
       <span class="brand-name">AutoForm AI</span>
+      <button type="button" class="sidebar-close-btn" id="sidebar-close" aria-label="Close Navigation Drawer">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
 
     <div class="sidebar-menu">
@@ -1560,6 +1882,9 @@ body {
     </div>
   </aside>
 
+  <!-- SIDEBAR BACKDROP OVERLAY FOR TABLET & MOBILE -->
+  <div class="sidebar-backdrop" id="sidebar-backdrop" aria-hidden="true"></div>
+
   <!-- MAIN WRAPPER -->
   <div class="main-wrapper">
 
@@ -1570,7 +1895,7 @@ body {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
         </button>
         <div class="page-breadcrumb">
-          <span>AutoForm AI</span> / <strong>Admin Console</strong>
+          <span class="breadcrumb-brand">AutoForm AI</span><span class="breadcrumb-sep"> / </span><strong class="breadcrumb-page">Admin Console</strong>
         </div>
       </div>
 
@@ -1585,7 +1910,7 @@ body {
         </button>
 
         <button class="btn-grant-top" onclick="openGrantModal()">
-          <span>+ Grant Pro</span>
+          <span class="btn-grant-text">+ Grant Pro</span>
         </button>
       </div>
     </header>
@@ -2710,9 +3035,46 @@ body {
     });
   });
 
-  // Mobile menu toggle
-  $('#menu-toggle').addEventListener('click', () => {
-    $('#sidebar').classList.toggle('open');
+  // ─── Mobile & Tablet Sidebar Drawer Controller ──────────────────────────
+  function openSidebar() {
+    $('#sidebar')?.classList.add('open');
+    $('#sidebar-backdrop')?.classList.add('visible');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSidebar() {
+    $('#sidebar')?.classList.remove('open');
+    $('#sidebar-backdrop')?.classList.remove('visible');
+    document.body.style.overflow = '';
+  }
+
+  $('#menu-toggle')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if ($('#sidebar')?.classList.contains('open')) {
+      closeSidebar();
+    } else {
+      openSidebar();
+    }
+  });
+
+  $('#sidebar-close')?.addEventListener('click', closeSidebar);
+  $('#sidebar-backdrop')?.addEventListener('click', closeSidebar);
+
+  // Close drawer and modals on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeSidebar();
+      $('#grant-modal')?.classList.remove('visible');
+    }
+  });
+
+  // Auto-close sidebar on mobile/tablet when clicking any navigation link
+  $$('.sidebar .menu-item').forEach(item => {
+    item.addEventListener('click', () => {
+      if (window.innerWidth <= 1024) {
+        closeSidebar();
+      }
+    });
   });
 
   $('#btn-refresh').addEventListener('click', () => refreshAllData());
