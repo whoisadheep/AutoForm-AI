@@ -1133,6 +1133,7 @@ app.get(['/admin/users', '/api/v1/admin/users'], rateLimiter, requireAdminAuth, 
                     FROM daily_solve_counts
                     GROUP BY user_id
                 ) solves ON solves.user_id = u.id
+                WHERE u.email NOT LIKE '%@example.com'
                 ORDER BY questions_solved DESC, forms_completed DESC, u.created_at DESC;
             `);
 
@@ -1185,7 +1186,7 @@ app.get(['/admin/activities', '/api/v1/admin/activities'], rateLimiter, requireA
                         ue.created_at
                     FROM usage_events ue
                     JOIN users u ON u.id = ue.user_id
-                    WHERE ue.success = true
+                    WHERE ue.success = true AND u.email NOT LIKE '%@example.com'
                     ORDER BY ue.created_at DESC
                     LIMIT 10
                 )
@@ -1198,6 +1199,7 @@ app.get(['/admin/activities', '/api/v1/admin/activities'], rateLimiter, requireA
                         NULL AS sub_detail,
                         created_at
                     FROM users
+                    WHERE email NOT LIKE '%@example.com'
                     ORDER BY created_at DESC
                     LIMIT 10
                 )
@@ -1211,7 +1213,7 @@ app.get(['/admin/activities', '/api/v1/admin/activities'], rateLimiter, requireA
                         p.created_at
                     FROM payments p
                     JOIN users u ON u.id = p.user_id
-                    WHERE p.status = 'captured'
+                    WHERE p.status = 'captured' AND u.email NOT LIKE '%@example.com'
                     ORDER BY p.created_at DESC
                     LIMIT 10
                 )

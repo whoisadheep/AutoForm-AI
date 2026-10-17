@@ -1335,6 +1335,7 @@ async function getAdminStats(todayIst = getTodayDateKeyIST()) {
             `SELECT to_char(created_at AT TIME ZONE 'Asia/Kolkata', 'YYYY-MM-DD') AS date, 
                     COUNT(*)::int AS count
              FROM users
+             WHERE email NOT LIKE '%@example.com'
              GROUP BY date
              ORDER BY date DESC
              LIMIT 30`
