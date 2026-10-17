@@ -1159,6 +1159,87 @@ app.get(['/admin/users', '/api/v1/admin/users'], rateLimiter, requireAdminAuth, 
     }
 });
 
+// Admin Real-Time Recent Activities Endpoint
+// Returns actual chronological events from the database: form completions, new user signups, and payments.
+app.get(['/admin/activities', '/api/v1/admin/activities'], rateLimiter, requireAdminAuth, async (req, res) => {
+    try {
+        const { Pool } = require('pg');
+        const dbUrl = process.env.DATABASE_URL;
+        if (!dbUrl) {
+            return res.status(500).json({ success: false, error: 'DATABASE_URL not configured.' });
+        }
+
+        const pool = new Pool({
+            connectionString: dbUrl,
+            ssl: dbUrl.includes('render.com') ? { rejectUnauthorized: false } : undefined
+        });
+
+        try {
+            const query = `
+                (
+                    SELECT 
+                        'form' AS event_type,
+                        u.email,
+                        ue.form_type_category AS detail,
+                        NULL AS sub_detail,
+                        ue.created_at
+                    FROM usage_events ue
+                    JOIN users u ON u.id = ue.user_id
+                    WHERE ue.success = true
+                    ORDER BY ue.created_at DESC
+                    LIMIT 10
+                )
+                UNION ALL
+                (
+                    SELECT 
+                        'signup' AS event_type,
+                        email,
+                        'New Account Created' AS detail,
+                        NULL AS sub_detail,
+                        created_at
+                    FROM users
+                    ORDER BY created_at DESC
+                    LIMIT 10
+                )
+                UNION ALL
+                (
+                    SELECT 
+                        'payment' AS event_type,
+                        u.email,
+                        p.plan AS detail,
+                        CONCAT('₹', ROUND(p.amount / 100)) AS sub_detail,
+                        p.created_at
+                    FROM payments p
+                    JOIN users u ON u.id = p.user_id
+                    WHERE p.status = 'captured'
+                    ORDER BY p.created_at DESC
+                    LIMIT 10
+                )
+                ORDER BY created_at DESC
+                LIMIT 15;
+            `;
+
+            const result = await pool.query(query);
+
+            res.json({
+                success: true,
+                activities: result.rows.map(r => ({
+                    type: r.event_type,
+                    email: r.email,
+                    detail: r.detail,
+                    subDetail: r.sub_detail,
+                    createdAt: r.created_at
+                }))
+            });
+        } finally {
+            await pool.end();
+        }
+    } catch (err) {
+        console.error('[Admin Activities Error]:', err.message);
+        res.status(500).json({ success: false, error: 'Failed to retrieve activities.' });
+    }
+});
+
 // Diagnostic Debug IP Route
 // Shows resolved req.ip, socket remoteAddress, raw X-Forwarded-For, and trust proxy hop count.
 // Gated by process.env.DEBUG_IP_ENDPOINT === 'true' or ADMIN_STATS_TOKEN header. Disabled by default.

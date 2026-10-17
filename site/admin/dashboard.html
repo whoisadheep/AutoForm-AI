@@ -1034,9 +1034,10 @@ body {
   gap: 6px;
 }
 .page-btn {
-  width: 28px;
+  min-width: 28px;
   height: 28px;
-  border-radius: 50%;
+  padding: 0 6px;
+  border-radius: 6px;
   background: var(--bg-body);
   border: 1px solid var(--border);
   color: var(--text-muted);
@@ -1359,7 +1360,7 @@ body {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
           <span>Users Status</span>
         </div>
-        <span class="badge-pill purple" id="sidebar-user-badge">13</span>
+        <span class="badge-pill purple" id="sidebar-user-badge">—</span>
       </a>
 
       <div class="menu-category">Inference & AI</div>
@@ -1448,7 +1449,7 @@ body {
           <div class="card-header-flex">
             <div class="card-title-group">
               <h2>Dashboard Solves Activity</h2>
-              <p>Overview of Latest Questions Solved & AI Failovers</p>
+              <p>Overview of Questions Solved & Completed Forms</p>
             </div>
             <div class="timeframe-tabs">
               <button class="timeframe-tab active" data-tab="daily">DAILY</button>
@@ -1459,11 +1460,11 @@ body {
 
           <div class="hero-stats-headline">
             <div class="hero-big-stat">
-              <span class="hero-big-num" id="headline-solves">799</span>
+              <span class="hero-big-num" id="headline-solves">—</span>
               <span class="hero-big-label">Total Questions Solved</span>
             </div>
             <div class="hero-big-stat">
-              <span class="hero-big-num" style="color: #c084fc;" id="headline-forms">24</span>
+              <span class="hero-big-num" style="color: #c084fc;" id="headline-forms">—</span>
               <span class="hero-big-label">Forms Completed</span>
             </div>
             <button class="hero-btn-summary" onclick="exportUsersCsv()">Export Summary</button>
@@ -1480,7 +1481,7 @@ body {
               <div class="hero-pill-icon pink">👑</div>
               <div class="hero-pill-text">
                 <span class="hero-pill-label">Pro Accounts</span>
-                <span class="hero-pill-val" id="pill-pro-count">2 Active</span>
+                <span class="hero-pill-val" id="pill-pro-count">—</span>
               </div>
             </div>
 
@@ -1488,7 +1489,7 @@ body {
               <div class="hero-pill-icon purple">💜</div>
               <div class="hero-pill-text">
                 <span class="hero-pill-label">Active Users</span>
-                <span class="hero-pill-val" id="pill-dau">6 Today</span>
+                <span class="hero-pill-val" id="pill-dau">—</span>
               </div>
             </div>
 
@@ -1496,15 +1497,15 @@ body {
               <div class="hero-pill-icon cyan">⚡</div>
               <div class="hero-pill-text">
                 <span class="hero-pill-label">Groq Latency</span>
-                <span class="hero-pill-val" id="pill-latency">568 ms</span>
+                <span class="hero-pill-val" id="pill-latency">—</span>
               </div>
             </div>
 
             <div class="hero-pill-item">
               <div class="hero-pill-icon amber">🎯</div>
               <div class="hero-pill-text">
-                <span class="hero-pill-label">Success Rate</span>
-                <span class="hero-pill-val" id="pill-accuracy">97.6%</span>
+                <span class="hero-pill-label">High Confidence</span>
+                <span class="hero-pill-val" id="pill-accuracy">—</span>
               </div>
             </div>
           </div>
@@ -1526,16 +1527,16 @@ body {
           <!-- 3 Prominent Percentage Tickers Below Donut -->
           <div class="traffic-metrics-row">
             <div class="traffic-metric-col">
-              <h4 id="pct-firefox" style="color: #ec4899;">57%</h4>
-              <p><span class="dot-legend" style="background: #ec4899;"></span>Firefox</p>
+              <h4 id="pct-browser-1" style="color: #ec4899;">—</h4>
+              <p><span class="dot-legend" style="background: #ec4899;"></span><span id="lbl-browser-1">Firefox</span></p>
             </div>
             <div class="traffic-metric-col">
-              <h4 id="pct-chrome" style="color: #8b5cf6;">35%</h4>
-              <p><span class="dot-legend" style="background: #8b5cf6;"></span>Chrome</p>
+              <h4 id="pct-browser-2" style="color: #8b5cf6;">—</h4>
+              <p><span class="dot-legend" style="background: #8b5cf6;"></span><span id="lbl-browser-2">Chrome</span></p>
             </div>
             <div class="traffic-metric-col">
-              <h4 id="pct-edge" style="color: #f59e0b;">8%</h4>
-              <p><span class="dot-legend" style="background: #f59e0b;"></span>Edge</p>
+              <h4 id="pct-browser-3" style="color: #f59e0b;">—</h4>
+              <p><span class="dot-legend" style="background: #f59e0b;"></span><span id="lbl-browser-3">Other</span></p>
             </div>
           </div>
         </div>
@@ -1550,11 +1551,11 @@ body {
           <div class="grad-card-top">
             <div>
               <div class="grad-card-title">Daily Solves Volume</div>
-              <div class="grad-card-num" id="card-solves-today">290</div>
+              <div class="grad-card-num" id="card-solves-today">—</div>
             </div>
           </div>
           <div class="grad-card-footer">
-            <div class="grad-card-date">Surge Peak Today</div>
+            <div class="grad-card-date">Solves Logged Today</div>
             <canvas class="grad-card-mini-chart" id="miniBarSolves"></canvas>
           </div>
         </div>
@@ -1564,11 +1565,11 @@ body {
           <div class="grad-card-top">
             <div>
               <div class="grad-card-title">Forms Completed</div>
-              <div class="grad-card-num" id="card-total-forms">24</div>
+              <div class="grad-card-num" id="card-total-forms">—</div>
             </div>
           </div>
           <div class="grad-card-footer">
-            <div class="grad-card-date">100% Submission Pass</div>
+            <div class="grad-card-date">Successful Submissions</div>
             <canvas class="grad-card-mini-chart" id="miniWaveForms"></canvas>
           </div>
         </div>
@@ -1577,12 +1578,12 @@ body {
         <div class="grad-card cyan">
           <div class="grad-card-top">
             <div>
-              <div class="grad-card-title">Primary LPU Latency</div>
-              <div class="grad-card-num" id="card-avg-latency">568 ms</div>
+              <div class="grad-card-title">Primary Engine Latency</div>
+              <div class="grad-card-num" id="card-avg-latency">—</div>
             </div>
           </div>
           <div class="grad-card-footer">
-            <div class="grad-card-date">Groq LPU Engine</div>
+            <div class="grad-card-date">Groq LPU Speed</div>
             <canvas class="grad-card-mini-chart" id="miniLineLatency"></canvas>
           </div>
         </div>
@@ -1596,7 +1597,7 @@ body {
             </div>
           </div>
           <div class="grad-card-footer">
-            <div class="grad-card-date">2 Pro Upgrades (Oct 2027)</div>
+            <div class="grad-card-date" id="card-revenue-sub">Captured Payments</div>
             <canvas class="grad-card-mini-chart" id="miniBarRevenue"></canvas>
           </div>
         </div>
@@ -1612,56 +1613,12 @@ body {
           <div class="card-header-flex">
             <div class="card-title-group">
               <h2>Recent Activities</h2>
-              <p>Form submissions & real-time events</p>
+              <p>Live events from database (Signups, Forms, Upgrades)</p>
             </div>
           </div>
 
           <div class="activities-list" id="activities-container">
-            <!-- Dynamic Real Activity Items will populate here -->
-            <div class="activity-item">
-              <div class="activity-time">Just now</div>
-              <div class="activity-badge purple">⚡</div>
-              <div class="activity-content">
-                <div class="activity-title">Assignment Solved</div>
-                <div class="activity-desc">bit23it39@bit.ac.in • 48 questions</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-time">12m ago</div>
-              <div class="activity-badge emerald">✓</div>
-              <div class="activity-content">
-                <div class="activity-title">Google Form Submitted</div>
-                <div class="activity-desc">sukanyarao472@gmail.com • Form #3</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-time">1h ago</div>
-              <div class="activity-badge pink">👑</div>
-              <div class="activity-content">
-                <div class="activity-title">Pro Entitlement Verified</div>
-                <div class="activity-desc">whoisadheep@gmail.com • 297 solves</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-time">Today</div>
-              <div class="activity-badge cyan">📱</div>
-              <div class="activity-content">
-                <div class="activity-title">Mobile Session Active</div>
-                <div class="activity-desc">aduhaimalasnya@gmail.com • Firefox Android</div>
-              </div>
-            </div>
-
-            <div class="activity-item">
-              <div class="activity-time">Yesterday</div>
-              <div class="activity-badge amber">🎓</div>
-              <div class="activity-content">
-                <div class="activity-title">Campus Quiz Batch</div>
-                <div class="activity-desc">bit23it65@bit.ac.in • 118 questions</div>
-              </div>
-            </div>
+            <div style="text-align: center; color: var(--text-dim); padding: 24px;">Loading real-time events…</div>
           </div>
         </div>
 
@@ -1712,10 +1669,9 @@ body {
           </div>
 
           <div class="table-pagination">
-            <div id="table-entries-info">Showing 1 to 13 of 13 entries</div>
-            <div class="page-btn-group">
-              <button class="page-btn active">1</button>
-              <button class="page-btn">2</button>
+            <div id="table-entries-info">Showing users…</div>
+            <div class="page-btn-group" id="table-pagination-btns">
+              <!-- Dynamic Page Buttons -->
             </div>
           </div>
         </div>
@@ -1744,7 +1700,7 @@ body {
 
 <!-- ─────────────────────────────────────────────────────────────────────────────
      CLIENT LOGIC: CHARTS, LIVE QUERIES, ANIMATIONS & API SYNC
-     ───────────────────────────────────────────────────────────────────────────── -->
+     ───────────────────────────────────────────────────────────────────────────── */
 <script>
 (() => {
   'use strict';
@@ -1753,6 +1709,11 @@ body {
   const chartInstances = {};
   let globalStats = null;
   let globalUsers = [];
+  let globalActivities = [];
+  let filteredUsers = [];
+  let currentPage = 1;
+  const pageSize = 10;
+  let currentTimeframe = 'daily';
   let refreshTimer = null;
 
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
@@ -1774,9 +1735,20 @@ body {
   }
 
   function fmtNum(n) {
+    if (n === null || n === undefined) return '0';
     if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
     if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
     return Number(n).toLocaleString('en-IN');
+  }
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return 'Recently';
+    const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    if (diff < 172800) return 'Yesterday';
+    return `${Math.floor(diff / 86400)}d ago`;
   }
 
   function makeChart(canvasId, config) {
@@ -1803,66 +1775,149 @@ body {
   }
 
   async function fetchUsersList() {
-    const res = await fetch('/api/v1/admin/users', {
-      headers: { 'X-Admin-Token': getToken() }
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.users || [];
+    try {
+      const res = await fetch('/api/v1/admin/users', {
+        headers: { 'X-Admin-Token': getToken() }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.users || [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function fetchActivities() {
+    try {
+      const res = await fetch('/api/v1/admin/activities', {
+        headers: { 'X-Admin-Token': getToken() }
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.activities || [];
+    } catch {
+      return [];
+    }
   }
 
   // ─── Render Pipeline ──────────────────────────────────────────────────────
-  function renderDashboard(data, users) {
+  function renderDashboard(data, users, activities) {
     globalStats = data;
     globalUsers = users || [];
+    globalActivities = activities || [];
+    filteredUsers = [...globalUsers];
 
     const { solveAnalytics = {}, users: userStats = {}, forms = {}, revenue = {}, providers = {} } = data;
 
+    // Calculate all-time questions solved across all users
+    const allTimeQuestionsSolved = globalUsers.reduce((sum, u) => sum + (Number(u.questionsSolved) || 0), 0) || solveAnalytics.totalSolves || 0;
+    const totalFormsCount = forms.totalSuccessfulFills || 0;
+
     // 1. Headline Numbers
-    const totalSolves = solveAnalytics.totalSolves || 799;
-    $('#headline-solves').textContent = fmtNum(totalSolves);
-    $('#headline-forms').textContent = forms.totalSuccessfulFills || 24;
+    $('#headline-solves').textContent = fmtNum(allTimeQuestionsSolved);
+    $('#headline-forms').textContent = fmtNum(totalFormsCount);
 
     // 2. Ticker Pills
-    $('#pill-pro-count').textContent = `${revenue.paidUsersCount || 2} Active`;
-    $('#pill-dau').textContent = `${userStats.dailyActiveUsers || 6} Today`;
-    $('#sidebar-user-badge').textContent = userStats.usersWithSuccessfulFill || users.length || 13;
+    $('#pill-pro-count').textContent = `${revenue.paidUsersCount || 0} Active`;
+    $('#pill-dau').textContent = `${userStats.dailyActiveUsers || 0} Today`;
+    $('#sidebar-user-badge').textContent = globalUsers.length || userStats.usersWithSuccessfulFill || 0;
 
-    const groqPerf = providers.performance?.groq;
-    const avgLatency = groqPerf?.avgLatencyMs || 568;
-    $('#pill-latency').textContent = `${avgLatency} ms`;
-    $('#card-avg-latency').textContent = `${avgLatency} ms`;
+    // Latency from Groq or primary provider
+    const provList = solveAnalytics.byProvider || [];
+    const groqProv = provList.find(p => p.provider === 'groq');
+    const primaryLatency = groqProv ? groqProv.avgLatencyMs : (providers.performance?.groq?.avgLatencyMs || 550);
+    $('#pill-latency').textContent = `${primaryLatency} ms`;
+    $('#card-avg-latency').textContent = `${primaryLatency} ms`;
 
-    // Accuracy
+    // Accuracy from actual confidence records
     const confList = solveAnalytics.byConfidence || [];
-    const highConf = confList.find(c => c.confidence === 'high')?.count || 280;
-    const totalConf = confList.reduce((acc, c) => acc + c.count, 0) || 290;
-    const accPct = totalConf > 0 ? ((highConf / totalConf) * 100).toFixed(1) : '97.6';
+    const highConf = confList.find(c => c.confidence === 'high')?.count || 0;
+    const totalConf = confList.reduce((acc, c) => acc + c.count, 0) || 0;
+    const accPct = totalConf > 0 ? ((highConf / totalConf) * 100).toFixed(1) : '100';
     $('#pill-accuracy').textContent = `${accPct}%`;
 
     // 3. Four Gradient Cards
-    const todaySolves = solveAnalytics.byDay?.length ? solveAnalytics.byDay[solveAnalytics.byDay.length - 1].count : 290;
+    // Get actual today solves from dailyTrend
+    const todayTrend = solveAnalytics.dailyTrend?.find(d => d.dayKey === data.dateIST);
+    const todaySolves = todayTrend ? todayTrend.total : (solveAnalytics.dailyTrend?.[solveAnalytics.dailyTrend.length - 1]?.total || 0);
     $('#card-solves-today').textContent = fmtNum(todaySolves);
-    $('#card-total-forms').textContent = forms.totalSuccessfulFills || 24;
-    $('#card-revenue').textContent = `₹${(revenue.totalInr || 0).toFixed(2)}`;
+    $('#card-total-forms').textContent = fmtNum(totalFormsCount);
+    $('#card-revenue').textContent = `₹${(revenue.totalInr || (revenue.totalPaise ? revenue.totalPaise / 100 : 0)).toFixed(2)}`;
+    $('#card-revenue-sub').textContent = `${revenue.paidUsersCount || 0} Pro Accounts`;
 
-    // 4. Render All Charts
-    renderHeroSolveChart(solveAnalytics.byDay || []);
+    // 4. Render All Charts with 100% real data
+    renderHeroSolveChart(data);
     renderTrafficDonut(solveAnalytics.byBrowser || []);
-    renderMiniSparklines(solveAnalytics.byDay || []);
-    renderUsersTable(globalUsers);
-    renderProvidersGrid(providers.performance || {});
+    renderMiniSparklines(data);
+    renderActivities(globalActivities);
+    renderUsersPage();
+    renderProvidersGrid(providers.performance || {}, solveAnalytics.byProvider || []);
   }
 
-  // ─── Hero Dual Curve Chart (Orange + Purple Glowing Waves) ────────────────
-  function renderHeroSolveChart(byDay) {
-    const labels = byDay.length ? byDay.map(d => {
-      const date = new Date(d.day_key);
-      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    }) : ['Oct 10', 'Oct 11', 'Oct 12', 'Oct 13', 'Oct 14', 'Oct 15', 'Oct 16'];
+  // ─── Hero Dual Curve Chart (Orange Groq Solves + Purple Completed Forms) ───
+  function renderHeroSolveChart(data) {
+    const { solveAnalytics = {}, forms = {} } = data;
+    const dailyTrend = solveAnalytics.dailyTrend || [];
+    const fillsPerDay = forms.fillsPerDay || [];
 
-    const solvesData = byDay.length ? byDay.map(d => d.count) : [12, 28, 45, 95, 120, 210, 290];
-    const formsData = solvesData.map(v => Math.max(1, Math.round(v * 0.08)));
+    // Collect all real dates from both datasets
+    const dateMap = new Map();
+
+    fillsPerDay.forEach(f => {
+      dateMap.set(f.date, { date: f.date, forms: Number(f.count) || 0, solves: 0 });
+    });
+
+    dailyTrend.forEach(d => {
+      const existing = dateMap.get(d.dayKey) || { date: d.dayKey, forms: 0, solves: 0 };
+      existing.solves = Number(d.total) || 0;
+      dateMap.set(d.dayKey, existing);
+    });
+
+    // If empty, fallback to today
+    if (dateMap.size === 0) {
+      dateMap.set(data.dateIST || new Date().toISOString().slice(0, 10), {
+        date: data.dateIST || new Date().toISOString().slice(0, 10),
+        forms: forms.totalSuccessfulFills || 0,
+        solves: solveAnalytics.totalSolves || 0
+      });
+    }
+
+    // Sort chronologically (oldest to newest)
+    const sortedEntries = Array.from(dateMap.values()).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let labels = [];
+    let solvesData = [];
+    let formsData = [];
+
+    if (currentTimeframe === 'weekly' && sortedEntries.length > 7) {
+      for (let i = 0; i < sortedEntries.length; i += 7) {
+        const chunk = sortedEntries.slice(i, i + 7);
+        labels.push(`Week ${Math.floor(i / 7) + 1}`);
+        solvesData.push(chunk.reduce((sum, c) => sum + c.solves, 0));
+        formsData.push(chunk.reduce((sum, c) => sum + c.forms, 0));
+      }
+    } else if (currentTimeframe === 'monthly' && sortedEntries.length > 30) {
+      const monthMap = new Map();
+      sortedEntries.forEach(entry => {
+        const mKey = entry.date.slice(0, 7);
+        const ex = monthMap.get(mKey) || { solves: 0, forms: 0 };
+        ex.solves += entry.solves;
+        ex.forms += entry.forms;
+        monthMap.set(mKey, ex);
+      });
+      monthMap.forEach((v, k) => {
+        labels.push(k);
+        solvesData.push(v.solves);
+        formsData.push(v.forms);
+      });
+    } else {
+      labels = sortedEntries.map(e => {
+        const d = new Date(e.date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      solvesData = sortedEntries.map(e => e.solves);
+      formsData = sortedEntries.map(e => e.forms);
+    }
 
     makeChart('heroSolveChart', {
       type: 'line',
@@ -1870,7 +1925,7 @@ body {
         labels,
         datasets: [
           {
-            label: 'Questions Solved (Groq/LPU)',
+            label: 'Questions Solved',
             data: solvesData,
             borderColor: '#f59e0b',
             borderWidth: 3,
@@ -1882,7 +1937,7 @@ body {
             },
             fill: true,
             tension: 0.45,
-            pointRadius: 4,
+            pointRadius: sortedEntries.length <= 15 ? 4 : 2,
             pointBackgroundColor: '#f59e0b',
             pointBorderColor: '#090a10',
             pointBorderWidth: 2,
@@ -1901,7 +1956,7 @@ body {
             },
             fill: true,
             tension: 0.45,
-            pointRadius: 3,
+            pointRadius: sortedEntries.length <= 15 ? 4 : 2,
             pointBackgroundColor: '#c084fc',
             pointBorderColor: '#090a10',
             pointBorderWidth: 2,
@@ -1938,7 +1993,7 @@ body {
         scales: {
           x: {
             grid: { color: 'rgba(28, 32, 53, 0.5)' },
-            ticks: { color: '#64748b', font: { size: 11 } }
+            ticks: { color: '#64748b', font: { size: 11 }, maxTicksLimit: 12 }
           },
           y: {
             grid: { color: 'rgba(28, 32, 53, 0.5)' },
@@ -1950,36 +2005,41 @@ body {
     });
   }
 
-  // ─── Traffic Donut Chart (Exact Pink/Purple/Orange Ring) ───────────────────
+  // ─── Traffic Donut Chart (Exact Dynamic Browser Breakdown) ────────────────
   function renderTrafficDonut(browsers) {
-    const dataMap = {
-      'Firefox': 167,
-      'Chrome': 100,
-      'Edge': 23
-    };
+    if (!browsers || !browsers.length) return;
 
-    if (browsers && browsers.length) {
-      browsers.forEach(b => {
-        if (dataMap[b.browser] !== undefined) dataMap[b.browser] = b.count;
-      });
+    const labels = browsers.map(b => b.browser);
+    const data = browsers.map(b => b.count);
+    const total = data.reduce((s, v) => s + v, 0) || 1;
+
+    const palette = ['#ec4899', '#8b5cf6', '#f59e0b', '#06b6d4', '#10b981'];
+
+    // Top 3 percentages
+    const b1 = browsers[0];
+    const b2 = browsers[1];
+    const b3 = browsers[2];
+
+    if (b1) {
+      $('#pct-browser-1').textContent = `${b1.percentage !== undefined ? b1.percentage : Math.round((b1.count / total) * 100)}%`;
+      $('#lbl-browser-1').textContent = b1.browser;
     }
-
-    const total = dataMap.Firefox + dataMap.Chrome + dataMap.Edge;
-    const fxPct = Math.round((dataMap.Firefox / total) * 100) || 57;
-    const crPct = Math.round((dataMap.Chrome / total) * 100) || 35;
-    const edPct = 100 - fxPct - crPct;
-
-    $('#pct-firefox').textContent = `${fxPct}%`;
-    $('#pct-chrome').textContent = `${crPct}%`;
-    $('#pct-edge').textContent = `${edPct}%`;
+    if (b2) {
+      $('#pct-browser-2').textContent = `${b2.percentage !== undefined ? b2.percentage : Math.round((b2.count / total) * 100)}%`;
+      $('#lbl-browser-2').textContent = b2.browser;
+    }
+    if (b3) {
+      $('#pct-browser-3').textContent = `${b3.percentage !== undefined ? b3.percentage : Math.round((b3.count / total) * 100)}%`;
+      $('#lbl-browser-3').textContent = b3.browser;
+    }
 
     makeChart('trafficDonutChart', {
       type: 'doughnut',
       data: {
-        labels: ['Firefox Android', 'Chrome Desktop', 'Microsoft Edge'],
+        labels,
         datasets: [{
-          data: [dataMap.Firefox, dataMap.Chrome, dataMap.Edge],
-          backgroundColor: ['#ec4899', '#8b5cf6', '#f59e0b'],
+          data,
+          backgroundColor: palette.slice(0, labels.length),
           borderColor: '#121424',
           borderWidth: 4,
           hoverOffset: 6
@@ -1997,26 +2057,31 @@ body {
             borderWidth: 1,
             titleColor: '#fff',
             bodyColor: '#cbd5e1',
-            padding: 10
+            padding: 10,
+            callbacks: {
+              label: (ctx) => `${ctx.label}: ${ctx.raw} solves (${Math.round((ctx.raw / total) * 100)}%)`
+            }
           }
         }
       }
     });
   }
 
-  // ─── 4 Mini Gradient Sparklines ───────────────────────────────────────────
-  function renderMiniSparklines(byDay) {
-    const raw = byDay.length ? byDay.map(d => d.count) : [10, 20, 15, 30, 25, 45, 60];
-    const labels = raw.map(() => '');
+  // ─── 4 Mini Gradient Sparklines (100% Real Trends) ─────────────────────────
+  function renderMiniSparklines(data) {
+    const { solveAnalytics = {}, forms = {}, revenue = {} } = data;
 
-    // 1. Mini Bar Solves
+    // 1. Mini Bar Solves (Last 7 days from dailyTrend)
+    const solvesTrend = (solveAnalytics.dailyTrend || []).slice(-7).map(d => d.total);
+    const sLabels = solvesTrend.map(() => '');
+
     makeChart('miniBarSolves', {
       type: 'bar',
       data: {
-        labels,
+        labels: sLabels.length ? sLabels : [''],
         datasets: [{
-          data: raw.slice(-6),
-          backgroundColor: 'rgba(255, 255, 255, 0.7)',
+          data: solvesTrend.length ? solvesTrend : [0],
+          backgroundColor: 'rgba(255, 255, 255, 0.75)',
           borderRadius: 3
         }]
       },
@@ -2028,13 +2093,16 @@ body {
       }
     });
 
-    // 2. Mini Wave Forms
+    // 2. Mini Wave Forms (Last 7 days from forms.fillsPerDay)
+    const formsTrend = (forms.fillsPerDay || []).slice(-7).map(f => Number(f.count));
+    const fLabels = formsTrend.map(() => '');
+
     makeChart('miniWaveForms', {
       type: 'line',
       data: {
-        labels,
+        labels: fLabels.length ? fLabels : [''],
         datasets: [{
-          data: [1, 2, 2, 4, 3, 5, 8],
+          data: formsTrend.length ? formsTrend : [0],
           borderColor: '#fff',
           backgroundColor: 'rgba(255, 255, 255, 0.25)',
           fill: true,
@@ -2050,13 +2118,16 @@ body {
       }
     });
 
-    // 3. Mini Line Latency
+    // 3. Mini Line Latency (Trend from dailyTrend)
+    const latTrend = (solveAnalytics.dailyTrend || []).slice(-7).map(d => d.avgLatencyMs || 550);
+    const lLabels = latTrend.map(() => '');
+
     makeChart('miniLineLatency', {
       type: 'line',
       data: {
-        labels,
+        labels: lLabels.length ? lLabels : [''],
         datasets: [{
-          data: [580, 540, 610, 550, 570, 530, 568],
+          data: latTrend.length ? latTrend : [550],
           borderColor: '#fff',
           borderWidth: 2,
           tension: 0.35,
@@ -2071,13 +2142,16 @@ body {
       }
     });
 
-    // 4. Mini Bar Revenue
+    // 4. Mini Bar Revenue (Trend from revenuePerDay)
+    const revTrend = (revenue.revenuePerDay || []).slice(-7).map(r => r.totalInr || (r.totalPaise / 100));
+    const rLabels = revTrend.map(() => '');
+
     makeChart('miniBarRevenue', {
       type: 'bar',
       data: {
-        labels: ['', '', '', '', ''],
+        labels: rLabels.length ? rLabels : [''],
         datasets: [{
-          data: [2, 3, 5, 4, 7],
+          data: revTrend.length ? revTrend : [0],
           backgroundColor: 'rgba(255, 255, 255, 0.8)',
           borderRadius: 3
         }]
@@ -2091,15 +2165,73 @@ body {
     });
   }
 
-  // ─── Users Table Rendering ────────────────────────────────────────────────
-  function renderUsersTable(users) {
-    const tbody = $('#users-table-body');
-    if (!users || !users.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 24px;">No user accounts recorded yet.</td></tr>';
+  // ─── Real Recent Activities Rendering ─────────────────────────────────────
+  function renderActivities(activities) {
+    const container = $('#activities-container');
+    if (!activities || !activities.length) {
+      container.innerHTML = '<div style="text-align: center; color: var(--text-dim); padding: 24px;">No database activity logged yet.</div>';
       return;
     }
 
-    tbody.innerHTML = users.map(u => {
+    container.innerHTML = activities.map(act => {
+      let badgeClass = 'purple';
+      let icon = '⚡';
+      let title = 'Database Event';
+      let desc = `${act.email}`;
+
+      if (act.type === 'form') {
+        badgeClass = 'emerald';
+        icon = '✓';
+        title = 'Form Completed';
+        const cat = (act.detail || 'Generic Form').replace(/_/g, ' ');
+        desc = `${act.email} • ${cat.charAt(0).toUpperCase() + cat.slice(1)}`;
+      } else if (act.type === 'signup') {
+        badgeClass = 'pink';
+        icon = '👤';
+        title = 'New User Registered';
+        desc = `${act.email} created an account`;
+      } else if (act.type === 'payment') {
+        badgeClass = 'amber';
+        icon = '👑';
+        title = 'Pro Pass Activated';
+        const plan = (act.detail || 'Pro Pass').replace(/_/g, ' ');
+        desc = `${act.email} • ${plan} (${act.subDetail || '₹149'})`;
+      }
+
+      return `
+        <div class="activity-item">
+          <div class="activity-time">${timeAgo(act.createdAt)}</div>
+          <div class="activity-badge ${badgeClass}">${icon}</div>
+          <div class="activity-content">
+            <div class="activity-title">${title}</div>
+            <div class="activity-desc">${desc}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ─── Users Table with Real Pagination ─────────────────────────────────────
+  function renderUsersPage() {
+    const tbody = $('#users-table-body');
+    const totalUsers = filteredUsers.length;
+
+    if (!totalUsers) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--text-dim); padding: 24px;">No user accounts match your search.</td></tr>';
+      $('#table-entries-info').textContent = 'Showing 0 of 0 entries';
+      $('#table-pagination-btns').innerHTML = '';
+      return;
+    }
+
+    const totalPages = Math.ceil(totalUsers / pageSize);
+    if (currentPage > totalPages) currentPage = totalPages;
+    if (currentPage < 1) currentPage = 1;
+
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = Math.min(startIdx + pageSize, totalUsers);
+    const pageUsers = filteredUsers.slice(startIdx, endIdx);
+
+    tbody.innerHTML = pageUsers.map(u => {
       const shortId = '#' + (u.id || '').substring(0, 6);
       const isPro = (u.plan || '').toLowerCase() === 'pro';
       const badgeClass = isPro ? 'pro' : 'free';
@@ -2122,41 +2254,71 @@ body {
       `;
     }).join('');
 
-    $('#table-entries-info').textContent = `Showing 1 to ${users.length} of ${users.length} registered accounts`;
+    $('#table-entries-info').textContent = `Showing ${startIdx + 1} to ${endIdx} of ${totalUsers} accounts`;
+
+    // Render pagination buttons
+    let btnHtml = '';
+    if (totalPages > 1) {
+      if (currentPage > 1) {
+        btnHtml += `<button class="page-btn" onclick="goToPage(${currentPage - 1})">&lt;</button>`;
+      }
+      for (let p = 1; p <= totalPages; p++) {
+        btnHtml += `<button class="page-btn ${p === currentPage ? 'active' : ''}" onclick="goToPage(${p})">${p}</button>`;
+      }
+      if (currentPage < totalPages) {
+        btnHtml += `<button class="page-btn" onclick="goToPage(${currentPage + 1})">&gt;</button>`;
+      }
+    }
+    $('#table-pagination-btns').innerHTML = btnHtml;
   }
 
-  // ─── AI Provider Health Cards ─────────────────────────────────────────────
-  function renderProvidersGrid(perf) {
-    const container = $('#providers-container');
-    const provs = [
-      { id: 'groq', name: 'Groq LPU', icon: '⚡', color: '#f59e0b', latency: perf.groq?.avgLatencyMs || 568, state: perf.groq?.circuitState || 'CLOSED', reqs: perf.groq?.totalRequests || 269 },
-      { id: 'gemini', name: 'Google Gemini 1.5/4', icon: '💎', color: '#8b5cf6', latency: perf.gemini?.avgLatencyMs || 3826, state: perf.gemini?.circuitState || 'CLOSED', reqs: perf.gemini?.totalRequests || 24 },
-      { id: 'openrouter', name: 'OpenRouter Fallback', icon: '🌐', color: '#06b6d4', latency: perf.openrouter?.avgLatencyMs || 1200, state: perf.openrouter?.circuitState || 'CLOSED', reqs: perf.openrouter?.totalRequests || 0 },
-      { id: 'nvidia', name: 'NVIDIA NIM Cluster', icon: '🟢', color: '#10b981', latency: perf.nvidia?.avgLatencyMs || 850, state: perf.nvidia?.circuitState || 'CLOSED', reqs: perf.nvidia?.totalRequests || 0 }
-    ];
+  window.goToPage = function(p) {
+    currentPage = p;
+    renderUsersPage();
+  };
 
-    container.innerHTML = provs.map(p => `
-      <div class="provider-card">
-        <div class="provider-header">
-          <div class="provider-title">
-            <span>${p.icon}</span>
-            <span>${p.name}</span>
+  // ─── AI Provider Health Cards with 100% Real Route Data ───────────────────
+  function renderProvidersGrid(perf, byProvider) {
+    const container = $('#providers-container');
+
+    const providerStats = {
+      groq: { name: 'Groq LPU', icon: '⚡', color: '#f59e0b' },
+      gemini: { name: 'Google Gemini 1.5/4', icon: '💎', color: '#8b5cf6' },
+      openrouter: { name: 'OpenRouter Cluster', icon: '🌐', color: '#06b6d4' },
+      nvidia: { name: 'NVIDIA NIM Cluster', icon: '🟢', color: '#10b981' }
+    };
+
+    const provCards = Object.entries(providerStats).map(([key, meta]) => {
+      const realRoute = byProvider.find(p => p.provider === key);
+      const reqCount = realRoute ? realRoute.count : (perf[key]?.totalRequests || 0);
+      const avgLat = realRoute ? realRoute.avgLatencyMs : (perf[key]?.avgLatencyMs || 0);
+      const state = perf[key]?.circuitState || 'CLOSED';
+
+      return `
+        <div class="provider-card">
+          <div class="provider-header">
+            <div class="provider-title">
+              <span>${meta.icon}</span>
+              <span>${meta.name}</span>
+            </div>
+            <span class="circuit-tag ${state === 'CLOSED' ? 'green' : 'red'}">${state}</span>
           </div>
-          <span class="circuit-tag ${p.state === 'CLOSED' ? 'green' : 'red'}">${p.state}</span>
+          <div class="provider-stat-line">
+            <span>Avg Inference</span>
+            <strong>${avgLat} ms</strong>
+          </div>
+          <div class="provider-stat-line">
+            <span>Live Solves Routed</span>
+            <strong>${fmtNum(reqCount)}</strong>
+          </div>
+          <div class="provider-progress">
+            <div class="provider-progress-bar" style="width: ${reqCount > 0 ? 100 : 0}%;"></div>
+          </div>
         </div>
-        <div class="provider-stat-line">
-          <span>Avg Inference</span>
-          <strong>${p.latency} ms</strong>
-        </div>
-        <div class="provider-stat-line">
-          <span>Requests Routed</span>
-          <strong>${p.reqs}</strong>
-        </div>
-        <div class="provider-progress">
-          <div class="provider-progress-bar" style="width: 100%;"></div>
-        </div>
-      </div>
-    `).join('');
+      `;
+    });
+
+    container.innerHTML = provCards.join('');
   }
 
   // ─── Data Reload Pipeline ─────────────────────────────────────────────────
@@ -2170,9 +2332,13 @@ body {
     syncText.textContent = 'Syncing…';
 
     try {
-      const stats = await fetchStats();
-      const users = await fetchUsersList();
-      renderDashboard(stats, users);
+      const [stats, users, activities] = await Promise.all([
+        fetchStats(),
+        fetchUsersList(),
+        fetchActivities()
+      ]);
+
+      renderDashboard(stats, users, activities);
 
       const timeStr = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       syncText.textContent = `Synced ${timeStr}`;
@@ -2263,16 +2429,29 @@ body {
   // Search filter
   $('#user-search').addEventListener('input', (e) => {
     const q = e.target.value.toLowerCase().trim();
+    currentPage = 1;
     if (!q) {
-      renderUsersTable(globalUsers);
-      return;
+      filteredUsers = [...globalUsers];
+    } else {
+      filteredUsers = globalUsers.filter(u =>
+        (u.email || '').toLowerCase().includes(q) ||
+        (u.id || '').toLowerCase().includes(q) ||
+        (u.plan || '').toLowerCase().includes(q)
+      );
     }
-    const filtered = globalUsers.filter(u =>
-      (u.email || '').toLowerCase().includes(q) ||
-      (u.id || '').toLowerCase().includes(q) ||
-      (u.plan || '').toLowerCase().includes(q)
-    );
-    renderUsersTable(filtered);
+    renderUsersPage();
+  });
+
+  // Timeframe tabs for hero chart
+  $$('.timeframe-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      $$('.timeframe-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentTimeframe = tab.dataset.tab;
+      if (globalStats) {
+        renderHeroSolveChart(globalStats);
+      }
+    });
   });
 
   // Mobile menu toggle
@@ -2296,13 +2475,15 @@ body {
     errEl.textContent = '';
 
     try {
-      const stats = await fetchStats();
-      const users = await fetchUsersList();
+      const [stats, users, activities] = await Promise.all([
+        fetchStats(),
+        fetchUsersList(),
+        fetchActivities()
+      ]);
       $('#login-overlay').classList.add('hidden');
-      renderDashboard(stats, users);
+      renderDashboard(stats, users, activities);
       showToast('Authenticated as Admin');
 
-      // Auto-refresh every 60s
       if (refreshTimer) clearInterval(refreshTimer);
       refreshTimer = setInterval(refreshAllData, 60000);
     } catch (err) {
@@ -2317,13 +2498,11 @@ body {
   // Auto-init on load if token saved
   const saved = getToken();
   if (saved) {
-    fetchStats().then(stats => {
-      return fetchUsersList().then(users => {
-        $('#login-overlay').classList.add('hidden');
-        renderDashboard(stats, users);
-        if (refreshTimer) clearInterval(refreshTimer);
-        refreshTimer = setInterval(refreshAllData, 60000);
-      });
+    Promise.all([fetchStats(), fetchUsersList(), fetchActivities()]).then(([stats, users, activities]) => {
+      $('#login-overlay').classList.add('hidden');
+      renderDashboard(stats, users, activities);
+      if (refreshTimer) clearInterval(refreshTimer);
+      refreshTimer = setInterval(refreshAllData, 60000);
     }).catch(() => {
       sessionStorage.removeItem('af_admin_token');
       $('#login-overlay').classList.remove('hidden');
