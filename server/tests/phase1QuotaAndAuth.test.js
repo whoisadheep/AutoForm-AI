@@ -139,8 +139,8 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             assert.equal(data.success, true);
             assert.ok(data.token);
             assert.equal(data.user.email, 'alexrivera@example.com');
-            assert.equal(data.quota.limit, 10);
-            assert.equal(data.quota.remaining, 10);
+            assert.equal(data.quota.limit, 30);
+            assert.equal(data.quota.remaining, 30);
             assert.equal(data.quota.plan, 'free');
         });
 
@@ -170,7 +170,7 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             assert.equal(data.success, true);
             assert.equal(data.user.id, user.id);
             assert.equal(data.user.email, 'me@example.com');
-            assert.equal(data.quota.limit, 10);
+            assert.equal(data.quota.limit, 30);
         });
 
         it('strictly verifies Google ID token security: audience, issuer, expiry, and email_verified', () => {
@@ -253,10 +253,10 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             assert.equal(resetDate.getUTCMinutes(), 30);
         });
 
-        it('free users get 10 forms limit; Pro users get 300 forms fair-use cap', async () => {
+        it('free users get 30 forms limit; Pro users get 300 forms fair-use cap', async () => {
             const freeUser = await db.createUser({ googleSub: 'free-user-sub', email: 'free@example.com' });
             const freeQuota = await formSessionManager.getUserQuotaStatus(freeUser.id);
-            assert.equal(freeQuota.limit, 10);
+            assert.equal(freeQuota.limit, 30);
             assert.equal(freeQuota.plan, 'free');
 
             const proUser = await db.createUser({ googleSub: 'pro-user-sub', email: 'pro@example.com' });
@@ -292,7 +292,7 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             assert.ok(data.sessionToken);
             assert.ok(data.sessionToken.startsWith('fses_'));
             assert.equal(data.quota.used, 1);
-            assert.equal(data.quota.remaining, 9);
+            assert.equal(data.quota.remaining, 29);
         });
 
         it('prevents quota cheating when client skips /complete (server marks success on valid solve)', async () => {
@@ -360,12 +360,12 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             });
         });
 
-        it('prevents opening unlimited sessions (opening 10 sessions exhausts free quota and 11th is rejected)', async () => {
+        it('prevents opening unlimited sessions (opening 30 sessions exhausts free quota and 31st is rejected)', async () => {
             const user = await db.createUser({ googleSub: 'user-multi-session', email: 'multi@example.com' });
             const token = signUserToken(user);
 
-            // Open 10 sessions
-            for (let i = 0; i < 10; i++) {
+            // Open 30 sessions
+            for (let i = 0; i < 30; i++) {
                 const res = await fetch(`${baseUrl}/api/v1/form/start`, {
                     method: 'POST',
                     headers: {
@@ -377,8 +377,8 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
                 assert.equal(res.status, 200);
             }
 
-            // 11th session must be rejected with 403 QUOTA_EXCEEDED
-            const res11 = await fetch(`${baseUrl}/api/v1/form/start`, {
+            // 31st session must be rejected with 403 QUOTA_EXCEEDED
+            const res31 = await fetch(`${baseUrl}/api/v1/form/start`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -387,24 +387,24 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
                 body: JSON.stringify({ formCategory: 'google_forms' })
             });
 
-            assert.equal(res11.status, 403);
-            const data11 = await res11.json();
-            assert.equal(data11.success, false);
-            assert.equal(data11.code, 'QUOTA_EXCEEDED');
-            assert.equal(data11.quota.remaining, 0);
+            assert.equal(res31.status, 403);
+            const data31 = await res31.json();
+            assert.equal(data31.success, false);
+            assert.equal(data31.code, 'QUOTA_EXCEEDED');
+            assert.equal(data31.quota.remaining, 0);
         });
 
-        it('prevents race conditions: 10 parallel /form/start calls at 9/10 quota only allows 1 to succeed', async () => {
+        it('prevents race conditions: 10 parallel /form/start calls at 29/30 quota only allows 1 to succeed', async () => {
             const user = await db.createUser({ googleSub: 'user-race-test', email: 'race@example.com' });
             const token = signUserToken(user);
 
-            // Simulate 9 completed forms for this user
-            for (let i = 0; i < 9; i++) {
+            // Simulate 29 completed forms for this user
+            for (let i = 0; i < 29; i++) {
                 await db.createUsageEvent({ userId: user.id, formCategory: 'generic', success: true });
             }
 
             const initialQuota = await formSessionManager.getUserQuotaStatus(user.id);
-            assert.equal(initialQuota.used, 9);
+            assert.equal(initialQuota.used, 29);
             assert.equal(initialQuota.remaining, 1);
 
             // Fire 10 parallel /form/start requests concurrently
@@ -424,11 +424,11 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
             const successes = statuses.filter(s => s === 200);
             const quotaExceeded = statuses.filter(s => s === 403);
 
-            assert.equal(successes.length, 1, 'Exactly one parallel request must succeed at 9/10 quota');
+            assert.equal(successes.length, 1, 'Exactly one parallel request must succeed at 29/30 quota');
             assert.equal(quotaExceeded.length, 9, 'All other 9 parallel requests must be rejected with 403 QUOTA_EXCEEDED');
 
             const finalQuota = await formSessionManager.getUserQuotaStatus(user.id);
-            assert.equal(finalQuota.used, 10, 'Total quota used must be exactly 10, never exceeded');
+            assert.equal(finalQuota.used, 30, 'Total quota used must be exactly 30, never exceeded');
             assert.equal(finalQuota.remaining, 0);
         });
 
@@ -441,14 +441,14 @@ describe('Phase 1 — Google Auth, Quota Reservation & Anti-Cheating Suite', () 
 
             const quotaDuring = await formSessionManager.getUserQuotaStatus(user.id);
             assert.equal(quotaDuring.used, 1);
-            assert.equal(quotaDuring.remaining, 9);
+            assert.equal(quotaDuring.remaining, 29);
 
             // Release session (failed provider calls / abandoned form)
             await formSessionManager.releaseSessionIfFailed(session.sessionToken);
 
             const quotaAfter = await formSessionManager.getUserQuotaStatus(user.id);
             assert.equal(quotaAfter.used, 0);
-            assert.equal(quotaAfter.remaining, 10, 'Quota must be restored when session ends with zero successful solves');
+            assert.equal(quotaAfter.remaining, 30, 'Quota must be restored when session ends with zero successful solves');
         });
 
         it('rejects session token used by a different user', async () => {

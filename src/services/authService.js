@@ -10,7 +10,7 @@
 // 1. Constants & Default Configs
 // ---------------------------------------------------------------------------
 
-const FREE_TIER_MONTHLY_LIMIT = 10;
+const FREE_TIER_MONTHLY_LIMIT = 30;
 const PRO_MONTHLY_FAIR_USE_CAP = 300;
 const REVIEW_SNOOZE_DURATION_MS = 3 * 24 * 60 * 60 * 1000; // 3 days snooze
 const REVIEW_FORMS_THRESHOLD = 2; // Prompt after 2 completed forms

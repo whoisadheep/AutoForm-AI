@@ -678,12 +678,20 @@ function withUserLock(userId, fn) {
  * @param {string} [params.formCategory='generic']
  * @returns {Promise<{ allowed: boolean, eventId?: string, isPro: boolean, limit: number, used: number, remaining: number }>}
  */
-async function reserveFormSessionSlot({ userId, formCategory = 'generic' }) {
+async function reserveFormSessionSlot({ userId, formCategory = 'generic', limit: customLimit }) {
+    let appConfig = null;
+    try {
+        appConfig = require('../config');
+    } catch (e) {}
+
     if (isInMemory) {
         return withUserLock(userId, async () => {
             const activeEnt = await getActiveEntitlement(userId);
             const isPro = !!activeEnt;
-            const limit = isPro ? 300 : 10;
+            const defaultLimit = isPro
+                ? (appConfig?.proMonthlyFormLimit || 300)
+                : (appConfig?.freeMonthlyFormLimit || 30);
+            const limit = customLimit !== undefined ? customLimit : defaultLimit;
             const startOfMonth = getStartOfCurrentMonthIST();
             const now = Date.now();
             const reservationTtlMs = 30 * 60 * 1000;
@@ -741,7 +749,10 @@ async function reserveFormSessionSlot({ userId, formCategory = 'generic' }) {
             [userId, now]
         );
         const isPro = (entRes.rows.length > 0);
-        const limit = isPro ? 300 : 10;
+        const defaultLimit = isPro
+            ? (appConfig?.proMonthlyFormLimit || 300)
+            : (appConfig?.freeMonthlyFormLimit || 30);
+        const limit = customLimit !== undefined ? customLimit : defaultLimit;
 
         const startOfMonth = getStartOfCurrentMonthIST();
         // Count confirmed successful fills AND active reservations in the last 30 minutes

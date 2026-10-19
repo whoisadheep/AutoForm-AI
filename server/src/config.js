@@ -101,6 +101,8 @@ module.exports = {
     port: parseInt(process.env.PORT || '3000', 10),
     env: process.env.NODE_ENV || 'development',
     rateLimitPerHour: parseInt(process.env.RATE_LIMIT_PER_HOUR || '150', 10),
+    freeMonthlyFormLimit: parseInt(process.env.FREE_MONTHLY_FORM_LIMIT || '30', 10),
+    proMonthlyFormLimit: parseInt(process.env.PRO_MONTHLY_FORM_LIMIT || '300', 10),
     dailySolveCapFree: parseInt(process.env.DAILY_SOLVE_CAP_FREE || '200', 10),
     dailySolveCapPro: parseInt(process.env.DAILY_SOLVE_CAP_PRO || '1500', 10),
     legacyAnonSolve: process.env.LEGACY_ANON_SOLVE === 'true' || process.env.LEGACY_ANON_SOLVE === '1',

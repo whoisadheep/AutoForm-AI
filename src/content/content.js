@@ -2914,7 +2914,7 @@ function showUpgradeModal(customMsg = '') {
                 <button class="autoform-preview-close-btn" id="btnCloseUpgradeModal" type="button" aria-label="Close">✕</button>
             </div>
             <h2 class="autoform-upgrade-title">Monthly Free Limit Reached</h2>
-            <p class="autoform-upgrade-desc">${customMsg || "You have filled all 10 free forms for this month. Upgrade to AutoForm Pro for unlimited forms and advanced AI models."}</p>
+            <p class="autoform-upgrade-desc">${customMsg || "You have filled all 30 free forms for this month. Upgrade to AutoForm Pro for unlimited forms and advanced AI models."}</p>
             ${isPaymentsDisabled ? '' : `
             <div class="autoform-upgrade-benefits">
                 <div class="benefit-row"><span>✓</span> <strong>Unlimited Form Fills</strong> every month (up to 300 fair-use cap)</div>

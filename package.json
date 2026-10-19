@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node server/src/index.js",
     "postinstall": "cd server && npm install",
-    "test": "node --test --test-concurrency=1 server/tests/*.test.js",
+    "test": "DATABASE_URL=\"\" node --test --test-concurrency=1 server/tests/*.test.js",
     "validate": "node scripts/validate_manifest.js",
     "package": "node scripts/package_extension.js",
     "testbench": "node testbench/server.js",

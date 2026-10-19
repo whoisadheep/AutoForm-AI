@@ -740,7 +740,7 @@ function renderAuthUI(user = {}, stats = {}, quota = {}) {
     window._hasMonthlyQuotaRendered = true;
     if (quotaFooterText) {
         if (isGuest) {
-            quotaFooterText.innerText = '10 free forms/month with Google account';
+            quotaFooterText.innerText = '30 free forms/month with Google account';
         } else if (isPro) {
             quotaFooterText.innerText = 'Pro: Unlimited forms (Fair-use 300/mo)';
         } else {

@@ -9,8 +9,8 @@ const crypto = require('crypto');
 const db = require('../db');
 const config = require('../config');
 
-const FREE_MONTHLY_LIMIT = 10;
-const PRO_MONTHLY_LIMIT = 300;
+const FREE_MONTHLY_LIMIT = config.freeMonthlyFormLimit || 30;
+const PRO_MONTHLY_LIMIT = config.proMonthlyFormLimit || 300;
 const MAX_QUESTIONS_PER_SESSION = 60;
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
@@ -94,10 +94,10 @@ async function startFormSession({ userId, formCategory = 'generic' }) {
             allowed: false,
             error: 'QUOTA_EXCEEDED',
             message: reservation.isPro
-                ? 'You have reached the monthly fair-use cap of 300 forms on Pro.'
+                ? `You have reached the monthly fair-use cap of ${reservation.limit || PRO_MONTHLY_LIMIT} forms on Pro.`
                 : (paymentsOn
-                    ? 'You have used all 10 free AI form fills for this month. Upgrade to Pro for unlimited forms.'
-                    : `You have used all 10 free AI form fills for this month. Your monthly limit resets on ${formattedResetDate}. Pro passes are coming soon!`),
+                    ? `You have used all ${reservation.limit || FREE_MONTHLY_LIMIT} free AI form fills for this month. Upgrade to Pro for unlimited forms.`
+                    : `You have used all ${reservation.limit || FREE_MONTHLY_LIMIT} free AI form fills for this month. Your monthly limit resets on ${formattedResetDate}. Pro passes are coming soon!`),
             quota,
             paymentsEnabled: paymentsOn
         };

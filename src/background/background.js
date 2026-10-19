@@ -942,7 +942,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         } else if (meRes.status === 401) {
                             await chrome.storage.local.remove(['sessionToken', 'authUser', 'quota']);
                             user = { plan: 'free' };
-                            quota = { limit: 10, used: 0, remaining: 10, isPro: false, plan: 'free' };
+                            quota = { limit: 30, used: 0, remaining: 30, isPro: false, plan: 'free' };
                         }
                     } catch (_) {}
                 }
@@ -1014,7 +1014,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 sendResponse({
                     success: true,
                     user: { plan: 'free' },
-                    quota: { limit: 10, used: 0, remaining: 10, isPro: false, plan: 'free' }
+                    quota: { limit: 30, used: 0, remaining: 30, isPro: false, plan: 'free' }
                 });
             } catch (e) {
                 sendResponse({ success: false, error: e.message });

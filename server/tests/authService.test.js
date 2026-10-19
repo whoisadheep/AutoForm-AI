@@ -48,7 +48,7 @@ describe('AuthService — Freemium Monthly Quota & Plan Management', () => {
         assert.equal(normalized.monthResetDate, currentMonth);
     });
 
-    it('reports correct quota for Free Tier users (10 forms/month)', () => {
+    it('reports correct quota for Free Tier users (30 forms/month)', () => {
         const user = { plan: 'free' };
         const stats = {
             questionsUsedThisMonth: 4,
@@ -57,9 +57,9 @@ describe('AuthService — Freemium Monthly Quota & Plan Management', () => {
 
         const status = authService.getMonthlyQuotaStatus(user, stats);
         assert.equal(status.isPro, false);
-        assert.equal(status.limit, 10);
+        assert.equal(status.limit, 30);
         assert.equal(status.used, 4);
-        assert.equal(status.remaining, 6);
+        assert.equal(status.remaining, 26);
         assert.equal(status.plan, 'free');
     });
 
@@ -86,14 +86,14 @@ describe('AuthService — Freemium Monthly Quota & Plan Management', () => {
 
         const result = authService.canSolveQuestion(user, stats);
         assert.equal(result.allowed, true);
-        assert.equal(result.remaining, 1);
+        assert.equal(result.remaining, 21);
         assert.equal(result.isPro, false);
     });
 
     it('canSolveQuestion blocks solving and returns upgrade reason when free quota is exhausted', () => {
         const user = { plan: 'free' };
         const stats = {
-            questionsUsedThisMonth: 10,
+            questionsUsedThisMonth: 30,
             monthResetDate: authService.getCurrentMonthKey()
         };
 
@@ -101,7 +101,7 @@ describe('AuthService — Freemium Monthly Quota & Plan Management', () => {
         assert.equal(result.allowed, false);
         assert.equal(result.remaining, 0);
         assert.equal(result.isPro, false);
-        assert.match(result.reason, /used all 10 free/i);
+        assert.match(result.reason, /used all 30 free/i);
     });
 
     it('canSolveQuestion always permits solving for Pro users regardless of usage', () => {
